@@ -1,0 +1,246 @@
+{
+  "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+  "id": "10106",
+  "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/10106",
+  "key": "SDLC-1",
+  "fields": {
+    "statuscategorychangedate": "2026-05-12T17:09:52.788+0300",
+    "issuetype": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issuetype/10108",
+      "id": "10108",
+      "description": "Request received from your email support channel.",
+      "iconUrl": "https://dourosepameinondas.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10791?size=medium",
+      "name": "Email request",
+      "subtask": false,
+      "avatarId": 10791,
+      "entityId": "b9f57499-66bc-40a8-925d-21b1f33e95eb",
+      "hierarchyLevel": 0
+    },
+    "timespent": null,
+    "customfield_10030": null,
+    "project": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/project/10066",
+      "id": "10066",
+      "key": "SDLC",
+      "name": "SDLC",
+      "projectTypeKey": "service_desk",
+      "simplified": true,
+      "avatarUrls": {
+        "48x48": "https://dourosepameinondas.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10404",
+        "24x24": "https://dourosepameinondas.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10404?size=small",
+        "16x16": "https://dourosepameinondas.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10404?size=xsmall",
+        "32x32": "https://dourosepameinondas.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10404?size=medium"
+      }
+    },
+    "customfield_10031": null,
+    "customfield_10032": null,
+    "fixVersions": [],
+    "aggregatetimespent": null,
+    "statusCategory": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/statuscategory/4",
+      "id": 4,
+      "key": "indeterminate",
+      "colorName": "yellow",
+      "name": "In Progress"
+    },
+    "customfield_10111": {
+      "id": "4",
+      "name": "Time to first response",
+      "_links": {
+        "self": "https://dourosepameinondas.atlassian.net/rest/servicedeskapi/request/10106/sla/4"
+      },
+      "completedCycles": [],
+      "ongoingCycle": {
+        "startTime": {
+          "iso8601": "2026-05-12T17:09:51+0300",
+          "jira": "2026-05-12T17:09:51.061+0300",
+          "friendly": "Yesterday 5:09 PM",
+          "epochMillis": 1778594991061
+        },
+        "breachTime": {
+          "iso8601": "2026-05-13T13:00:00+0300",
+          "jira": "2026-05-13T13:00:00.000+0300",
+          "friendly": "Today 1:00 PM",
+          "epochMillis": 1778666400000
+        },
+        "breached": false,
+        "paused": false,
+        "withinCalendarHours": false,
+        "goalDuration": {
+          "millis": 14400000,
+          "friendly": "4h"
+        },
+        "elapsedTime": {
+          "millis": 0,
+          "friendly": "0m"
+        },
+        "remainingTime": {
+          "millis": 14400000,
+          "friendly": "4h"
+        }
+      }
+    },
+    "resolution": null,
+    "customfield_10104": null,
+    "customfield_10105": null,
+    "customfield_10029": null,
+    "resolutiondate": null,
+    "workratio": -1,
+    "watches": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/SDLC-1/watchers",
+      "watchCount": 1,
+      "isWatching": true
+    },
+    "lastViewed": null,
+    "created": "2026-05-12T17:09:51.061+0300",
+    "priority": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/priority/3",
+      "iconUrl": "https://dourosepameinondas.atlassian.net/images/icons/priorities/medium_new.svg",
+      "name": "Medium",
+      "id": "3"
+    },
+    "customfield_10103": [],
+    "labels": [
+      "ai_task:book_flight_with_seat_preference"
+    ],
+    "timeestimate": null,
+    "aggregatetimeoriginalestimate": null,
+    "versions": [],
+    "issuelinks": [],
+    "assignee": null,
+    "updated": "2026-05-12T17:09:53.036+0300",
+    "status": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/status/10073",
+      "description": "",
+      "iconUrl": "https://dourosepameinondas.atlassian.net/",
+      "name": "Waiting for support",
+      "id": "10073",
+      "statusCategory": {
+        "self": "https://dourosepameinondas.atlassian.net/rest/api/3/statuscategory/4",
+        "id": 4,
+        "key": "indeterminate",
+        "colorName": "yellow",
+        "name": "In Progress"
+      }
+    },
+    "components": [],
+    "timeoriginalestimate": null,
+    "description": {
+      "type": "doc",
+      "version": 1,
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "The booking workflow should keep the requested aisle or window preference throughout the flow and confirm it in the final response."
+            }
+          ]
+        }
+      ]
+    },
+    "customfield_10179": {
+      "id": "3",
+      "name": "Time to done",
+      "_links": {
+        "self": "https://dourosepameinondas.atlassian.net/rest/servicedeskapi/request/10106/sla/3"
+      },
+      "completedCycles": [],
+      "ongoingCycle": {
+        "startTime": {
+          "iso8601": "2026-05-12T17:09:51+0300",
+          "jira": "2026-05-12T17:09:51.061+0300",
+          "friendly": "Yesterday 5:09 PM",
+          "epochMillis": 1778594991061
+        },
+        "breachTime": {
+          "iso8601": "2026-05-14T17:00:00+0300",
+          "jira": "2026-05-14T17:00:00.000+0300",
+          "friendly": "14/May/26 5:00 PM",
+          "epochMillis": 1778767200000
+        },
+        "breached": false,
+        "paused": false,
+        "withinCalendarHours": false,
+        "goalDuration": {
+          "millis": 57600000,
+          "friendly": "16h"
+        },
+        "elapsedTime": {
+          "millis": 0,
+          "friendly": "0m"
+        },
+        "remainingTime": {
+          "millis": 57600000,
+          "friendly": "16h"
+        }
+      }
+    },
+    "timetracking": {},
+    "security": null,
+    "attachment": [],
+    "aggregatetimeestimate": null,
+    "summary": "Booking flow should honor seat preference",
+    "creator": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/user?accountId=712020%3A5a87061d-28b4-425f-8687-cd5d099bc3e9",
+      "accountId": "712020:5a87061d-28b4-425f-8687-cd5d099bc3e9",
+      "emailAddress": "dourosepameinondas@gmail.com",
+      "avatarUrls": {
+        "48x48": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "24x24": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "16x16": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "32x32": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png"
+      },
+      "displayName": "Epameinondas Douros",
+      "active": true,
+      "timeZone": "Europe/Athens",
+      "accountType": "atlassian"
+    },
+    "subtasks": [],
+    "reporter": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/user?accountId=712020%3A5a87061d-28b4-425f-8687-cd5d099bc3e9",
+      "accountId": "712020:5a87061d-28b4-425f-8687-cd5d099bc3e9",
+      "emailAddress": "dourosepameinondas@gmail.com",
+      "avatarUrls": {
+        "48x48": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "24x24": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "16x16": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "32x32": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png"
+      },
+      "displayName": "Epameinondas Douros",
+      "active": true,
+      "timeZone": "Europe/Athens",
+      "accountType": "atlassian"
+    },
+    "aggregateprogress": {
+      "progress": 0,
+      "total": 0
+    },
+    "customfield_10002": [],
+    "environment": null,
+    "duedate": null,
+    "progress": {
+      "progress": 0,
+      "total": 0
+    },
+    "votes": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/SDLC-1/votes",
+      "votes": 0,
+      "hasVoted": false
+    },
+    "comment": {
+      "comments": [],
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/10106/comment",
+      "maxResults": 0,
+      "total": 0,
+      "startAt": 0
+    },
+    "worklog": {
+      "startAt": 0,
+      "maxResults": 20,
+      "total": 0,
+      "worklogs": []
+    }
+  }
+}

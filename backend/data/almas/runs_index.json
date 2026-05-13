@@ -1,0 +1,38 @@
+{
+  "sdlc-3-20260512205547-d94dbb97": {
+    "run_id": "sdlc-3-20260512205547-d94dbb97",
+    "issue_key": "SDLC-3",
+    "status": "needs_approval",
+    "current_stage": "peer_review",
+    "revision_count": 0,
+    "updated_at": "2026-05-12T20:56:09.876474+00:00",
+    "explanation": "Peer review approved. Waiting for human approval before GitHub handoff."
+  },
+  "sdlc-1-20260512212613-ce86544c": {
+    "run_id": "sdlc-1-20260512212613-ce86544c",
+    "issue_key": "SDLC-1",
+    "status": "needs_review_revision",
+    "current_stage": "fixer",
+    "revision_count": 1,
+    "updated_at": "2026-05-12T21:26:40.923551+00:00",
+    "explanation": "Fixer still requires revisions after the allowed retry loop."
+  },
+  "sdlc-4-20260513124708-65d94c20": {
+    "run_id": "sdlc-4-20260513124708-65d94c20",
+    "issue_key": "SDLC-4",
+    "status": "needs_review_revision",
+    "current_stage": "fixer",
+    "revision_count": 1,
+    "updated_at": "2026-05-13T12:47:41.167901+00:00",
+    "explanation": "Fixer still requires revisions after the allowed retry loop."
+  },
+  "sdlc-2-20260513124717-51cb5bf0": {
+    "run_id": "sdlc-2-20260513124717-51cb5bf0",
+    "issue_key": "SDLC-2",
+    "status": "needs_review_revision",
+    "current_stage": "fixer",
+    "revision_count": 1,
+    "updated_at": "2026-05-13T12:47:42.878661+00:00",
+    "explanation": "Fixer still requires revisions after the allowed retry loop."
+  }
+}

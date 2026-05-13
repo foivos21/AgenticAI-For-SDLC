@@ -1,0 +1,29 @@
+{
+  "issue_key": "SDLC-1",
+  "problem_statement": "The booking workflow does not consistently honor the user's seat preference (aisle or window) throughout the booking process, failing to ensure that the preference is maintained and confirmed in the final response.",
+  "goal": "To update the booking flow to preserve and confirm seat preferences (aisle or window) throughout the entire booking process.",
+  "acceptance_criteria": [
+    "Seat preference should be retained from the initial selection to the confirmation stage.",
+    "The final booking response must include the confirmed seat preference."
+  ],
+  "constraints": [],
+  "unknowns": [],
+  "repo_summary": "The repository includes files related to booking management and seat inventory, which are likely to contain the necessary logic to implement seat preference handling.",
+  "candidate_files": [
+    "app/api/routes/bookings.py",
+    "app/models/booking.py",
+    "app/services/booking_service.py"
+  ],
+  "selected_files": [
+    "app/models/booking.py",
+    "app/services/booking_service.py"
+  ],
+  "selected_symbols": [],
+  "localization_rationale": [
+    "The 'booking.py' model manages the structure and data tied to bookings, which will include seat preferences.",
+    "The 'booking_service.py' contains business logic for handling bookings, making it central to implementing the requested feature."
+  ],
+  "confidence": 0.9,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

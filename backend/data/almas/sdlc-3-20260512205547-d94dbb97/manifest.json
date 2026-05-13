@@ -1,0 +1,24 @@
+{
+  "run_id": "sdlc-3-20260512205547-d94dbb97",
+  "issue_key": "SDLC-3",
+  "status": "needs_approval",
+  "current_stage": "peer_review",
+  "revision_count": 0,
+  "created_at": "2026-05-12T20:55:47.449045+00:00",
+  "updated_at": "2026-05-12T20:56:09.876474+00:00",
+  "explanation": "Peer review approved. Waiting for human approval before GitHub handoff.",
+  "model_names": {
+    "sprint": "openai:gpt-4o-mini",
+    "control": "openai:gpt-4o-mini",
+    "developer": "openai:gpt-4o-mini",
+    "peer_review": "openai:gpt-4o-mini"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "sprint_work_package": "sprint_work_package.json",
+    "context_bundle": "context_bundle.json",
+    "implementation_package": "implementation_package.json",
+    "review_report": "review_report.json"
+  },
+  "latest_review_decision": "approved"
+}

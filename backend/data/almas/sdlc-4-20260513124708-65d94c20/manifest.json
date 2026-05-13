@@ -1,0 +1,22 @@
+{
+  "run_id": "sdlc-4-20260513124708-65d94c20",
+  "issue_key": "SDLC-4",
+  "status": "needs_review_revision",
+  "current_stage": "fixer",
+  "revision_count": 1,
+  "created_at": "2026-05-13T12:47:08.163744+00:00",
+  "updated_at": "2026-05-13T12:47:41.167901+00:00",
+  "explanation": "Fixer still requires revisions after the allowed retry loop.",
+  "model_names": {
+    "analyzer": "openai:gpt-4o-mini",
+    "planner": "openai:gpt-4o-mini",
+    "fixer": "openai:gpt-4o-mini"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "fixer_output": "fixer_output.json"
+  },
+  "latest_fixer_decision": "needs_revision"
+}

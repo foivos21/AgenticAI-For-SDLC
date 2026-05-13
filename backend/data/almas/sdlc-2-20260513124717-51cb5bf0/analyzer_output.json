@@ -1,0 +1,37 @@
+{
+  "issue_key": "SDLC-2",
+  "problem_statement": "The cancellation workflow must be able to verify a booking, cancel it, and provide a clear explanation of the refund outcome to the customer.",
+  "goal": "Enable customers to cancel their bookings and ensure they are informed about the refund process.",
+  "acceptance_criteria": [
+    "The booking should be verified before cancellation.",
+    "A successful cancellation should update the booking status accordingly.",
+    "A clear explanation of the refund outcome should be provided to the customer."
+  ],
+  "constraints": [],
+  "unknowns": [],
+  "repo_summary": "README.md(1), agents(9), alembic(5), app(49), data(17), pyproject.toml(1), railway.json(1), techmellon_airline_backend.egg-info(4)",
+  "candidate_files": [
+    "alembic/versions/20260403_0003_booking_duplicate_guardrails.py",
+    "app/api/routes/bookings.py",
+    "app/models/booking.py",
+    "app/models/booking_event.py",
+    "app/models/booking_extra.py",
+    "app/models/booking_passenger.py",
+    "app/schemas/booking.py",
+    "app/scripts/seed_bookings.py",
+    "app/services/booking_service.py"
+  ],
+  "selected_files": [
+    "app/api/routes/bookings.py",
+    "app/services/booking_service.py",
+    "app/models/booking.py"
+  ],
+  "selected_symbols": [],
+  "localization_rationale": [
+    "The cancellation workflow is likely to be implemented in the booking routes and services, which handle API requests and business logic related to bookings.",
+    "The booking model would be essential for verifying existence and state of bookings."
+  ],
+  "confidence": 0.9,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

@@ -1,0 +1,15 @@
+{
+  "decision": "needs_revision",
+  "fix_summary": "",
+  "approval_reasons": [],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": [
+    "Clarify how the cancellation eligibility will be determined within the booking model. Are there specific conditions or states for cancellation?",
+    "Specify what kinds of security checks will be implemented to prevent unauthorized cancellation requests.",
+    "Outline the testing framework that will be used to run unit and integration tests. Will any specific tools or libraries be utilized?",
+    "Ensure that the error handling approach is documented. What types of errors are anticipated, and how should they be logged or reported?"
+  ]
+}

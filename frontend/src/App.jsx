@@ -1,0 +1,3895 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  approveAlmasRun,
+  approveTestingPipeline,
+  cancelTestingPipeline,
+  createBooking,
+  getAlmasRun,
+  getTestingPipeline,
+  getTestingPipelineApplyResult,
+  getTestingPipelineDeliverables,
+  getTestingPipelineDeliverableUrl,
+  getTestingPipelineEvents,
+  getJiraIssue,
+  planJiraIssue,
+  listAllTripsBooked,
+  listAlmasRuns,
+  listFlights,
+  listJiraIssues,
+  listTestingPipelines,
+  listTestingTasks,
+  listTestingRuns,
+  retryAlmasRun,
+  runJiraIssue,
+  runTestingTaskLive,
+  searchFlights,
+  startAlmasRun,
+  startTestingPipeline,
+  syncJiraIssues,
+} from "./api";
+
+function uniqueFlights(items) {
+  const byKey = new Map();
+  for (const item of items) {
+    const key = `${item.flight_number}:${item.departure_time}:${item.seat_class || ""}`;
+    const existing = byKey.get(key);
+    if (!existing || Number(item.price) < Number(existing.price)) {
+      byKey.set(key, item);
+    }
+  }
+  return Array.from(byKey.values());
+}
+
+function formatFlightDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+}
+
+function formatFlightTime(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatTimestamp(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+function formatCurrency(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  const amount = Number(value);
+  if (Number.isNaN(amount)) return `$${value}`;
+  return amount.toLocaleString([], { style: "currency", currency: "USD" });
+}
+
+function formatSeatClass(value) {
+  if (!value) return "—";
+  return String(value)
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatTaskLabel(value, fallback = "Task") {
+  const raw = value || fallback;
+  if (!raw) return "Task";
+  return String(raw)
+    .replace(/^task_/i, "")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function replaceTaskSlugInText(value, taskSlug) {
+  const text = String(value || "");
+  if (!text) return "";
+  if (!taskSlug) return text;
+  return text.split(String(taskSlug)).join(formatTaskLabel(taskSlug));
+}
+
+function formatJson(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value, null, 2);
+}
+
+function renderSimpleList(items, keyPrefix) {
+  if (!Array.isArray(items) || !items.length) return <p className="testing-muted">No items.</p>;
+  return (
+    <ul className="jira-agent-card__list">
+      {items.map((item, index) => (
+        <li key={`${keyPrefix}-${index}`}>{String(item)}</li>
+      ))}
+    </ul>
+  );
+}
+
+function stripAnsi(value) {
+  return String(value || "").replace(/\u001b\[[0-9;]*m/g, "");
+}
+
+function pipelineIsTerminal(status) {
+  return ["completed", "failed", "blocked_manual_fix", "canceled"].includes(String(status || ""));
+}
+
+function pipelineEventCategory(type) {
+  const eventType = String(type || "").toLowerCase();
+  if (eventType.includes("error") || eventType.includes("failed") || eventType.includes("blocked")) return "error";
+  if (eventType.includes("approval")) return "approval";
+  if (eventType.includes("deploy") || eventType.includes("git") || eventType.includes("code_apply") || eventType.includes("agent_sync")) return "code";
+  if (eventType.includes("fix") || eventType.includes("refinement") || eventType.includes("root_cause")) return "refine";
+  if (eventType.includes("evaluation") || eventType.includes("criterion") || eventType.includes("finding")) return "evaluation";
+  if (eventType.includes("iteration") || eventType.includes("testing") || eventType.includes("task") || eventType.includes("run")) return "testing";
+  return "note";
+}
+
+function formatPipelineEventTitle(type) {
+  const eventType = String(type || "").replaceAll("_", " ").trim();
+  if (!eventType) return "Pipeline event";
+  return eventType.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatElevenLabsTranscriptItems(transcript) {
+  if (!Array.isArray(transcript) || transcript.length === 0) return [];
+
+  const lines = ["ElevenLabs transcript:"];
+  for (const item of transcript) {
+    const role = String(item?.role || "");
+    const text = String(item?.message || item?.text || "").trim();
+    if (text) {
+      if (role === "agent") {
+        lines.push(`- Agent: ${text}`);
+      } else if (role === "user" || role === "user_transcript") {
+        lines.push(`- User: ${text}`);
+      } else {
+        lines.push(`- ${role || "Transcript"}: ${text}`);
+      }
+    }
+
+    for (const toolCall of item?.tool_calls || []) {
+      const name = String(toolCall?.tool_name || "unknown_tool").trim();
+      const method = String(toolCall?.tool_details?.method || "").trim();
+      const url = String(toolCall?.tool_details?.url || "").trim();
+      const params = String(toolCall?.params_as_json || "").trim();
+      const parts = [name];
+      if (method) parts.push(method);
+      if (url) parts.push(url);
+      let line = `- Tool call: ${parts.filter(Boolean).join(" | ")}`;
+      if (params) line += ` | params=${params}`;
+      lines.push(line);
+    }
+
+    for (const toolResult of item?.tool_results || []) {
+      const name = String(toolResult?.tool_name || "unknown_tool").trim();
+      const status = toolResult?.is_error ? "error" : "ok";
+      const latency = toolResult?.tool_latency_secs;
+      const resultValue = String(toolResult?.result_value || "").trim();
+      const parts = [name, status];
+      if (typeof latency !== "undefined" && latency !== null && latency !== "") {
+        parts.push(`latency=${latency}s`);
+      }
+      let line = `- Tool result: ${parts.join(" | ")}`;
+      if (resultValue) line += ` | ${resultValue}`;
+      lines.push(line);
+    }
+  }
+  return lines;
+}
+
+function formatPipelineEventBody(event) {
+  const payload = event.payload && typeof event.payload === "object" ? event.payload : {};
+  const runtime = payload.event_payload && typeof payload.event_payload === "object" ? payload.event_payload : {};
+  const taskSlug = payload.task || payload.task_slug || runtime.task || null;
+  const parts = [];
+  if (event.message) parts.push(replaceTaskSlugInText(event.message, taskSlug));
+  const extraLines = [];
+  if (typeof payload.iteration !== "undefined") {
+    extraLines.push(`Iteration: ${payload.iteration}`);
+  }
+  if (typeof payload.overall_score !== "undefined") {
+    extraLines.push(`Score: ${payload.overall_score}/10`);
+  }
+  if (typeof payload.goal_achieved !== "undefined") {
+    extraLines.push(`Goal achieved: ${payload.goal_achieved ? "yes" : "no"}`);
+  }
+  if (typeof payload.edit_count !== "undefined") {
+    extraLines.push(`Edit count: ${payload.edit_count}`);
+  }
+  if (typeof payload.invalid_count !== "undefined") {
+    extraLines.push(`Invalid edits: ${payload.invalid_count}`);
+  }
+  if (typeof payload.repaired_count !== "undefined") {
+    extraLines.push(`Repaired edits: ${payload.repaired_count}`);
+  }
+  if (typeof payload.edit_index !== "undefined") {
+    extraLines.push(`Edit index: ${payload.edit_index}`);
+  }
+  if (typeof payload.elapsed_seconds !== "undefined") {
+    extraLines.push(`Elapsed seconds: ${payload.elapsed_seconds}`);
+  }
+  if (typeof payload.timeout_seconds !== "undefined") {
+    extraLines.push(`Timeout seconds: ${payload.timeout_seconds}`);
+  }
+  if (typeof payload.pid !== "undefined") {
+    extraLines.push(`PID: ${payload.pid}`);
+  }
+  if (payload.health_url) {
+    extraLines.push(`Health URL: ${payload.health_url}`);
+  }
+  if (typeof payload.health_status !== "undefined") {
+    extraLines.push(`Health status: ${payload.health_status}`);
+  }
+  if (payload.phase) {
+    extraLines.push(`Phase: ${payload.phase}`);
+  }
+  if (payload.path) {
+    extraLines.push(`Path: ${payload.path}`);
+  }
+  if (payload.selector_type || payload.selector_value) {
+    extraLines.push(`Selector: ${payload.selector_type || "unknown"}:${payload.selector_value || ""}`);
+  }
+  if (payload.error && !parts.some((line) => line.includes(String(payload.error)))) {
+    extraLines.push(`Error: ${payload.error}`);
+  }
+  if (Array.isArray(payload.changed_paths) && payload.changed_paths.length) {
+    extraLines.push(`Changed paths: ${payload.changed_paths.join(", ")}`);
+  }
+  if (typeof payload.stderr === "string" && payload.stderr.trim()) {
+    extraLines.push(`stderr: ${payload.stderr.trim()}`);
+  }
+  if (typeof payload.stdout === "string" && payload.stdout.trim()) {
+    extraLines.push(`stdout: ${payload.stdout.trim()}`);
+  }
+  if (typeof payload.approved !== "undefined") {
+    extraLines.push(`Approved: ${payload.approved ? "yes" : "no"}`);
+  }
+  if (runtime.text && !parts.some((line) => line.includes(String(runtime.text)))) {
+    extraLines.push(replaceTaskSlugInText(runtime.text, taskSlug));
+  }
+  if (runtime.message && !parts.some((line) => line.includes(String(runtime.message)))) {
+    extraLines.push(replaceTaskSlugInText(runtime.message, taskSlug));
+  }
+  if (String(event.type || "") === "elevenlabs_analysis") {
+    extraLines.push(...formatElevenLabsTranscriptItems(payload.transcript));
+  }
+
+  if (extraLines.length) {
+    parts.push(extraLines.join("\n"));
+  }
+  return parts.join("\n");
+}
+
+const PIPELINE_PHASE_ORDER = [
+  "start",
+  "testing",
+  "evaluation",
+  "refinement",
+  "fix_plan",
+  "approval",
+  "code_deploy",
+  "final",
+];
+
+const PIPELINE_PHASE_LABELS = {
+  start: "Start Pipeline",
+  testing: "Testing",
+  evaluation: "Evaluation",
+  refinement: "Refinement Analysis",
+  fix_plan: "Fix Planning",
+  approval: "Approval",
+  code_deploy: "Code Change / Deploy",
+  final: "Final Summary",
+};
+
+const ACTIVE_PIPELINE_STATUSES = new Set(["running", "waiting_approval", "approving", "applying", "deploy_wait"]);
+
+function getPipelineEventPayload(event) {
+  const payload = event?.payload && typeof event.payload === "object" ? event.payload : {};
+  const runtime = payload.event_payload && typeof payload.event_payload === "object" ? payload.event_payload : {};
+  return {
+    ...runtime,
+    ...payload,
+  };
+}
+
+function getPipelineRuntimePayload(event) {
+  const payload = event?.payload && typeof event.payload === "object" ? event.payload : {};
+  return payload.event_payload && typeof payload.event_payload === "object" ? payload.event_payload : {};
+}
+
+function getPipelineEventIterationNumber(event) {
+  const payload = getPipelineEventPayload(event);
+  return event?.iteration ?? payload.iteration ?? null;
+}
+
+function getPipelineEventTaskSlug(event) {
+  const payload = getPipelineEventPayload(event);
+  const runtime = getPipelineRuntimePayload(event);
+  return payload.task || payload.task_slug || runtime.task || null;
+}
+
+function getPipelinePhase(type) {
+  const eventType = String(type || "").toLowerCase();
+  if (eventType === "pipeline_started") return "start";
+  if ([
+    "iteration_started",
+    "testing_started",
+    "fixture_reset_skipped",
+    "task_started",
+    "user_turn",
+    "customer_reply",
+    "transcript_turn",
+    "conversation_finalizing",
+    "task_finished",
+    "testing_complete",
+    "run_started",
+    "run_finished",
+  ].includes(eventType)) {
+    return "testing";
+  }
+  if ([
+    "evaluation_started",
+    "evaluation_complete",
+    "elevenlabs_analysis",
+    "evaluation_criterion",
+    "evaluation_finding",
+    "refinement_gate",
+    "evaluation_error",
+  ].includes(eventType)) {
+    return "evaluation";
+  }
+  if (["refinement_started", "root_cause_complete", "refinement_error"].includes(eventType)) {
+    return "refinement";
+  }
+  if ([
+    "fix_plan_validation_started",
+    "fix_plan_validation_failed",
+    "fix_plan_repair_started",
+    "fix_plan_repair_finished",
+    "fix_plan_ready",
+    "fixer_summary",
+    "fixer_expected_improvement",
+    "fixer_edit",
+  ].includes(eventType)) {
+    return "fix_plan";
+  }
+  if (eventType === "approval_required") return "approval";
+  if ([
+    "code_apply_started",
+    "code_apply_finished",
+    "agent_sync_started",
+    "agent_sync_progress",
+    "agent_sync_finished",
+    "agent_sync_failed",
+    "git_commit_finished",
+    "git_push_started",
+    "git_push_progress",
+    "git_push_finished",
+    "git_push_skipped",
+    "deploy_wait_started",
+    "deploy_wait_health_check",
+    "deploy_wait_progress",
+    "deploy_verified",
+    "deploy_skipped",
+  ].includes(eventType)) {
+    return "code_deploy";
+  }
+  if ([
+    "iteration_complete",
+    "pipeline_complete",
+    "pipeline_failed",
+    "pipeline_blocked",
+  ].includes(eventType)) {
+    return "final";
+  }
+  return "testing";
+}
+
+function getIterationTaskSlug(iterationRecord, fallbackTaskSlugs = []) {
+  if (!iterationRecord) return fallbackTaskSlugs[0] || "";
+  if (iterationRecord.selected_task_slug) return iterationRecord.selected_task_slug;
+  if (Array.isArray(iterationRecord.task_results) && iterationRecord.task_results.length) {
+    return iterationRecord.task_results[iterationRecord.task_results.length - 1]?.task_slug || fallbackTaskSlugs[0] || "";
+  }
+  return fallbackTaskSlugs[0] || "";
+}
+
+function buildPipelineTranscriptTurns(events) {
+  const turns = [];
+  for (const event of events) {
+    const type = String(event?.type || "");
+    const runtime = getPipelineRuntimePayload(event);
+    let role = null;
+    let text = "";
+    let timestamp = event?.timestamp || null;
+
+    if (type === "transcript_turn") {
+      role = runtime.role || "turn";
+      if (role === "user_transcript") role = "user";
+      text = String(runtime.text || runtime.message || "").trim();
+      timestamp = runtime.timestamp || timestamp;
+    } else if (type === "user_turn") {
+      role = "user";
+      text = String(runtime.message || getPipelineEventPayload(event).message || "").trim();
+    } else if (type === "customer_reply") {
+      role = "user";
+      text = String(runtime.message || getPipelineEventPayload(event).message || "").trim();
+    }
+
+    if (!text) continue;
+    const last = turns[turns.length - 1];
+    if (last && last.role === role && last.text === text) continue;
+    turns.push({
+      role,
+      text,
+      timestamp,
+    });
+  }
+  return turns;
+}
+
+function formatElapsedSecondsCompact(value) {
+  const elapsed = Number(value);
+  if (!Number.isFinite(elapsed)) return "—";
+  if (elapsed < 60) return `${elapsed.toFixed(1)}s`;
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed - minutes * 60;
+  return `${minutes}m ${seconds.toFixed(seconds >= 10 ? 0 : 1)}s`;
+}
+
+function formatCommitShort(value) {
+  if (!value) return "—";
+  return String(value).slice(0, 12);
+}
+
+function splitCodeLines(value) {
+  const text = String(value || "").replace(/\r\n/g, "\n");
+  if (!text) return [];
+  return text.split("\n");
+}
+
+function buildSnippetDiffRows(beforeContent, afterContent) {
+  const beforeLines = splitCodeLines(beforeContent);
+  const afterLines = splitCodeLines(afterContent);
+  if (!beforeLines.length && !afterLines.length) return [];
+
+  let prefix = 0;
+  while (
+    prefix < beforeLines.length &&
+    prefix < afterLines.length &&
+    beforeLines[prefix] === afterLines[prefix]
+  ) {
+    prefix += 1;
+  }
+
+  let beforeSuffix = beforeLines.length - 1;
+  let afterSuffix = afterLines.length - 1;
+  while (
+    beforeSuffix >= prefix &&
+    afterSuffix >= prefix &&
+    beforeLines[beforeSuffix] === afterLines[afterSuffix]
+  ) {
+    beforeSuffix -= 1;
+    afterSuffix -= 1;
+  }
+
+  if (prefix === beforeLines.length && prefix === afterLines.length) {
+    return beforeLines.slice(0, 12).map((line, index) => ({
+      type: "context",
+      oldNumber: index + 1,
+      newNumber: index + 1,
+      text: line,
+    }));
+  }
+
+  const rows = [];
+  const contextWindow = 2;
+  const leadingContextStart = Math.max(0, prefix - contextWindow);
+  if (leadingContextStart > 0) {
+    rows.push({
+      type: "skipped",
+      text: `${leadingContextStart} unchanged line${leadingContextStart === 1 ? "" : "s"}`,
+    });
+  }
+
+  for (let index = leadingContextStart; index < prefix; index += 1) {
+    rows.push({
+      type: "context",
+      oldNumber: index + 1,
+      newNumber: index + 1,
+      text: beforeLines[index],
+    });
+  }
+
+  for (let index = prefix; index <= beforeSuffix; index += 1) {
+    rows.push({
+      type: "remove",
+      oldNumber: index + 1,
+      newNumber: null,
+      text: beforeLines[index],
+    });
+  }
+
+  for (let index = prefix; index <= afterSuffix; index += 1) {
+    rows.push({
+      type: "add",
+      oldNumber: null,
+      newNumber: index + 1,
+      text: afterLines[index],
+    });
+  }
+
+  const commonSuffixCount = beforeLines.length - (beforeSuffix + 1);
+  const shownSuffixCount = Math.min(contextWindow, commonSuffixCount);
+  const suffixStartBefore = beforeSuffix + 1;
+  const suffixStartAfter = afterSuffix + 1;
+
+  for (let offset = 0; offset < shownSuffixCount; offset += 1) {
+    rows.push({
+      type: "context",
+      oldNumber: suffixStartBefore + offset + 1,
+      newNumber: suffixStartAfter + offset + 1,
+      text: beforeLines[suffixStartBefore + offset],
+    });
+  }
+
+  const omittedSuffixCount = commonSuffixCount - shownSuffixCount;
+  if (omittedSuffixCount > 0) {
+    rows.push({
+      type: "skipped",
+      text: `${omittedSuffixCount} unchanged line${omittedSuffixCount === 1 ? "" : "s"}`,
+    });
+  }
+
+  return rows;
+}
+
+function summarizeSnippetDiff(rows) {
+  return rows.reduce(
+    (summary, row) => {
+      if (row.type === "add") summary.added += 1;
+      if (row.type === "remove") summary.removed += 1;
+      return summary;
+    },
+    { added: 0, removed: 0 }
+  );
+}
+
+function getLastPipelineEvent(events, matchingTypes) {
+  const types = new Set(matchingTypes);
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index];
+    if (types.has(String(event?.type || ""))) {
+      return event;
+    }
+  }
+  return null;
+}
+
+function buildFallbackAppliedChanges(events) {
+  return events
+    .filter((event) => String(event?.type || "") === "code_apply_change")
+    .map((event) => ({
+      path: event.path || "Unknown path",
+      selector_type: event.selector_type || "unknown",
+      selector_value: event.selector_value || "",
+      applied: true,
+      blocked: false,
+      error: null,
+      before_content: event.before_content || "",
+      after_content: event.after_content || "",
+    }));
+}
+
+function getAgentSyncStatus(events) {
+  const lastEvent = getLastPipelineEvent(events, [
+    "agent_sync_started",
+    "agent_sync_progress",
+    "agent_sync_finished",
+    "agent_sync_failed",
+  ]);
+  if (!lastEvent) {
+    return { label: "Not needed", tone: "neutral" };
+  }
+  if (lastEvent.type === "agent_sync_finished") {
+    return { label: "Completed", tone: "success" };
+  }
+  if (lastEvent.type === "agent_sync_failed") {
+    return { label: "Failed", tone: "failure" };
+  }
+  return { label: "Running", tone: "waiting" };
+}
+
+function getRailwayWaitStatus(events) {
+  const lastEvent = getLastPipelineEvent(events, [
+    "deploy_wait_started",
+    "deploy_wait_health_check",
+    "deploy_wait_progress",
+    "deploy_verified",
+    "deploy_skipped",
+  ]);
+  if (!lastEvent) {
+    return { label: "Not needed", tone: "neutral" };
+  }
+  if (lastEvent.type === "deploy_skipped") {
+    return { label: "Skipped", tone: "neutral" };
+  }
+  if (lastEvent.type === "deploy_verified") {
+    return { label: "Ready", tone: "success" };
+  }
+  if (lastEvent.type === "deploy_wait_health_check" && lastEvent.health_ready === false) {
+    return { label: "Retrying", tone: "waiting" };
+  }
+  return { label: "Waiting", tone: "waiting" };
+}
+
+function formatCriterionLabel(value) {
+  if (!value) return "Criterion";
+  return String(value)
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getScoreTone(score) {
+  const numeric = Number(score);
+  if (!Number.isFinite(numeric)) return "neutral";
+  if (numeric >= 8) return "success";
+  if (numeric >= 5) return "waiting";
+  return "failure";
+}
+
+function formatPipelineSelectorOption(pipeline) {
+  if (!pipeline) return "";
+  const score = typeof pipeline.latest_evaluator_score === "number" ? ` · ${pipeline.latest_evaluator_score}/10` : "";
+  return `${pipeline.pipeline_id} · ${pipeline.status}${score}`;
+}
+
+function getTestingConversationTurns(run) {
+  const topLevelTranscript = run?.transcript;
+  if (Array.isArray(topLevelTranscript) && topLevelTranscript.length) {
+    return topLevelTranscript.map((item, index) => ({
+      key: `${item.role || "turn"}-${item.timestamp || index}`,
+      role: item.role || "unknown",
+      text: item.text || item.message || item.original_message || "",
+      time: item.timestamp || item.time_in_call_secs || null,
+      meta: Array.isArray(item.tool_calls) ? item.tool_calls.map((toolCall) => toolCall.tool_name).filter(Boolean) : [],
+    }));
+  }
+
+  const elevenLabsTranscript = run?.elevenlabs_conversation?.transcript;
+  if (Array.isArray(elevenLabsTranscript) && elevenLabsTranscript.length) {
+    return elevenLabsTranscript.map((item, index) => ({
+      key: `${item.role || "turn"}-${item.time_in_call_secs ?? index}`,
+      role: item.role || "unknown",
+      text: item.message || item.original_message || "",
+      time: item.time_in_call_secs ?? null,
+      meta: Array.isArray(item.tool_calls) ? item.tool_calls.map((toolCall) => toolCall.tool_name).filter(Boolean) : [],
+    }));
+  }
+
+  return [];
+}
+
+function safeJson(value) {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+const SEAT_LAYOUTS = {
+  economy: {
+    rows: Array.from({ length: 20 }, (_, index) => index + 10),
+    columns: ["A", "B", "C", "D", "E", "F"],
+    windowColumns: new Set(["A", "F"]),
+    aisleColumns: new Set(["C", "D"]),
+    extraLegroomRows: new Set([18, 19, 20]),
+  },
+  premium_economy: {
+    rows: Array.from({ length: 5 }, (_, index) => index + 5),
+    columns: ["A", "B", "C", "D", "E", "F"],
+    windowColumns: new Set(["A", "F"]),
+    aisleColumns: new Set(["C", "D"]),
+    extraLegroomRows: new Set(),
+  },
+  business: {
+    rows: Array.from({ length: 4 }, (_, index) => index + 1),
+    columns: ["A", "B", "C", "D"],
+    windowColumns: new Set(["A", "D"]),
+    aisleColumns: new Set(["B", "C"]),
+    extraLegroomRows: new Set(),
+  },
+};
+
+const FULL_PLANE_ROWS = Array.from({ length: 29 }, (_, index) => index + 1);
+const FULL_PLANE_COLUMNS = ["A", "B", "C", "D", "E", "F"];
+// Jira-first phase: keep testing/refinement logic in code, but hide those screens from UI navigation.
+const HIDDEN_SCREENS = new Set(["testing", "refinement"]);
+const PROFILE_STORAGE_KEY = "aeromellon_profile_v1";
+
+function isScreenVisible(screenName) {
+  return !HIDDEN_SCREENS.has(String(screenName || ""));
+}
+
+function normalizeSeatClass(value) {
+  return String(value || "").toLowerCase();
+}
+
+function seatMetadata(seatClass, seatNumber) {
+  const layout = SEAT_LAYOUTS[normalizeSeatClass(seatClass)];
+  if (!layout || !seatNumber) return { valid: false, window: false, aisle: false, extraLegroom: false };
+  const trimmed = String(seatNumber).toUpperCase().trim();
+  const row = Number(trimmed.replace(/[^0-9]/g, ""));
+  const column = trimmed.replace(/[0-9]/g, "").slice(-1);
+  const valid = layout.rows.includes(row) && layout.columns.includes(column);
+  return {
+    valid,
+    window: valid && layout.windowColumns.has(column),
+    aisle: valid && layout.aisleColumns.has(column),
+    extraLegroom: valid && layout.extraLegroomRows.has(row),
+  };
+}
+
+function buildSeatNumber(flightClass, row, column) {
+  const seatClass = normalizeSeatClass(flightClass);
+  const layout = SEAT_LAYOUTS[seatClass];
+  if (!layout || !layout.rows.includes(row) || !layout.columns.includes(column)) return "";
+  return `${row}${column}`;
+}
+
+function getSeatAvailabilityForPlane(row, column, seatClass) {
+  const className = normalizeSeatClass(seatClass);
+  const cabin = getCabinForRow(row);
+  if (!cabin) return { exists: false, active: false, extraLegroom: false };
+
+  const layout = SEAT_LAYOUTS[cabin];
+  const exists = layout.columns.includes(column);
+  return {
+    exists,
+    active: exists && className === cabin,
+    extraLegroom: exists && cabin === "economy" && layout.extraLegroomRows.has(row),
+  };
+}
+
+function getDefaultSeatForFlight(flight, preference = "") {
+  const seatClass = normalizeSeatClass(flight.seat_class);
+  const layout = SEAT_LAYOUTS[seatClass];
+  if (!layout) return "";
+  const occupied = new Set((flight.occupied_seat_numbers || []).map((seat) => String(seat).toUpperCase()));
+  const pref = String(preference || "").toLowerCase();
+  const orderedRows = pref === "extra_legroom"
+    ? [...layout.rows].filter((row) => layout.extraLegroomRows.has(row)).concat([...layout.rows].filter((row) => !layout.extraLegroomRows.has(row)))
+    : [...layout.rows];
+  const orderedColumns = pref === "window"
+    ? [...layout.columns.filter((col) => layout.windowColumns.has(col)), ...layout.columns.filter((col) => !layout.windowColumns.has(col))]
+    : pref === "aisle"
+      ? [...layout.columns.filter((col) => layout.aisleColumns.has(col)), ...layout.columns.filter((col) => !layout.aisleColumns.has(col))]
+      : layout.columns;
+  for (const row of orderedRows) {
+    for (const column of orderedColumns) {
+      const candidate = buildSeatNumber(seatClass, row, column);
+      if (candidate && !occupied.has(candidate)) return candidate;
+    }
+  }
+  return "";
+}
+
+function getSeatTypeLabel(seatClass, seatNumber) {
+  const meta = seatMetadata(seatClass, seatNumber);
+  const parts = [];
+  if (meta.window) parts.push("Window");
+  if (meta.aisle) parts.push("Aisle");
+  if (meta.extraLegroom) parts.push("Extra legroom");
+  return parts.length ? parts.join(" · ") : "Standard";
+}
+
+function getCabinForRow(row) {
+  for (const [cabin, layout] of Object.entries(SEAT_LAYOUTS)) {
+    if (layout.rows.includes(row)) return cabin;
+  }
+  return null;
+}
+
+function getCabinLabel(cabin) {
+  if (cabin === "economy") return "Economy";
+  if (cabin === "premium_economy") return "Premium Economy";
+  if (cabin === "business") return "Business";
+  return "";
+}
+
+function App() {
+  const [screen, setScreen] = useState("search");
+  const [health, setHealth] = useState("Ready");
+  const [flightStatus, setFlightStatus] = useState("Loading flights...");
+  const [flights, setFlights] = useState([]);
+  const [bookedTrips, setBookedTrips] = useState([]);
+  const [tripsStatus, setTripsStatus] = useState("Loading booked trips...");
+  const [tripsLoading, setTripsLoading] = useState(false);
+  const [selectedFlight, setSelectedFlight] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [modalMode, setModalMode] = useState("detail");
+  const [bookingStatus, setBookingStatus] = useState("");
+  const [bookingDraft, setBookingDraft] = useState({
+    contact_name: "Julian Vane",
+    contact_email: "julian@example.com",
+    contact_phone: "",
+    first_name: "Julian",
+    last_name: "Vane",
+    date_of_birth: "",
+    passenger_type: "adult",
+    seat_preference: "window",
+    seat_number: "",
+  });
+  const [flightFilters, setFlightFilters] = useState({
+    origin: "ATH",
+    destination: "JFK",
+    departure_date_from: "2026-04-01",
+    departure_date_to: "2026-04-30",
+    seat_class: "",
+    max_price: "2500",
+    sort_by: "departure_time",
+    only_available: true,
+    limit: 20,
+  });
+  const [profileStatus, setProfileStatus] = useState("Profile ready");
+  const [profileDraft, setProfileDraft] = useState({
+    full_name: "Julian Vane",
+    email: "julian@example.com",
+    phone: "+30 69 1234 5678",
+    home_airport: "ATH",
+    seat_preference: "window",
+    meal_preference: "standard",
+    notifications_email: true,
+    notifications_sms: false,
+  });
+  const [testingStatus, setTestingStatus] = useState("Loading testing workspace...");
+  const [testingTasks, setTestingTasks] = useState([]);
+  const [testingRuns, setTestingRuns] = useState([]);
+  const [testingPipelines, setTestingPipelines] = useState([]);
+  const [selectedTestingRunId, setSelectedTestingRunId] = useState(null);
+  const [selectedPipelineId, setSelectedPipelineId] = useState(null);
+  const [selectedPipeline, setSelectedPipeline] = useState(null);
+  const [selectedPipelineEvents, setSelectedPipelineEvents] = useState([]);
+  const [selectedTaskSlug, setSelectedTaskSlug] = useState("");
+  const [testingBusy, setTestingBusy] = useState(false);
+  const [pipelineBusy, setPipelineBusy] = useState(false);
+  const [, setPipelineStatus] = useState("Loading self-improvement pipelines...");
+  const [pipelineForm, setPipelineForm] = useState({
+    task_slugs: [],
+    target_score: 8,
+    max_iterations: 5,
+    review_model: "openai:gpt-5.4-mini",
+    fixer_model: "openai:gpt-5.4-mini",
+    require_manual_approval: false,
+    skip_fixture_reset: true,
+  });
+  const [selectedPipelineIterationNumber, setSelectedPipelineIterationNumber] = useState(null);
+  const [selectedPipelineTaskSlug, setSelectedPipelineTaskSlug] = useState("");
+  const [expandedPipelineIterations, setExpandedPipelineIterations] = useState([]);
+  const [expandedPipelineSections, setExpandedPipelineSections] = useState({});
+  const [pipelineApplyResults, setPipelineApplyResults] = useState({});
+  const [pipelineDeliverables, setPipelineDeliverables] = useState(null);
+  const [pipelineDeliverablesError, setPipelineDeliverablesError] = useState("");
+  const [testingConversation, setTestingConversation] = useState([]);
+  const [testingLiveEvents, setTestingLiveEvents] = useState([]);
+  const [testingLogLines, setTestingLogLines] = useState([]);
+  const [testingRefinementEvents, setTestingRefinementEvents] = useState([]);
+  const [testingTaskBlocks, setTestingTaskBlocks] = useState([]);
+  const [testingLiveActive, setTestingLiveActive] = useState(false);
+  const [jiraStatus, setJiraStatus] = useState("Loading Jira issue monitor...");
+  const [jiraIssues, setJiraIssues] = useState([]);
+  const [selectedJiraIssueKey, setSelectedJiraIssueKey] = useState(null);
+  const [selectedJiraIssue, setSelectedJiraIssue] = useState(null);
+  const [selectedJiraPipeline, setSelectedJiraPipeline] = useState(null);
+  const [selectedJiraPipelineEvents, setSelectedJiraPipelineEvents] = useState([]);
+  const [jiraBusy, setJiraBusy] = useState(false);
+  const [jiraPlans, setJiraPlans] = useState({});
+  const [almasRunsByIssue, setAlmasRunsByIssue] = useState({});
+  const [jiraSyncForm, setJiraSyncForm] = useState({
+    jql: "",
+    max_results: 25,
+  });
+  const currentTestingTaskRef = useRef(null);
+  const transcriptConsoleRef = useRef(null);
+  const liveConsoleRef = useRef(null);
+  const logConsoleRef = useRef(null);
+  const pipelineConsoleRef = useRef(null);
+  const visibleFlights = useMemo(() => uniqueFlights(flights), [flights]);
+  const refinementSections = useMemo(() => {
+    const evaluation = [];
+    const refinementAnalysis = [];
+    const fixPlan = [];
+    const fixerEdits = [];
+    const completion = [];
+
+    for (const event of testingRefinementEvents) {
+      if (!event) continue;
+      if (event.kind === "evaluation" || event.kind === "criterion" || event.kind === "finding" || event.kind === "evaluation_error") {
+        evaluation.push(event);
+        continue;
+      }
+      if (event.kind === "refinement" || event.kind === "refinement_error") {
+        refinementAnalysis.push(event);
+        continue;
+      }
+      if (event.kind === "fixer") {
+        if (/edit/i.test(event.title || "") || /edit/i.test(event.body || "")) {
+          fixerEdits.push(event);
+        } else {
+          fixPlan.push(event);
+        }
+        continue;
+      }
+      if (event.kind === "completion") {
+        completion.push(event);
+      }
+    }
+
+    return { evaluation, refinementAnalysis, fixPlan, fixerEdits, completion };
+  }, [testingRefinementEvents]);
+  const selectedPipelineSummary = useMemo(
+    () => testingPipelines.find((pipeline) => pipeline.pipeline_id === selectedPipelineId) || null,
+    [testingPipelines, selectedPipelineId]
+  );
+  const effectivePipelineSummary = useMemo(
+    () => ({
+      pipeline_id: selectedPipeline?.pipeline_id || selectedPipelineSummary?.pipeline_id || "",
+      status: selectedPipeline?.status || selectedPipelineSummary?.status || "idle",
+      stage: selectedPipeline?.stage || selectedPipelineSummary?.stage || "idle",
+      target_score: selectedPipeline?.target_score ?? selectedPipelineSummary?.target_score ?? pipelineForm.target_score,
+      max_iterations: selectedPipeline?.max_iterations ?? selectedPipelineSummary?.max_iterations ?? pipelineForm.max_iterations,
+      current_iteration: selectedPipeline?.current_iteration ?? selectedPipelineSummary?.current_iteration ?? 0,
+      branch_name: selectedPipeline?.branch_name || selectedPipelineSummary?.branch_name || "—",
+      latest_evaluator_score: selectedPipelineSummary?.latest_evaluator_score ?? null,
+      latest_task_slug: selectedPipelineSummary?.latest_task_slug || selectedPipeline?.latest_task_slug || "",
+      stop_reason: selectedPipeline?.stop_reason || selectedPipelineSummary?.stop_reason || "",
+      require_manual_approval: false,
+    }),
+    [selectedPipeline, selectedPipelineSummary, pipelineForm]
+  );
+  const pipelineIterations = useMemo(() => {
+    const manifestIterations = Array.isArray(selectedPipeline?.iterations) ? selectedPipeline.iterations : [];
+    return [...manifestIterations].sort((left, right) => Number(left.iteration || 0) - Number(right.iteration || 0));
+  }, [selectedPipeline]);
+  const pipelineIterationNumbers = useMemo(() => {
+    const values = new Set();
+    for (const iteration of pipelineIterations) {
+      if (iteration?.iteration) values.add(Number(iteration.iteration));
+    }
+    for (const event of selectedPipelineEvents) {
+      const iteration = getPipelineEventIterationNumber(event);
+      if (iteration) values.add(Number(iteration));
+    }
+    return [...values].sort((left, right) => left - right);
+  }, [pipelineIterations, selectedPipelineEvents]);
+  const pipelineEventsByIteration = useMemo(() => {
+    const groups = new Map();
+    for (const event of selectedPipelineEvents) {
+      const iteration = getPipelineEventIterationNumber(event) || 0;
+      if (!groups.has(iteration)) groups.set(iteration, []);
+      groups.get(iteration).push(event);
+    }
+    return groups;
+  }, [selectedPipelineEvents]);
+  const pipelineTimeline = useMemo(() => {
+    const globalStartEvents = [];
+    const globalFinalEvents = [];
+    const iterationGroups = [];
+
+    for (const event of selectedPipelineEvents) {
+      const iteration = getPipelineEventIterationNumber(event);
+      const phase = getPipelinePhase(event.type);
+      if (!iteration && phase === "start") {
+        globalStartEvents.push(event);
+      }
+      if (!iteration && phase === "final") {
+        globalFinalEvents.push(event);
+      }
+    }
+
+    for (const iterationNumber of pipelineIterationNumbers) {
+      const events = pipelineEventsByIteration.get(iterationNumber) || [];
+      const phases = PIPELINE_PHASE_ORDER.map((phaseKey) => ({
+        key: phaseKey,
+        label: PIPELINE_PHASE_LABELS[phaseKey],
+        events: events.filter((event) => getPipelinePhase(event.type) === phaseKey),
+      })).filter((phase) => phase.events.length);
+      const record = pipelineIterations.find((item) => Number(item.iteration) === Number(iterationNumber)) || null;
+      iterationGroups.push({
+        iterationNumber,
+        record,
+        phases,
+      });
+    }
+
+    return { globalStartEvents, globalFinalEvents, iterationGroups };
+  }, [selectedPipelineEvents, pipelineIterationNumbers, pipelineEventsByIteration, pipelineIterations]);
+  const selectedIterationRecord = useMemo(
+    () =>
+      pipelineIterations.find((iteration) => Number(iteration.iteration) === Number(selectedPipelineIterationNumber)) ||
+      pipelineIterations[pipelineIterations.length - 1] ||
+      null,
+    [pipelineIterations, selectedPipelineIterationNumber]
+  );
+  const selectedIterationTaskOptions = useMemo(() => {
+    const values = new Set();
+    if (Array.isArray(selectedIterationRecord?.task_results)) {
+      for (const result of selectedIterationRecord.task_results) {
+        if (result?.task_slug) values.add(result.task_slug);
+      }
+    }
+    for (const event of selectedPipelineEvents) {
+      const eventIteration = getPipelineEventIterationNumber(event);
+      if (selectedIterationRecord && Number(eventIteration) !== Number(selectedIterationRecord.iteration)) continue;
+      const taskSlug = getPipelineEventTaskSlug(event);
+      if (taskSlug) values.add(taskSlug);
+    }
+    return [...values];
+  }, [selectedIterationRecord, selectedPipelineEvents]);
+  const selectedTaskResult = useMemo(() => {
+    if (!selectedPipelineTaskSlug || !Array.isArray(selectedIterationRecord?.task_results)) return null;
+    return selectedIterationRecord.task_results.find((result) => result.task_slug === selectedPipelineTaskSlug) || null;
+  }, [selectedIterationRecord, selectedPipelineTaskSlug]);
+  const selectedPipelineContextEvents = useMemo(() => {
+    return selectedPipelineEvents.filter((event) => {
+      const iteration = getPipelineEventIterationNumber(event);
+      if (selectedIterationRecord && Number(iteration || 0) !== Number(selectedIterationRecord.iteration)) {
+        return false;
+      }
+      const eventTask = getPipelineEventTaskSlug(event);
+      if (!selectedPipelineTaskSlug) return true;
+      if (!eventTask) return true;
+      return eventTask === selectedPipelineTaskSlug;
+    });
+  }, [selectedPipelineEvents, selectedIterationRecord, selectedPipelineTaskSlug]);
+  const pipelineConversationTurns = useMemo(
+    () => buildPipelineTranscriptTurns(selectedPipelineContextEvents),
+    [selectedPipelineContextEvents]
+  );
+  const pipelineTestingStepEvents = useMemo(() => {
+    return selectedPipelineContextEvents.filter((event) => {
+      const phase = getPipelinePhase(event.type);
+      return phase === "testing" && !["transcript_turn", "user_turn", "customer_reply"].includes(String(event.type || ""));
+    });
+  }, [selectedPipelineContextEvents]);
+  const pipelineDetailSections = useMemo(() => {
+    const sections = {
+      evaluation: [],
+      rootCause: [],
+      fixPlan: [],
+      fixerEdits: [],
+      codeDeploy: [],
+      completion: [],
+    };
+
+    for (const event of selectedPipelineContextEvents) {
+      const payload = getPipelineEventPayload(event);
+      const item = {
+        id: `${event.timestamp}-${event.type}-${getPipelineEventTaskSlug(event) || "pipeline"}`,
+        type: event.type,
+        title: formatPipelineEventTitle(event.type),
+        timestamp: event.timestamp,
+        body: formatPipelineEventBody(event),
+        payload,
+      };
+
+      if (["evaluation_started", "evaluation_complete", "elevenlabs_analysis", "evaluation_criterion", "evaluation_finding", "refinement_gate", "evaluation_error"].includes(event.type)) {
+        sections.evaluation.push(item);
+        continue;
+      }
+      if (["refinement_started", "root_cause_complete", "refinement_error"].includes(event.type)) {
+        sections.rootCause.push(item);
+        continue;
+      }
+      if ([
+        "fix_plan_validation_started",
+        "fix_plan_validation_failed",
+        "fix_plan_repair_started",
+        "fix_plan_repair_finished",
+        "fix_plan_ready",
+        "fixer_summary",
+        "fixer_expected_improvement",
+      ].includes(event.type)) {
+        sections.fixPlan.push(item);
+        continue;
+      }
+      if (event.type === "fixer_edit") {
+        sections.fixerEdits.push(item);
+        continue;
+      }
+      if (["approval_required", "code_apply_started", "code_apply_finished", "code_apply_noop", "agent_sync_started", "agent_sync_progress", "agent_sync_finished", "agent_sync_failed", "git_commit_finished", "git_push_started", "git_push_progress", "git_push_finished", "git_push_skipped", "deploy_wait_started", "deploy_wait_health_check", "deploy_wait_progress", "deploy_verified", "deploy_skipped"].includes(event.type)) {
+        sections.codeDeploy.push(item);
+        continue;
+      }
+      if (["task_finished", "iteration_complete", "pipeline_complete", "pipeline_failed", "pipeline_blocked"].includes(event.type)) {
+        sections.completion.push(item);
+      }
+    }
+
+    return sections;
+  }, [selectedPipelineContextEvents]);
+  const pipelineIterationAccordions = useMemo(() => {
+    const globalFinalEvents = selectedPipelineEvents.filter(
+      (event) => !getPipelineEventIterationNumber(event) && ["pipeline_complete", "pipeline_failed", "pipeline_blocked"].includes(String(event.type || ""))
+    );
+    const lastIterationNumber = pipelineIterationNumbers[pipelineIterationNumbers.length - 1] || null;
+
+    return pipelineIterationNumbers.map((iterationNumber) => {
+      const record =
+        pipelineIterations.find((iteration) => Number(iteration.iteration) === Number(iterationNumber)) || null;
+      const latestTaskResult =
+        Array.isArray(record?.task_results) && record.task_results.length
+          ? record.task_results[record.task_results.length - 1]
+          : null;
+      const events = (pipelineEventsByIteration.get(iterationNumber) || []).filter(Boolean);
+      const taskSlug =
+        getIterationTaskSlug(record, selectedPipeline?.task_slugs || []) ||
+        getPipelineEventTaskSlug(events.find((event) => getPipelineEventTaskSlug(event))) ||
+        "";
+
+      const transcriptTurns = buildPipelineTranscriptTurns(events);
+      const testingSetupEvents = events.filter((event) =>
+        ["iteration_started", "testing_started", "fixture_reset_skipped", "task_started", "conversation_finalizing"].includes(String(event.type || ""))
+      );
+      const evaluationEvents = events.filter((event) =>
+        ["evaluation_started", "evaluation_complete", "elevenlabs_analysis", "evaluation_criterion", "evaluation_finding", "refinement_gate", "evaluation_error"].includes(String(event.type || ""))
+      );
+      const evaluationCompleteEvent = getLastPipelineEvent(evaluationEvents, ["evaluation_complete"]);
+      const evaluationCompletePayload = evaluationCompleteEvent ? getPipelineEventPayload(evaluationCompleteEvent) : {};
+      const evaluationCriteria =
+        Array.isArray(evaluationCompletePayload.metrics) && evaluationCompletePayload.metrics.length
+          ? evaluationCompletePayload.metrics.map((metric) => ({
+              criterion: metric.criterion || "criterion",
+              label: metric.label || formatCriterionLabel(metric.criterion || "criterion"),
+              score: metric.score,
+              summary: metric.summary || "",
+            }))
+          : evaluationEvents
+              .filter((event) => String(event.type || "") === "evaluation_criterion")
+              .map((event) => {
+                const payload = getPipelineEventPayload(event);
+                return {
+                  criterion: payload.criterion || "criterion",
+                  label: formatCriterionLabel(payload.criterion || "criterion"),
+                  score: payload.score,
+                  summary: payload.summary || event.message || "",
+                };
+              });
+      const analysisEvents = events.filter((event) =>
+        ["refinement_started", "root_cause_complete", "refinement_error"].includes(String(event.type || ""))
+      );
+      const fixPlanEvents = events.filter((event) =>
+        [
+          "fix_plan_validation_started",
+          "fix_plan_validation_failed",
+          "fix_plan_repair_started",
+          "fix_plan_repair_finished",
+          "fix_plan_ready",
+          "fixer_summary",
+          "fixer_expected_improvement",
+          "fixer_edit",
+        ].includes(String(event.type || ""))
+      );
+      const implementationEvents = events.filter((event) =>
+        [
+          "code_apply_started",
+          "code_apply_finished",
+          "code_apply_noop",
+          "agent_sync_started",
+          "agent_sync_progress",
+          "agent_sync_finished",
+          "agent_sync_failed",
+          "git_commit_finished",
+          "git_push_started",
+          "git_push_progress",
+          "git_push_finished",
+          "git_push_skipped",
+          "deploy_wait_started",
+          "deploy_wait_health_check",
+          "deploy_wait_progress",
+          "deploy_verified",
+          "deploy_skipped",
+        ].includes(String(event.type || ""))
+      );
+      const codeChangeEntries =
+        Array.isArray(pipelineApplyResults[Number(iterationNumber)]?.applied_changes) &&
+        pipelineApplyResults[Number(iterationNumber)]?.applied_changes.length
+          ? pipelineApplyResults[Number(iterationNumber)].applied_changes
+          : buildFallbackAppliedChanges(events);
+      const plannedChangedPaths = [
+        ...new Set(
+          fixPlanEvents
+            .map((event) => getPipelineEventPayload(event).path)
+            .filter(Boolean)
+        ),
+      ];
+      const agentSyncEvents = events.filter((event) =>
+        ["agent_sync_started", "agent_sync_progress", "agent_sync_finished", "agent_sync_failed"].includes(String(event.type || ""))
+      );
+      const agentSyncLogEvent = getLastPipelineEvent(agentSyncEvents, ["agent_sync_finished", "agent_sync_failed"]);
+      const railwayWaitEvents = events.filter((event) =>
+        ["deploy_wait_started", "deploy_wait_health_check", "deploy_wait_progress", "deploy_verified", "deploy_skipped"].includes(String(event.type || ""))
+      );
+      const railwayHealthChecks = railwayWaitEvents.filter((event) => String(event.type || "") === "deploy_wait_health_check");
+      const railwayStatus = getRailwayWaitStatus(railwayWaitEvents);
+      const agentSyncStatus = getAgentSyncStatus(agentSyncEvents);
+      const latestRailwayEvent = railwayWaitEvents[railwayWaitEvents.length - 1] || null;
+      const iterationResultEvents = events.filter((event) =>
+        ["task_finished", "testing_complete", "iteration_complete"].includes(String(event.type || ""))
+      );
+      const completionEvents =
+        Number(iterationNumber) === Number(lastIterationNumber)
+          ? [
+              ...events.filter((event) => ["pipeline_complete", "pipeline_failed", "pipeline_blocked"].includes(String(event.type || ""))),
+              ...globalFinalEvents,
+            ]
+          : events.filter((event) => ["pipeline_complete", "pipeline_failed", "pipeline_blocked"].includes(String(event.type || "")));
+
+      return {
+        iterationNumber,
+        record,
+        taskSlug,
+        overallScore: latestTaskResult?.overall_score ?? null,
+        applyResult: pipelineApplyResults[Number(iterationNumber)] || null,
+        evaluationCriteria,
+        evaluationCompleteEvent,
+        evaluationCompletePayload,
+        codeChangeEntries,
+        plannedChangedPaths,
+        agentSyncEvents,
+        agentSyncLogEvent,
+        agentSyncStatus,
+        railwayWaitEvents,
+        railwayHealthChecks,
+        railwayStatus,
+        latestRailwayEvent,
+        sections: [
+          {
+            key: "testing",
+            label: "Testing",
+            transcriptTurns,
+            events: testingSetupEvents,
+            emptyText: "No testing transcript is available for this iteration.",
+          },
+          {
+            key: "evaluation",
+            label: "Evaluation",
+            events: evaluationEvents,
+            emptyText: "No evaluation output yet.",
+          },
+          {
+            key: "analysis_planning",
+            label: "Analysis & Planning",
+            events: [...analysisEvents, ...fixPlanEvents],
+            analysisEvents,
+            planningEvents: fixPlanEvents,
+            plannedChangedPaths,
+            emptyText:
+              latestTaskResult?.needs_refinement === false
+                ? "No analysis or planning was needed because this iteration already met the target."
+                : "No analysis or planning output yet.",
+          },
+          {
+            key: "implementation",
+            label: "Implementation",
+            events: implementationEvents,
+            emptyText: "No implementation events for this iteration.",
+          },
+          {
+            key: "changed_snippets",
+            label: "Changed Snippets",
+            events: [],
+            emptyText: "No changed snippet details yet.",
+          },
+          {
+            key: "iteration_results",
+            label: "Iteration Results",
+            events: iterationResultEvents,
+            emptyText: "No iteration result events yet.",
+          },
+          {
+            key: "complete",
+            label: "Complete",
+            events: completionEvents,
+            emptyText: "No terminal completion event yet.",
+          },
+        ],
+      };
+    });
+  }, [selectedPipelineEvents, pipelineIterationNumbers, pipelineIterations, pipelineEventsByIteration, selectedPipeline?.task_slugs, pipelineApplyResults]);
+  const latestApprovalEvent = useMemo(() => {
+    for (let index = selectedPipelineEvents.length - 1; index >= 0; index -= 1) {
+      const event = selectedPipelineEvents[index];
+      if (event?.type === "approval_required") return event;
+    }
+    return null;
+  }, [selectedPipelineEvents]);
+  const pipelineCurrentTaskSlug = pipelineForm.task_slugs[0] || "";
+  const bookedTripSummary = useMemo(() => {
+    const passengerCount = bookedTrips.reduce((total, trip) => total + (trip.passengers?.length || 0), 0);
+    const nextDeparture = bookedTrips
+      .map((trip) => trip.flight?.departure_time)
+      .filter(Boolean)
+      .sort((left, right) => new Date(left) - new Date(right))[0] || null;
+    return {
+      trips: bookedTrips.length,
+      passengers: passengerCount,
+      nextDeparture,
+    };
+  }, [bookedTrips]);
+
+  useEffect(() => {
+    if (!isScreenVisible(screen)) {
+      setScreen("search");
+    }
+  }, [screen]);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved && typeof saved === "object") {
+        setProfileDraft((current) => ({
+          ...current,
+          ...saved,
+        }));
+      }
+    } catch {
+      setProfileStatus("Profile ready (local profile could not be restored).");
+    }
+  }, []);
+
+  useEffect(() => {
+    searchFlights({
+      origin: "ATH",
+      destination: "JFK",
+      departure_date_from: "2026-04-01",
+      departure_date_to: "2026-04-30",
+      seat_class: "",
+      max_price: "2500",
+      sort_by: "departure_time",
+      only_available: true,
+      limit: 20,
+    })
+      .then((items) => {
+        setFlights(items);
+        setFlightStatus(uniqueFlights(items).length ? `Loaded ${uniqueFlights(items).length} flights` : "No flights returned");
+      })
+      .catch((error) => {
+        setFlights([]);
+        setFlightStatus(error.message);
+        setHealth("Flight API unavailable");
+      });
+  }, []);
+
+  useEffect(() => {
+    loadBookedTrips();
+  }, []);
+
+  useEffect(() => {
+    if (!isScreenVisible("testing") && !isScreenVisible("refinement")) {
+      return;
+    }
+    Promise.all([listTestingTasks(), listTestingRuns()])
+      .then(([tasks, runs]) => {
+        setTestingTasks(tasks);
+        setTestingRuns(runs);
+        setSelectedTaskSlug(tasks[0]?.slug || "");
+        setPipelineForm((current) =>
+          current.task_slugs.length
+            ? current
+            : {
+                ...current,
+                task_slugs: tasks[0] ? [tasks[0].slug] : [],
+              }
+        );
+        setSelectedTestingRunId((current) => current || runs[0]?.id || null);
+        setTestingStatus(runs.length ? `Loaded ${runs.length} testing runs.` : "No testing runs yet. Run a task to generate one.");
+      })
+      .catch((error) => {
+        setTestingStatus(error.message);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!isScreenVisible("testing") && !isScreenVisible("refinement")) {
+      return;
+    }
+    refreshTestingPipelines()
+      .catch((error) => {
+        setTestingPipelines([]);
+        setSelectedPipelineId(null);
+        setSelectedPipeline(null);
+        setSelectedPipelineEvents([]);
+        setPipelineStatus(`Pipeline backend unavailable: ${error.message}`);
+      });
+  }, []);
+
+  useEffect(() => {
+    refreshJiraIssues().catch((error) => {
+      setJiraIssues([]);
+      setSelectedJiraIssueKey(null);
+      setSelectedJiraIssue(null);
+      setSelectedJiraPipeline(null);
+      setSelectedJiraPipelineEvents([]);
+      setJiraStatus(`Jira monitor unavailable: ${error.message}`);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (liveConsoleRef.current) {
+      liveConsoleRef.current.scrollTop = liveConsoleRef.current.scrollHeight;
+    }
+  }, [testingLiveEvents, testingLiveActive]);
+
+  useEffect(() => {
+    if (logConsoleRef.current) {
+      logConsoleRef.current.scrollTop = logConsoleRef.current.scrollHeight;
+    }
+  }, [testingLogLines, testingLiveActive]);
+
+  useEffect(() => {
+    if (pipelineConsoleRef.current) {
+      pipelineConsoleRef.current.scrollTop = pipelineConsoleRef.current.scrollHeight;
+    }
+  }, [selectedPipelineEvents, selectedPipelineId]);
+
+  useEffect(() => {
+    if (screen === "trips") {
+      loadBookedTrips({ silent: bookedTrips.length > 0 });
+    }
+  }, [screen]);
+
+  useEffect(() => {
+    if (!selectedPipelineId) {
+      setSelectedPipeline(null);
+      setSelectedPipelineEvents([]);
+      setPipelineApplyResults({});
+      setPipelineDeliverables(null);
+      setPipelineDeliverablesError("");
+      setExpandedPipelineSections({});
+      return;
+    }
+    setPipelineApplyResults({});
+    setPipelineDeliverables(null);
+    setPipelineDeliverablesError("");
+    setExpandedPipelineSections({});
+    refreshPipelineDetails(selectedPipelineId).catch((error) => {
+      setPipelineStatus(error.message);
+    });
+  }, [selectedPipelineId]);
+
+  useEffect(() => {
+    if (!selectedJiraIssueKey) {
+      setSelectedJiraIssue(null);
+      setSelectedJiraPipeline(null);
+      setSelectedJiraPipelineEvents([]);
+      return;
+    }
+    refreshSelectedJiraIssue(selectedJiraIssueKey).catch((error) => {
+      setJiraStatus(error.message);
+    });
+  }, [selectedJiraIssueKey]);
+
+  useEffect(() => {
+    if (!selectedPipelineId) return;
+    const pendingIterations = pipelineIterations.filter((iteration) => {
+      const iterationNumber = Number(iteration?.iteration || 0);
+      if (!iterationNumber || !expandedPipelineIterations.includes(iterationNumber)) return false;
+      if (!iteration?.apply_result_path) return false;
+      return !pipelineApplyResults[iterationNumber];
+    });
+    if (!pendingIterations.length) return;
+
+    let canceled = false;
+    Promise.all(
+      pendingIterations.map((iteration) =>
+        getTestingPipelineApplyResult(selectedPipelineId, Number(iteration.iteration))
+          .then((payload) => ({
+            iterationNumber: Number(iteration.iteration),
+            payload,
+          }))
+          .catch((error) => ({
+            iterationNumber: Number(iteration.iteration),
+            payload: { error: error.message },
+          }))
+      )
+    ).then((results) => {
+      if (canceled) return;
+      setPipelineApplyResults((current) => {
+        const next = { ...current };
+        for (const result of results) {
+          next[result.iterationNumber] = result.payload;
+        }
+        return next;
+      });
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [selectedPipelineId, pipelineIterations, expandedPipelineIterations, pipelineApplyResults]);
+
+  useEffect(() => {
+    if (!pipelineIterationNumbers.length) {
+      setSelectedPipelineIterationNumber(null);
+      setExpandedPipelineIterations([]);
+      return;
+    }
+    const latestIteration =
+      Number(selectedPipeline?.current_iteration) ||
+      pipelineIterationNumbers[pipelineIterationNumbers.length - 1] ||
+      null;
+    setSelectedPipelineIterationNumber((current) =>
+      current && pipelineIterationNumbers.includes(Number(current)) ? current : latestIteration
+    );
+    setExpandedPipelineIterations((current) => {
+      const filtered = current.filter((value) => pipelineIterationNumbers.includes(Number(value)));
+      if (filtered.length) return filtered;
+      return latestIteration ? [latestIteration] : [];
+    });
+  }, [selectedPipeline?.current_iteration, pipelineIterationNumbers]);
+
+  useEffect(() => {
+    const fallbackTask =
+      getIterationTaskSlug(selectedIterationRecord, selectedPipeline?.task_slugs || []) ||
+      selectedIterationTaskOptions[0] ||
+      "";
+    setSelectedPipelineTaskSlug((current) => {
+      if (current && selectedIterationTaskOptions.includes(current)) return current;
+      return fallbackTask;
+    });
+  }, [selectedIterationRecord, selectedIterationTaskOptions, selectedPipeline?.task_slugs]);
+
+  useEffect(() => {
+    if (screen !== "refinement" || !selectedPipelineId) {
+      return undefined;
+    }
+    const activeStatus = selectedPipeline?.status;
+    if (!activeStatus || pipelineIsTerminal(activeStatus)) {
+      return undefined;
+    }
+    const interval = window.setInterval(() => {
+      refreshTestingPipelines(selectedPipelineId).catch((error) => {
+        setPipelineStatus(error.message);
+      });
+    }, 2000);
+    return () => window.clearInterval(interval);
+  }, [screen, selectedPipelineId, selectedPipeline?.status]);
+
+  useEffect(() => {
+    if (!selectedPipelineId || String(effectivePipelineSummary.status || "") !== "completed") {
+      setPipelineDeliverables(null);
+      setPipelineDeliverablesError("");
+      return;
+    }
+    let canceled = false;
+    setPipelineDeliverablesError("");
+    getTestingPipelineDeliverables(selectedPipelineId)
+      .then((payload) => {
+        if (canceled) return;
+        setPipelineDeliverables(payload);
+      })
+      .catch((error) => {
+        if (canceled) return;
+        setPipelineDeliverables(null);
+        setPipelineDeliverablesError(error.message);
+      });
+    return () => {
+      canceled = true;
+    };
+  }, [selectedPipelineId, effectivePipelineSummary.status]);
+
+  function loadBookedTrips({ silent = false } = {}) {
+    if (!silent) {
+      setTripsStatus("Loading booked trips...");
+    }
+    setTripsLoading(true);
+    return listAllTripsBooked()
+      .then((items) => {
+        setBookedTrips(items);
+        setTripsStatus(items.length ? `Loaded ${items.length} booked trip${items.length === 1 ? "" : "s"}.` : "No booked trips yet.");
+      })
+      .catch((error) => {
+        setBookedTrips([]);
+        setTripsStatus(error.message);
+      })
+      .finally(() => {
+        setTripsLoading(false);
+      });
+  }
+
+  function runFlightSearch() {
+    searchFlights({
+      origin: flightFilters.origin,
+      destination: flightFilters.destination,
+      departure_date_from: flightFilters.departure_date_from,
+      departure_date_to: flightFilters.departure_date_to,
+      seat_class: flightFilters.seat_class,
+      max_price: flightFilters.max_price,
+      sort_by: flightFilters.sort_by,
+      only_available: flightFilters.only_available,
+      limit: flightFilters.limit,
+    })
+      .then((items) => {
+        setFlights(items);
+        setSelectedFlight(null);
+        setDrawerOpen(false);
+        setFlightStatus(uniqueFlights(items).length ? `Loaded ${uniqueFlights(items).length} flights` : "No flights returned");
+      })
+      .catch((error) => {
+        setFlightStatus(error.message);
+        setHealth("Flight search failed");
+      });
+  }
+
+  function saveProfile(event) {
+    event.preventDefault();
+    try {
+      window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileDraft));
+      setProfileStatus("Profile settings saved locally.");
+    } catch {
+      setProfileStatus("Could not save profile locally.");
+    }
+  }
+
+  function openFlightDetail(flight) {
+    setSelectedFlight(flight);
+    setDrawerOpen(true);
+    setModalMode("detail");
+    setBookingStatus("");
+    setBookingDraft((current) => ({
+      ...current,
+      seat_preference: current.seat_preference || "window",
+      seat_number: getDefaultSeatForFlight(flight, current.seat_preference || "window"),
+    }));
+  }
+
+  function openBookingForm() {
+    if (!selectedFlight) return;
+    setModalMode("booking");
+    setBookingStatus("");
+    setBookingDraft((current) => ({
+      ...current,
+      seat_number: current.seat_number || getDefaultSeatForFlight(selectedFlight, current.seat_preference),
+    }));
+  }
+
+  function closeFlightModal() {
+    setDrawerOpen(false);
+    setModalMode("detail");
+    setBookingStatus("");
+  }
+
+  function handleSeatPreferenceChange(value) {
+    setBookingDraft((current) => ({
+      ...current,
+      seat_preference: value,
+      seat_number: value ? getDefaultSeatForFlight(selectedFlight, value) : getDefaultSeatForFlight(selectedFlight, ""),
+    }));
+  }
+
+  function selectSeat(seatNumber) {
+    setBookingDraft((current) => ({ ...current, seat_number: seatNumber }));
+  }
+
+  function submitBooking(event) {
+    event.preventDefault();
+    if (!selectedFlight) return;
+
+    const payload = {
+      flight_id: selectedFlight.id,
+      contact_name: bookingDraft.contact_name.trim(),
+      contact_email: bookingDraft.contact_email.trim(),
+      contact_phone: bookingDraft.contact_phone.trim() || null,
+      passengers: [
+        {
+          first_name: bookingDraft.first_name.trim(),
+          last_name: bookingDraft.last_name.trim(),
+          date_of_birth: bookingDraft.date_of_birth,
+          passenger_type: bookingDraft.passenger_type,
+          seat_preference: bookingDraft.seat_preference || null,
+          seat_number: bookingDraft.seat_number || null,
+        },
+      ],
+      extras: [],
+    };
+
+    setBookingStatus("Creating booking...");
+    createBooking(payload)
+      .then((response) => {
+        setBookingStatus(`Booking confirmed: ${response.booking_reference}`);
+        setTripsStatus(`Latest booking confirmed: ${response.booking_reference}`);
+        loadBookedTrips({ silent: true }).catch(() => {});
+        setChatInput(`Book flight ${selectedFlight.flight_number} for ${payload.contact_name}. Booking reference: ${response.booking_reference}.`);
+        setModalMode("detail");
+      })
+      .catch((error) => {
+        setBookingStatus(error.message);
+      });
+  }
+
+  function refreshTestingRuns(preferredRunId = null) {
+    return listTestingRuns().then((runs) => {
+      setTestingRuns(runs);
+      const nextSelected = preferredRunId || runs[0]?.id || null;
+      setSelectedTestingRunId(nextSelected);
+      return runs;
+    });
+  }
+
+  function refreshPipelineDetails(pipelineId) {
+    if (!pipelineId) {
+      setSelectedPipeline(null);
+      setSelectedPipelineEvents([]);
+      return Promise.resolve(null);
+    }
+    return Promise.all([getTestingPipeline(pipelineId), getTestingPipelineEvents(pipelineId)]).then(
+      ([pipelinePayload, events]) => {
+        setSelectedPipeline(pipelinePayload.payload);
+        setSelectedPipelineEvents(events);
+        return pipelinePayload.payload;
+      }
+    );
+  }
+
+  function refreshTestingPipelines(preferredPipelineId = null) {
+    return listTestingPipelines().then((pipelines) => {
+      setTestingPipelines(pipelines);
+      const nextSelected = preferredPipelineId || pipelines[0]?.pipeline_id || null;
+      setSelectedPipelineId(nextSelected);
+      setPipelineStatus(
+        pipelines.length
+          ? `Loaded ${pipelines.length} pipeline run${pipelines.length === 1 ? "" : "s"}.`
+          : "No self-improvement pipelines yet."
+      );
+      return refreshPipelineDetails(nextSelected).then(() => pipelines);
+    });
+  }
+
+  function refreshSelectedJiraIssue(issueKey) {
+    if (!issueKey) {
+      setSelectedJiraIssue(null);
+      setSelectedJiraPipeline(null);
+      setSelectedJiraPipelineEvents([]);
+      return Promise.resolve(null);
+    }
+    return getJiraIssue(issueKey).then((response) => {
+      const payload = response.payload || null;
+      setSelectedJiraIssue(payload);
+      const pipeline = payload?.pipeline || null;
+      setSelectedJiraPipeline(pipeline);
+      if (!pipeline?.pipeline_id) {
+        setSelectedJiraPipelineEvents([]);
+        return payload;
+      }
+      return getTestingPipelineEvents(pipeline.pipeline_id)
+        .then((events) => {
+          setSelectedJiraPipelineEvents(events);
+          return payload;
+        })
+        .catch((error) => {
+          setSelectedJiraPipelineEvents([]);
+          setJiraStatus(`Could not load pipeline events: ${error.message}`);
+          return payload;
+        });
+    });
+  }
+
+  function refreshJiraIssues(preferredIssueKey = null) {
+    return listJiraIssues().then((response) => {
+      const issues = Array.isArray(response?.payload) ? response.payload : [];
+      setJiraIssues(issues);
+      const nextSelected = preferredIssueKey || selectedJiraIssueKey || issues[0]?.issue_key || null;
+      setSelectedJiraIssueKey(nextSelected);
+      setJiraStatus(
+        issues.length
+          ? `Loaded ${issues.length} Jira issue${issues.length === 1 ? "" : "s"}.`
+          : "No Jira issues have been tracked yet."
+      );
+      const selectedIssueRequest =
+        nextSelected && nextSelected === selectedJiraIssueKey
+          ? refreshSelectedJiraIssue(nextSelected)
+          : Promise.resolve(null);
+      return Promise.all([selectedIssueRequest, refreshLatestAlmasRuns(issues)]).then(() => issues);
+    });
+  }
+
+  function refreshLatestAlmasRuns(issues) {
+    if (!Array.isArray(issues) || !issues.length) {
+      setAlmasRunsByIssue({});
+      return Promise.resolve({});
+    }
+    return listAlmasRuns()
+      .then((response) => {
+        const summaries = Array.isArray(response?.payload) ? response.payload : [];
+        const latestByIssue = new Map();
+        for (const summary of summaries) {
+          const issueKey = String(summary?.issue_key || "").toUpperCase();
+          if (!issueKey) continue;
+          if (!latestByIssue.has(issueKey)) {
+            latestByIssue.set(issueKey, summary.run_id);
+          }
+        }
+        const trackedKeys = issues.map((item) => String(item.issue_key || "").toUpperCase());
+        const detailRequests = trackedKeys
+          .map((issueKey) => {
+            const runId = latestByIssue.get(issueKey);
+            if (!runId) return Promise.resolve([issueKey, null]);
+            return getAlmasRun(runId)
+              .then((detailResponse) => [issueKey, detailResponse?.payload || null])
+              .catch(() => [issueKey, null]);
+          });
+        return Promise.all(detailRequests);
+      })
+      .then((entries) => {
+        const next = {};
+        for (const [issueKey, payload] of entries) {
+          next[issueKey] = payload;
+        }
+        setAlmasRunsByIssue(next);
+        return next;
+      })
+      .catch(() => {
+        setAlmasRunsByIssue({});
+        return {};
+      });
+  }
+
+  function runJiraIssueByKey(issueKey, force = false) {
+    if (!issueKey || jiraBusy) return;
+    setJiraBusy(true);
+    setJiraStatus(`Starting Jira issue ${issueKey}...`);
+    runJiraIssue(issueKey, force)
+      .then((response) => {
+        setJiraStatus(response.message || "Jira issue queued.");
+        return refreshJiraIssues(issueKey);
+      })
+      .catch((error) => {
+        setJiraStatus(error.message);
+      })
+      .finally(() => {
+        setJiraBusy(false);
+      });
+  }
+
+  function syncTrackedJiraIssues() {
+    if (jiraBusy) return;
+    setJiraBusy(true);
+    setJiraStatus("Syncing Jira issues...");
+    syncJiraIssues({
+      jql: jiraSyncForm.jql.trim() || null,
+      max_results: Number(jiraSyncForm.max_results) || 25,
+    })
+      .then((response) => {
+        const issues = Array.isArray(response?.payload) ? response.payload : [];
+        setJiraIssues(issues);
+        const nextSelected = selectedJiraIssueKey || issues[0]?.issue_key || null;
+        setSelectedJiraIssueKey(nextSelected);
+        setJiraStatus(
+          issues.length
+            ? `Synced ${issues.length} Jira issue${issues.length === 1 ? "" : "s"}.`
+            : "No Jira issues matched the current sync query."
+        );
+        return Promise.all([
+          refreshSelectedJiraIssue(nextSelected),
+          refreshLatestAlmasRuns(issues),
+        ]);
+      })
+      .catch((error) => {
+        setJiraStatus(error.message);
+      })
+      .finally(() => {
+        setJiraBusy(false);
+      });
+  }
+
+  function generateJiraIssuePlan(issueKey) {
+    if (!issueKey || jiraBusy) return;
+    setJiraBusy(true);
+    setJiraStatus(`Generating plan for ${issueKey}...`);
+    planJiraIssue(issueKey, true)
+      .then((response) => {
+        setJiraPlans((current) => ({ ...current, [issueKey]: response }));
+        setJiraStatus(`Plan generated for ${issueKey}.`);
+      })
+      .catch((error) => {
+        setJiraStatus(error.message);
+      })
+      .finally(() => {
+        setJiraBusy(false);
+      });
+  }
+
+  function startAlmasRunForIssue(issueKey) {
+    if (!issueKey || jiraBusy) return;
+    setJiraBusy(true);
+    setJiraStatus(`Starting ALMAS run for ${issueKey}...`);
+    startAlmasRun(issueKey)
+      .then((response) => {
+        if (response?.payload) {
+          setAlmasRunsByIssue((current) => ({ ...current, [issueKey]: response.payload }));
+        }
+        setJiraStatus(response.message || `ALMAS run started for ${issueKey}.`);
+      })
+      .catch((error) => {
+        setJiraStatus(error.message);
+      })
+      .finally(() => {
+        setJiraBusy(false);
+      });
+  }
+
+  function retryAlmasRunForIssue(issueKey, runId) {
+    if (!issueKey || !runId || jiraBusy) return;
+    setJiraBusy(true);
+    setJiraStatus(`Retrying ALMAS run ${runId}...`);
+    retryAlmasRun(runId, true)
+      .then((response) => {
+        if (response?.payload) {
+          setAlmasRunsByIssue((current) => ({ ...current, [issueKey]: response.payload }));
+        }
+        setJiraStatus(response.message || `ALMAS run retried for ${issueKey}.`);
+      })
+      .catch((error) => {
+        setJiraStatus(error.message);
+      })
+      .finally(() => {
+        setJiraBusy(false);
+      });
+  }
+
+  function approveAlmasRunForIssue(issueKey, runId) {
+    if (!issueKey || !runId || jiraBusy) return;
+    setJiraBusy(true);
+    setJiraStatus(`Approving ALMAS run ${runId}...`);
+    approveAlmasRun(runId, { approved_by: "platform_user", notes: "Approved from Jira monitor UI." })
+      .then((response) => {
+        if (response?.payload) {
+          setAlmasRunsByIssue((current) => ({ ...current, [issueKey]: response.payload }));
+        }
+        setJiraStatus(response.message || `ALMAS run approved for ${issueKey}.`);
+      })
+      .catch((error) => {
+        setJiraStatus(error.message);
+      })
+      .finally(() => {
+        setJiraBusy(false);
+      });
+  }
+
+  function setPipelineTask(taskSlug) {
+    setPipelineForm((current) => ({
+      ...current,
+      task_slugs: taskSlug ? [taskSlug] : [],
+    }));
+  }
+
+  function startPipelineRun() {
+    if (!pipelineForm.task_slugs.length || pipelineBusy) return;
+    setPipelineBusy(true);
+    setPipelineStatus("Starting self-improvement pipeline...");
+    startTestingPipeline({
+      ...pipelineForm,
+      task_slugs: pipelineForm.task_slugs,
+      target_score: Number(pipelineForm.target_score),
+      max_iterations: Number(pipelineForm.max_iterations),
+      require_manual_approval: false,
+    })
+      .then((response) => {
+        const nextPipeline = response.payload;
+        setSelectedPipelineId(nextPipeline.pipeline_id);
+        return refreshTestingPipelines(nextPipeline.pipeline_id);
+      })
+      .catch((error) => {
+        setPipelineStatus(error.message);
+      })
+      .finally(() => {
+        setPipelineBusy(false);
+      });
+  }
+
+  function approveSelectedPipeline() {
+    if (!selectedPipelineId || pipelineBusy) return;
+    setPipelineBusy(true);
+    setPipelineStatus("Approving the current iteration...");
+    approveTestingPipeline(selectedPipelineId)
+      .then(() => refreshTestingPipelines(selectedPipelineId))
+      .catch((error) => {
+        setPipelineStatus(error.message);
+      })
+      .finally(() => {
+        setPipelineBusy(false);
+      });
+  }
+
+  function cancelSelectedPipeline() {
+    if (!selectedPipelineId || pipelineBusy) return;
+    setPipelineBusy(true);
+    setPipelineStatus("Canceling pipeline...");
+    cancelTestingPipeline(selectedPipelineId)
+      .then(() => refreshTestingPipelines(selectedPipelineId))
+      .catch((error) => {
+        setPipelineStatus(error.message);
+      })
+      .finally(() => {
+        setPipelineBusy(false);
+      });
+  }
+
+  function appendTestingTaskStep(taskSlug, step) {
+    if (!taskSlug || !step) return;
+    setTestingTaskBlocks((current) => {
+      const next = [...current];
+      const index = next.findIndex((item) => item.task === taskSlug);
+      const block =
+        index >= 0
+          ? next[index]
+          : {
+              task: taskSlug,
+              status: "running",
+              startedAt: new Date().toISOString(),
+              finishedAt: null,
+              conversation: [],
+              steps: [],
+            };
+      const last = block.steps[block.steps.length - 1];
+      if (last && last.tag === step.tag && last.text === step.text) {
+        if (index === -1) next.push(block);
+        return next;
+      }
+      const updated = {
+        ...block,
+        steps: [...block.steps, step],
+      };
+      if (index >= 0) {
+        next[index] = updated;
+      } else {
+        next.push(updated);
+      }
+      return next;
+    });
+  }
+
+  function appendTestingTaskConversation(taskSlug, turn) {
+    if (!taskSlug || !turn?.text) return;
+    setTestingTaskBlocks((current) => {
+      const next = [...current];
+      const index = next.findIndex((item) => item.task === taskSlug);
+      const block =
+        index >= 0
+          ? next[index]
+          : {
+              task: taskSlug,
+              status: "running",
+              startedAt: new Date().toISOString(),
+              finishedAt: null,
+              conversation: [],
+              steps: [],
+            };
+      const last = block.conversation[block.conversation.length - 1];
+      if (last && last.role === turn.role && last.text === turn.text) {
+        if (index === -1) next.push(block);
+        return next;
+      }
+      const updated = {
+        ...block,
+        conversation: [...block.conversation, turn],
+      };
+      if (index >= 0) {
+        next[index] = updated;
+      } else {
+        next.push(updated);
+      }
+      return next;
+    });
+  }
+
+  function updateTestingTaskStatus(taskSlug, status, extra = {}) {
+    if (!taskSlug) return;
+    setTestingTaskBlocks((current) => {
+      const next = [...current];
+      const index = next.findIndex((item) => item.task === taskSlug);
+      const block =
+        index >= 0
+          ? next[index]
+          : {
+              task: taskSlug,
+              status: "running",
+              startedAt: new Date().toISOString(),
+              finishedAt: null,
+              conversation: [],
+              steps: [],
+            };
+      const updated = {
+        ...block,
+        status,
+        ...extra,
+      };
+      if (index >= 0) {
+        next[index] = updated;
+      } else {
+        next.push(updated);
+      }
+      return next;
+    });
+  }
+
+  function executeTestingRun(payload = {}) {
+    setTestingBusy(true);
+    setTestingLiveActive(true);
+    currentTestingTaskRef.current = payload.task || null;
+    setTestingConversation([]);
+    setTestingLiveEvents([{ tag: "status", text: "Connecting to live test runner..." }]);
+    setTestingLogLines([]);
+    setTestingRefinementEvents([]);
+    setTestingTaskBlocks([]);
+    setTestingStatus("Running testing task...");
+    runTestingTaskLive(payload, (event) => {
+      if (!event || typeof event !== "object") return;
+      const eventTaskSlug = event.task || payload.task || currentTestingTaskRef.current || null;
+      if (event.type === "status") {
+        const statusMessage = replaceTaskSlugInText(event.message || "Running testing task...", eventTaskSlug);
+        setTestingStatus(statusMessage);
+        setTestingLiveEvents((current) => [...current, { tag: "status", text: statusMessage || "started" }]);
+        return;
+      }
+      if (event.type === "run_started") {
+        setTestingLiveEvents((current) => [...current, { tag: "run", text: `Started ${event.task_count} task${event.task_count === 1 ? "" : "s"}.` }]);
+        return;
+      }
+      if (event.type === "task_started") {
+        currentTestingTaskRef.current = event.task || currentTestingTaskRef.current;
+        updateTestingTaskStatus(event.task || currentTestingTaskRef.current, "running", {
+          startedAt: event.timestamp || new Date().toISOString(),
+        });
+        setTestingLiveEvents((current) => [...current, { tag: "task", text: `${formatTaskLabel(event.task)} started.` }]);
+        appendTestingTaskStep(event.task || currentTestingTaskRef.current, {
+          tag: "task",
+          text: `${formatTaskLabel(event.task)} started.`,
+          timestamp: event.timestamp || new Date().toISOString(),
+        });
+        return;
+      }
+      if (event.type === "user_turn") {
+        return;
+      }
+      if (event.type === "customer_reply") {
+        return;
+      }
+      if (event.type === "transcript_turn") {
+        const text = String(event.text || "").trim();
+        if (text) {
+          const taskSlug = event.task || currentTestingTaskRef.current || payload.task || selectedTaskSlug || "task";
+          setTestingConversation((current) => {
+            const last = current[current.length - 1];
+            if (last && last.role === event.role && last.text === text) {
+              return current;
+            }
+            return [
+              ...current,
+              {
+                role: event.role || "turn",
+                text,
+                timestamp: event.timestamp || null,
+              },
+            ];
+          });
+          appendTestingTaskConversation(taskSlug, {
+            role: event.role || "turn",
+            text,
+            timestamp: event.timestamp || null,
+          });
+          setTestingLiveEvents((current) => {
+            const last = current[current.length - 1];
+            if (last && last.tag === event.role && last.text === text) {
+              return current;
+            }
+            return [...current, { tag: event.role || "turn", text }];
+          });
+          appendTestingTaskStep(taskSlug, {
+            tag: event.role || "turn",
+            text,
+            timestamp: event.timestamp || new Date().toISOString(),
+          });
+        }
+        return;
+      }
+      if (event.type === "evaluation_started") {
+        setTestingLiveEvents((current) => [...current, { tag: "eval", text: `Evaluating ${formatTaskLabel(event.task)}.` }]);
+        appendTestingTaskStep(event.task || currentTestingTaskRef.current, {
+          tag: "eval",
+          text: `Evaluating ${formatTaskLabel(event.task)}.`,
+          timestamp: new Date().toISOString(),
+        });
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "evaluation",
+            title: "Evaluation started",
+            subtitle: formatTaskLabel(event.task),
+            timestamp: new Date().toISOString(),
+            body: `Evaluation started for ${formatTaskLabel(event.task, "the selected task")}.`,
+          },
+        ]);
+        return;
+      }
+      if (event.type === "evaluation_complete") {
+        setTestingLiveEvents((current) => [...current, { tag: "eval", text: `Evaluation complete for ${formatTaskLabel(event.task)}.` }]);
+        appendTestingTaskStep(event.task || currentTestingTaskRef.current, {
+          tag: "eval",
+          text: `Evaluation complete for ${formatTaskLabel(event.task)}.`,
+          timestamp: new Date().toISOString(),
+        });
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "evaluation",
+            title: "Evaluation complete",
+            subtitle: formatTaskLabel(event.task),
+            timestamp: new Date().toISOString(),
+            body: [
+              event.verdict ? `Verdict: ${event.verdict}` : null,
+              typeof event.overall_score !== "undefined" ? `Score: ${event.overall_score}` : null,
+              typeof event.goal_achieved !== "undefined" ? `Goal achieved: ${event.goal_achieved ? "yes" : "no"}` : null,
+              event.answer_quality ? `Answer quality: ${event.answer_quality}` : null,
+              event.suggested_next_step ? `Next step: ${event.suggested_next_step}` : null,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          },
+        ]);
+        return;
+      }
+      if (event.type === "elevenlabs_analysis") {
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "evaluation",
+            title: "ElevenLabs analysis",
+            subtitle: formatTaskLabel(event.task),
+            timestamp: new Date().toISOString(),
+            body: [
+              event.call_summary_title || null,
+              typeof event.call_successful !== "undefined"
+                ? `Call successful: ${event.call_successful ? "yes" : "no"}`
+                : null,
+              event.transcript_summary || null,
+              event.termination_reason ? `Termination: ${event.termination_reason}` : null,
+              ...formatElevenLabsTranscriptItems(event.transcript),
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          },
+        ]);
+        return;
+      }
+      if (event.type === "evaluation_criterion") {
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "criterion",
+            title: formatCriterionLabel(event.criterion || "Evaluation criterion"),
+            subtitle: formatTaskLabel(event.task),
+            timestamp: new Date().toISOString(),
+            score: event.score,
+            body: event.summary || "",
+            details: event.evidence_quotes || [],
+          },
+        ]);
+        return;
+      }
+      if (event.type === "refinement_gate") {
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "evaluation",
+            title: "Refinement gate",
+            subtitle: formatTaskLabel(event.task),
+            timestamp: new Date().toISOString(),
+            body: event.message || "",
+            details: Array.isArray(event.criteria_below_target) ? event.criteria_below_target : [],
+          },
+        ]);
+        return;
+      }
+      if (event.type === "evaluation_finding") {
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "finding",
+            title: String(event.title || "Finding"),
+            subtitle: String(event.severity || "finding"),
+            timestamp: new Date().toISOString(),
+            body: event.detail || "",
+          },
+        ]);
+        return;
+      }
+      if (event.type === "root_cause" || event.type === "root_cause_complete") {
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "refinement",
+            title: "Refinement analysis",
+            subtitle: formatTaskLabel(event.task, event.root_cause_category || event.category || "Analysis"),
+            timestamp: new Date().toISOString(),
+            body: [
+              event.primary_root_cause || event.summary || event.message || null,
+              event.confidence ? `Confidence: ${event.confidence}` : null,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          },
+        ]);
+        return;
+      }
+      if (event.type === "refinement_error") {
+        setTestingLiveEvents((current) => [...current, { tag: "error", text: event.error || "Refinement analysis failed." }]);
+        appendTestingTaskStep(event.task || currentTestingTaskRef.current, {
+          tag: "error",
+          text: event.error || "Refinement analysis failed.",
+          timestamp: new Date().toISOString(),
+        });
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "refinement_error",
+            title: "Refinement error",
+            subtitle: event.stage || formatTaskLabel(event.task, "Refinement"),
+            timestamp: new Date().toISOString(),
+            body: event.error || "Refinement analysis failed.",
+          },
+        ]);
+        return;
+      }
+      if (
+        event.type === "fix_plan_validation_started" ||
+        event.type === "fix_plan_validation_failed" ||
+        event.type === "fix_plan_repair_started" ||
+        event.type === "fix_plan_repair_finished" ||
+        event.type === "fix_plan_ready" ||
+        event.type === "fixer_summary" ||
+        event.type === "fixer_expected_improvement" ||
+        event.type === "fixer_edit"
+      ) {
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "fixer",
+            title:
+              event.type === "fix_plan_validation_started"
+                ? "Fix plan validation started"
+                : event.type === "fix_plan_validation_failed"
+                  ? "Fix plan validation failed"
+                  : event.type === "fix_plan_repair_started"
+                    ? "Fix plan repair started"
+                    : event.type === "fix_plan_repair_finished"
+                      ? "Fix plan repair finished"
+                      : event.type === "fix_plan_ready"
+                ? "Fix plan ready"
+                : event.type === "fixer_summary"
+                  ? "Fixer summary"
+                : event.type === "fixer_expected_improvement"
+                    ? "Expected improvement"
+                    : "Fixer edit",
+            subtitle: formatTaskLabel(event.task, event.section || "Fixer"),
+            timestamp: new Date().toISOString(),
+            body: event.message || event.summary || event.expected_improvement || event.detail || safeJson(event),
+          },
+        ]);
+        return;
+      }
+      if (event.type === "evaluation_error") {
+        setTestingLiveEvents((current) => [...current, { tag: "error", text: event.error || "Evaluation failed." }]);
+        appendTestingTaskStep(event.task || currentTestingTaskRef.current, {
+          tag: "error",
+          text: event.error || "Evaluation failed.",
+          timestamp: new Date().toISOString(),
+        });
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "evaluation_error",
+            title: "Evaluation error",
+            subtitle: formatTaskLabel(event.task),
+            timestamp: new Date().toISOString(),
+            body: event.error || "Evaluation failed.",
+          },
+        ]);
+        return;
+      }
+      if (event.type === "task_finished") {
+        setTestingLiveEvents((current) => [...current, { tag: "task", text: `${formatTaskLabel(event.task)} finished.` }]);
+        updateTestingTaskStatus(event.task || currentTestingTaskRef.current, "completed", {
+          finishedAt: event.timestamp || new Date().toISOString(),
+        });
+        appendTestingTaskStep(event.task || currentTestingTaskRef.current, {
+          tag: "task",
+          text: `${formatTaskLabel(event.task)} finished.`,
+          timestamp: event.timestamp || new Date().toISOString(),
+        });
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "completion",
+            title: "Task finished",
+            subtitle: formatTaskLabel(event.task),
+            timestamp: new Date().toISOString(),
+            body: `${formatTaskLabel(event.task)} finished.`,
+          },
+        ]);
+        return;
+      }
+      if (event.type === "run_finished") {
+        setTestingLiveEvents((current) => [...current, { tag: "run", text: "Run finished." }]);
+        setTestingRefinementEvents((current) => [
+          ...current,
+          {
+            kind: "completion",
+            title: "Run finished",
+            subtitle: payload.task ? formatTaskLabel(payload.task) : "All Tasks",
+            timestamp: new Date().toISOString(),
+            body: "Live test run completed.",
+          },
+        ]);
+        const scope = payload.task ? formatTaskLabel(payload.task) : "all tasks";
+        setTestingStatus(`Completed ${scope}.`);
+        refreshTestingRuns(selectedTestingRunId).catch(() => {});
+        return;
+      }
+      if (event.type === "error") {
+        const errorMessage = replaceTaskSlugInText(event.message || "Testing failed.", eventTaskSlug);
+        setTestingStatus(errorMessage);
+        setTestingLiveEvents((current) => [...current, { tag: "error", text: errorMessage || "Testing failed." }]);
+        appendTestingTaskStep(currentTestingTaskRef.current || payload.task, {
+          tag: "error",
+          text: errorMessage || "Testing failed.",
+          timestamp: new Date().toISOString(),
+        });
+        updateTestingTaskStatus(currentTestingTaskRef.current || payload.task, "failed");
+        return;
+      }
+      if (event.type === "log") {
+        const cleaned = stripAnsi(event.message || "");
+        if (cleaned) {
+          setTestingLogLines((current) => [...current, cleaned]);
+        }
+        return;
+      }
+      setTestingLiveEvents((current) => [
+        ...current,
+        {
+          tag: event.type || "log",
+          text: event.message ? replaceTaskSlugInText(String(event.message), eventTaskSlug) : safeJson(event),
+        },
+      ]);
+    })
+      .catch((error) => {
+        setTestingStatus(error.message);
+        setTestingLiveEvents((current) => [...current, { tag: "error", text: error.message }]);
+      })
+      .finally(() => {
+        setTestingBusy(false);
+        setTestingLiveActive(false);
+      });
+  }
+
+  return (
+    <div className="app-shell">
+      <nav className="topbar">
+        <div className="topbar__brand">AeroMellon</div>
+        <div className="topbar__links">
+          <button className={screen === "search" ? "tab active" : "tab"} onClick={() => setScreen("search")}>Search Flights</button>
+          <button className={screen === "trips" ? "tab active" : "tab"} onClick={() => setScreen("trips")}>My Trips</button>
+          <button className={screen === "account" ? "tab active" : "tab"} onClick={() => setScreen("account")}>Account</button>
+          <button className={screen === "jira" ? "tab active" : "tab"} onClick={() => setScreen("jira")}>Jira</button>
+          {isScreenVisible("refinement") ? (
+            <button className={screen === "refinement" ? "tab active" : "tab"} onClick={() => setScreen("refinement")}>Refinement</button>
+          ) : null}
+          {isScreenVisible("testing") ? (
+            <button className={screen === "testing" ? "tab active" : "tab"} onClick={() => setScreen("testing")}>Testing</button>
+          ) : null}
+        </div>
+      </nav>
+
+      <aside className="sidebar">
+        <div className="sidebar__header">
+          <h2>AeroMellon</h2>
+          <p>Elite Voyager</p>
+        </div>
+        <nav className="sidebar__nav" aria-label="Primary">
+          <button className={screen === "search" ? "sidebar__item active" : "sidebar__item"} onClick={() => setScreen("search")}>Search Flights</button>
+          <button className={screen === "trips" ? "sidebar__item active" : "sidebar__item"} onClick={() => setScreen("trips")}>My Trips</button>
+          <button className={screen === "account" ? "sidebar__item active" : "sidebar__item"} onClick={() => setScreen("account")}>Account</button>
+          <button className={screen === "jira" ? "sidebar__item active" : "sidebar__item"} onClick={() => setScreen("jira")}>Jira</button>
+          {isScreenVisible("refinement") ? (
+            <button className={screen === "refinement" ? "sidebar__item active" : "sidebar__item"} onClick={() => setScreen("refinement")}>Refinement</button>
+          ) : null}
+          {isScreenVisible("testing") ? (
+            <button className={screen === "testing" ? "sidebar__item active" : "sidebar__item"} onClick={() => setScreen("testing")}>Testing</button>
+          ) : null}
+        </nav>
+      </aside>
+
+      <main className="page">
+        {screen === "search" ? (
+          <>
+            <header className="page-header">
+              <h1>Where will luxury take you?</h1>
+              <p>Explore destinations with high-hospitality aviation, tailored for the modern voyager.</p>
+              <div className="status-pill">Flight API status: {flightStatus}</div>
+              <div className="status-pill">Backend: {health}</div>
+            </header>
+
+            <section className="search-bar">
+              <label className="search-field search-field--input">
+                <span className="material-symbols-outlined">flight_takeoff</span>
+                <div>
+                  <small>Origin</small>
+                  <input value={flightFilters.origin} onChange={(event) => setFlightFilters((current) => ({ ...current, origin: event.target.value.toUpperCase() }))} maxLength={3} placeholder="NYC" />
+                </div>
+              </label>
+              <label className="search-field search-field--input">
+                <span className="material-symbols-outlined">location_on</span>
+                <div>
+                  <small>Destination</small>
+                  <input value={flightFilters.destination} onChange={(event) => setFlightFilters((current) => ({ ...current, destination: event.target.value.toUpperCase() }))} maxLength={3} placeholder="LHR" />
+                </div>
+              </label>
+              <label className="search-field search-field--input">
+                <span className="material-symbols-outlined">calendar_month</span>
+                <div>
+                  <small>From</small>
+                  <input type="date" value={flightFilters.departure_date_from} onChange={(event) => setFlightFilters((current) => ({ ...current, departure_date_from: event.target.value }))} />
+                </div>
+              </label>
+              <label className="search-field search-field--input">
+                <span className="material-symbols-outlined">calendar_month</span>
+                <div>
+                  <small>To</small>
+                  <input type="date" value={flightFilters.departure_date_to} onChange={(event) => setFlightFilters((current) => ({ ...current, departure_date_to: event.target.value }))} />
+                </div>
+              </label>
+              <label className="search-field search-field--input">
+                <span className="material-symbols-outlined">airline_seat_recline_normal</span>
+                <div>
+                  <small>Ticket class</small>
+                  <select value={flightFilters.seat_class} onChange={(event) => setFlightFilters((current) => ({ ...current, seat_class: event.target.value }))}>
+                    <option value="">All classes</option>
+                    <option value="economy">Economy</option>
+                    <option value="premium_economy">Premium Economy</option>
+                    <option value="business">Business</option>
+                  </select>
+                </div>
+              </label>
+              <label className="search-field search-field--input">
+                <span className="material-symbols-outlined">payments</span>
+                <div>
+                  <small>Budget</small>
+                  <input type="number" min="0" step="1" value={flightFilters.max_price} onChange={(event) => setFlightFilters((current) => ({ ...current, max_price: event.target.value }))} placeholder="2500" />
+                </div>
+              </label>
+              <button type="button" className="search-button" onClick={runFlightSearch}>
+                <span className="material-symbols-outlined">search</span>
+              </button>
+            </section>
+
+            <section className="results-grid results-grid--single">
+              <div className="results-panel">
+                {visibleFlights.length ? visibleFlights.map((flight) => (
+                  <button
+                    type="button"
+                    className={selectedFlight?.id === flight.id ? "flight-card flight-card--selected" : "flight-card flight-card--button"}
+                    key={flight.id}
+                    onClick={() => openFlightDetail(flight)}
+                  >
+                    <div className="flight-card__row">
+                      <div>
+                        <small>{formatFlightDate(flight.departure_time)}</small>
+                        <strong>{flight.departure_time ? new Date(flight.departure_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</strong>
+                        <span>{flight.origin_airport}</span>
+                      </div>
+                      <div>
+                        <small>{flight.arrival_time && flight.departure_time ? `${Math.max(1, Math.round((new Date(flight.arrival_time) - new Date(flight.departure_time)) / 60000 / 60))}h` : "—"}</small>
+                        <span>{flight.available_seats} seats left</span>
+                      </div>
+                      <div>
+                        <strong>{flight.arrival_time ? new Date(flight.arrival_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</strong>
+                        <span>{flight.destination_airport}</span>
+                      </div>
+                      <div className="price">${flight.price}</div>
+                    </div>
+                  </button>
+                )) : (
+                  <div className="flight-detail">
+                    <h3>No flights available</h3>
+                    <p>Try widening the date range or clearing some filters.</p>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {drawerOpen && selectedFlight ? (
+              <div className="modal-backdrop" onClick={closeFlightModal} role="presentation">
+                <aside className="modal-card" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="flight-detail-title">
+                  {modalMode === "detail" ? (
+                    <>
+                      <div className="modal-card__header modal-card__header--booking">
+                        <div>
+                          <span className="eyebrow">Flight Detail</span>
+                          <h3 id="flight-detail-title">{selectedFlight.flight_number}</h3>
+                          <p className="modal-card__subtitle">{selectedFlight.origin_airport} to {selectedFlight.destination_airport}</p>
+                        </div>
+                        <button type="button" className="icon-button" onClick={closeFlightModal} aria-label="Close flight detail">
+                          <span className="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
+                      <div className="modal-card__route">
+                        <div><span>Day</span><strong>{formatFlightDate(selectedFlight.departure_time)}</strong></div>
+                        <div><span>Time</span><strong>{selectedFlight.departure_time ? new Date(selectedFlight.departure_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</strong></div>
+                        <div><span>Route</span><strong>{selectedFlight.origin_airport} → {selectedFlight.destination_airport}</strong></div>
+                        <div><span>Class</span><strong>{selectedFlight.seat_class}</strong></div>
+                        <div><span>Gate</span><strong>{selectedFlight.departure_gate ?? "TBA"}</strong></div>
+                        <div><span>Status</span><strong>{selectedFlight.status}</strong></div>
+                      </div>
+                      <div className="modal-card__meta">
+                        <span>{selectedFlight.available_seats} seats left</span>
+                        <span>${selectedFlight.price}</span>
+                      </div>
+                      <div className="modal-card__actions modal-card__actions--inline">
+                        <button type="button" className="button button--primary" onClick={openBookingForm}>Start booking</button>
+                      </div>
+                      {bookingStatus ? <p className="modal-card__status">{bookingStatus}</p> : null}
+                    </>
+                  ) : (
+                    <form className="booking-form" onSubmit={submitBooking}>
+                      <div className="modal-card__header modal-card__header--booking">
+                        <div>
+                          <span className="eyebrow">Booking</span>
+                          <h3 id="flight-detail-title">{selectedFlight.flight_number}</h3>
+                          <p className="modal-card__subtitle">Select passenger details and a seat before confirming.</p>
+                        </div>
+                        <button type="button" className="icon-button" onClick={closeFlightModal} aria-label="Close booking">
+                          <span className="material-symbols-outlined">close</span>
+                        </button>
+                      </div>
+
+                      <div className="booking-form__grid">
+                        <label className="booking-field">
+                          <span>Contact name</span>
+                          <input value={bookingDraft.contact_name} onChange={(event) => setBookingDraft((current) => ({ ...current, contact_name: event.target.value }))} required />
+                        </label>
+                        <label className="booking-field">
+                          <span>Contact email</span>
+                          <input type="email" value={bookingDraft.contact_email} onChange={(event) => setBookingDraft((current) => ({ ...current, contact_email: event.target.value }))} required />
+                        </label>
+                        <label className="booking-field">
+                          <span>First name</span>
+                          <input value={bookingDraft.first_name} onChange={(event) => setBookingDraft((current) => ({ ...current, first_name: event.target.value }))} required />
+                        </label>
+                        <label className="booking-field">
+                          <span>Last name</span>
+                          <input value={bookingDraft.last_name} onChange={(event) => setBookingDraft((current) => ({ ...current, last_name: event.target.value }))} required />
+                        </label>
+                        <label className="booking-field">
+                          <span>Date of birth</span>
+                          <input type="date" value={bookingDraft.date_of_birth} onChange={(event) => setBookingDraft((current) => ({ ...current, date_of_birth: event.target.value }))} required />
+                        </label>
+                        <label className="booking-field">
+                          <span>Passenger type</span>
+                          <select value={bookingDraft.passenger_type} onChange={(event) => setBookingDraft((current) => ({ ...current, passenger_type: event.target.value }))}>
+                            <option value="adult">Adult</option>
+                            <option value="child">Child</option>
+                            <option value="infant">Infant</option>
+                          </select>
+                        </label>
+                        <label className="booking-field">
+                          <span>Seat preference</span>
+                          <select value={bookingDraft.seat_preference} onChange={(event) => handleSeatPreferenceChange(event.target.value)}>
+                            <option value="">Any seat</option>
+                            <option value="window">Window</option>
+                            <option value="aisle">Aisle</option>
+                            <option value="extra_legroom">Extra legroom</option>
+                          </select>
+                        </label>
+                        <label className="booking-field booking-field--wide">
+                          <span>Seat number</span>
+                          <input
+                            value={bookingDraft.seat_number}
+                            onChange={(event) => setBookingDraft((current) => ({ ...current, seat_number: event.target.value.toUpperCase() }))}
+                            placeholder={getDefaultSeatForFlight(selectedFlight, bookingDraft.seat_preference) || "Choose from the map"}
+                            required
+                          />
+                        </label>
+                      </div>
+
+                      <div className="seat-map">
+                        <div className="seat-map__header">
+                          <div>
+                            <span className="eyebrow">Seat map</span>
+                            <strong>Entire plane</strong>
+                          </div>
+                          <p>{bookingDraft.seat_number ? `${bookingDraft.seat_number} • ${getSeatTypeLabel(selectedFlight.seat_class, bookingDraft.seat_number)}` : "Pick a seat from the aircraft layout below."}</p>
+                        </div>
+                        <div className="seat-map__legend">
+                          <span><i className="seat seat--legend" />Selectable</span>
+                          <span><i className="seat seat--legend seat--selected" />Selected</span>
+                          <span><i className="seat seat--legend seat--window" />Window</span>
+                          <span><i className="seat seat--legend seat--aisle" />Aisle</span>
+                          <span><i className="seat seat--legend seat--extra" />Extra legroom</span>
+                          <span><i className="seat seat--legend seat--inactive" />Unavailable</span>
+                        </div>
+                        <div className="seat-map__grid">
+                          {FULL_PLANE_ROWS.map((row) => (
+                            <div className="seat-row" key={row}>
+                              {row === 1 || row === 5 || row === 10 ? (
+                                <div className="seat-row__cabin" style={{ gridColumn: "1 / -1" }}>
+                                  <span>{getCabinLabel(getCabinForRow(row))}</span>
+                                </div>
+                              ) : null}
+                              <div className="seat-row__label">{row}</div>
+                              {(() => {
+                                const cabin = getCabinForRow(row);
+                                const columns = cabin === "business" ? ["A", "B", "C", "D"] : FULL_PLANE_COLUMNS;
+                                const seatColumns = columns.length;
+                                return (
+                              <div
+                                  className={`seat-row__seats ${cabin === "business" ? "seat-row__seats--business" : ""}`}
+                                  style={{ "--seat-columns": seatColumns }}
+                                >
+                                  {columns.map((column) => {
+                                    const planeSeat = getSeatAvailabilityForPlane(row, column, selectedFlight.seat_class);
+                                    const seatNumber = planeSeat.exists ? buildSeatNumber(cabin, row, column) || `${row}${column}` : "";
+                                    const meta = seatMetadata(cabin, seatNumber);
+                                    const selected = bookingDraft.seat_number === seatNumber;
+                                    return (
+                                      <button
+                                        key={`${row}${column}`}
+                                        type="button"
+                                        className={[
+                                          "seat",
+                                          planeSeat.active ? "" : "seat--inactive",
+                                          meta.window ? "seat--window" : "",
+                                          meta.aisle ? "seat--aisle" : "",
+                                          planeSeat.extraLegroom ? "seat--extra" : "",
+                                          selected ? "seat--selected" : "",
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" ")}
+                                        onClick={() => planeSeat.active && seatNumber ? selectSeat(seatNumber) : null}
+                                        aria-pressed={selected}
+                                        aria-label={seatNumber ? `Seat ${seatNumber}` : `Unavailable seat ${row}${column}`}
+                                        disabled={!planeSeat.active || !seatNumber}
+                                      >
+                                        {planeSeat.exists ? column : ""}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                );
+                              })()}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="modal-card__route modal-card__route--compact">
+                        <div><span>Day</span><strong>{formatFlightDate(selectedFlight.departure_time)}</strong></div>
+                        <div><span>Route</span><strong>{selectedFlight.origin_airport} → {selectedFlight.destination_airport}</strong></div>
+                        <div><span>Class</span><strong>{selectedFlight.seat_class.replaceAll("_", " ")}</strong></div>
+                        <div><span>Fare</span><strong>${selectedFlight.price}</strong></div>
+                      </div>
+
+                      <div className="modal-card__actions modal-card__actions--inline">
+                        <button type="button" className="button button--secondary" onClick={() => setModalMode("detail")}>Back</button>
+                        <button type="submit" className="button button--primary">Confirm booking</button>
+                      </div>
+                      {bookingStatus ? <p className="modal-card__status">{bookingStatus}</p> : null}
+                    </form>
+                  )}
+                </aside>
+              </div>
+            ) : null}
+          </>
+        ) : screen === "trips" ? (
+          <>
+            <header className="page-header">
+              <h1>All Trips Booked</h1>
+              <p>Confirmed trips for every passenger load here automatically, with flight details, seats, and contact records in one place.</p>
+              <div className="status-pill">Trips: {tripsStatus}</div>
+            </header>
+
+            <section className="trips-summary">
+              <article className="trip-stat-card">
+                <small>Booked trips</small>
+                <strong>{bookedTripSummary.trips}</strong>
+              </article>
+              <article className="trip-stat-card">
+                <small>Total passengers</small>
+                <strong>{bookedTripSummary.passengers}</strong>
+              </article>
+              <article className="trip-stat-card">
+                <small>Next departure</small>
+                <strong>{bookedTripSummary.nextDeparture ? `${formatFlightDate(bookedTripSummary.nextDeparture)} · ${formatFlightTime(bookedTripSummary.nextDeparture)}` : "No future trips"}</strong>
+              </article>
+            </section>
+
+            <section className="trips-toolbar">
+              <button type="button" className="button button--primary" onClick={() => loadBookedTrips()} disabled={tripsLoading}>
+                <span className="material-symbols-outlined">refresh</span>
+                {tripsLoading ? "Refreshing..." : "Refresh trips"}
+              </button>
+              <p className="testing-muted">This view always pulls the latest confirmed bookings from the backend.</p>
+            </section>
+
+            <section className="trips-grid">
+              {bookedTrips.length ? bookedTrips.map((trip) => (
+                <article className="trip-card" key={trip.booking_reference}>
+                  <div className="trip-card__header">
+                    <div>
+                      <span className="eyebrow">Booking {trip.booking_reference}</span>
+                      <h3>{trip.flight.flight_number} · {trip.flight.origin_airport} → {trip.flight.destination_airport}</h3>
+                      <p>{formatFlightDate(trip.flight.departure_time)} · {formatFlightTime(trip.flight.departure_time)} to {formatFlightTime(trip.flight.arrival_time)} · {formatSeatClass(trip.flight.seat_class)}</p>
+                    </div>
+                    <div className="trip-card__price">
+                      <span>{trip.passengers.length} passenger{trip.passengers.length === 1 ? "" : "s"}</span>
+                      <strong>{formatCurrency(trip.total_price)}</strong>
+                    </div>
+                  </div>
+
+                  <div className="trip-card__meta">
+                    <span>Contact {trip.contact_name}</span>
+                    <span>{trip.contact_email}</span>
+                    <span>Terminal {trip.flight.terminal ?? "TBA"} · Gate {trip.flight.departure_gate ?? "TBA"}</span>
+                    <span>Booked {formatTimestamp(trip.created_at)} · {formatSeatClass(trip.status)}</span>
+                  </div>
+
+                  <div className="trip-card__passengers">
+                    {trip.passengers.map((passenger) => (
+                      <article
+                        className="trip-passenger"
+                        key={`${trip.booking_reference}-${passenger.id ?? `${passenger.first_name}-${passenger.last_name}`}`}
+                      >
+                        <strong>{passenger.first_name} {passenger.last_name}</strong>
+                        <span>{formatSeatClass(passenger.passenger_type)} · Seat {passenger.seat_number ?? "TBA"}</span>
+                        <span>{passenger.seat_preference ? `${formatSeatClass(passenger.seat_preference)} preference` : "No seat preference"}</span>
+                      </article>
+                    ))}
+                  </div>
+
+                  {trip.extras?.length ? (
+                    <div className="trip-card__extras">
+                      {trip.extras.map((extra) => (
+                        <span className="trip-extra" key={`${trip.booking_reference}-${extra.id}`}>
+                          {formatSeatClass(extra.extra_type)} x{extra.quantity}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              )) : (
+                <div className="flight-detail">
+                  <h3>No booked trips yet</h3>
+                  <p>Bookings confirmed from the flight search flow will appear here automatically.</p>
+                </div>
+              )}
+            </section>
+          </>
+        ) : screen === "account" ? (
+          <>
+            <header className="page-header">
+              <h1>My Account</h1>
+              <p>Manage your traveler profile, preferences, and notification settings. This is the customer-facing foundation for future Jira-driven automation work.</p>
+              <div className="status-pill">Profile: {profileStatus}</div>
+            </header>
+
+            <section className="account-grid">
+              <article className="account-card">
+                <div className="account-card__head">
+                  <div>
+                    <span className="eyebrow">Profile</span>
+                    <strong>Passenger details</strong>
+                  </div>
+                </div>
+                <form className="booking-form__grid" onSubmit={saveProfile}>
+                  <label className="booking-field">
+                    <span>Full name</span>
+                    <input value={profileDraft.full_name} onChange={(event) => setProfileDraft((current) => ({ ...current, full_name: event.target.value }))} required />
+                  </label>
+                  <label className="booking-field">
+                    <span>Email</span>
+                    <input type="email" value={profileDraft.email} onChange={(event) => setProfileDraft((current) => ({ ...current, email: event.target.value }))} required />
+                  </label>
+                  <label className="booking-field">
+                    <span>Phone</span>
+                    <input value={profileDraft.phone} onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))} />
+                  </label>
+                  <label className="booking-field">
+                    <span>Home airport</span>
+                    <input maxLength={3} value={profileDraft.home_airport} onChange={(event) => setProfileDraft((current) => ({ ...current, home_airport: event.target.value.toUpperCase() }))} />
+                  </label>
+                  <label className="booking-field">
+                    <span>Preferred seat</span>
+                    <select value={profileDraft.seat_preference} onChange={(event) => setProfileDraft((current) => ({ ...current, seat_preference: event.target.value }))}>
+                      <option value="window">Window</option>
+                      <option value="aisle">Aisle</option>
+                      <option value="extra_legroom">Extra legroom</option>
+                      <option value="any">Any</option>
+                    </select>
+                  </label>
+                  <label className="booking-field">
+                    <span>Meal preference</span>
+                    <select value={profileDraft.meal_preference} onChange={(event) => setProfileDraft((current) => ({ ...current, meal_preference: event.target.value }))}>
+                      <option value="standard">Standard</option>
+                      <option value="vegetarian">Vegetarian</option>
+                      <option value="vegan">Vegan</option>
+                      <option value="gluten_free">Gluten free</option>
+                    </select>
+                  </label>
+                  <label className="account-toggle">
+                    <input type="checkbox" checked={profileDraft.notifications_email} onChange={(event) => setProfileDraft((current) => ({ ...current, notifications_email: event.target.checked }))} />
+                    <span>Email notifications</span>
+                  </label>
+                  <label className="account-toggle">
+                    <input type="checkbox" checked={profileDraft.notifications_sms} onChange={(event) => setProfileDraft((current) => ({ ...current, notifications_sms: event.target.checked }))} />
+                    <span>SMS notifications</span>
+                  </label>
+                  <div className="account-actions">
+                    <button type="submit" className="button button--primary">Save profile</button>
+                  </div>
+                </form>
+              </article>
+
+              <article className="account-card">
+                <div className="account-card__head">
+                  <div>
+                    <span className="eyebrow">Overview</span>
+                    <strong>Booking snapshot</strong>
+                  </div>
+                </div>
+                <div className="account-stats">
+                  <div><span>Total trips</span><strong>{bookedTripSummary.trips}</strong></div>
+                  <div><span>Passengers</span><strong>{bookedTripSummary.passengers}</strong></div>
+                  <div><span>Next departure</span><strong>{bookedTripSummary.nextDeparture ? formatFlightDate(bookedTripSummary.nextDeparture) : "—"}</strong></div>
+                  <div><span>Primary contact</span><strong>{profileDraft.email || "—"}</strong></div>
+                </div>
+              </article>
+            </section>
+          </>
+        ) : screen === "jira" ? (
+          <>
+            <header className="page-header">
+              <h1>Jira Issue Monitor</h1>
+            </header>
+
+            <section className="jira-page">
+              <section className="jira-panel jira-panel--controls">
+                <div className="pipeline-actions">
+                  <button type="button" className="button button--primary" onClick={syncTrackedJiraIssues} disabled={jiraBusy}>
+                    <span className="material-symbols-outlined">sync</span>
+                    Sync issues
+                  </button>
+                  <button type="button" className="button button--secondary" onClick={() => refreshJiraIssues()} disabled={jiraBusy}>
+                    <span className="material-symbols-outlined">refresh</span>
+                    Refresh
+                  </button>
+                </div>
+              </section>
+
+              <section className="jira-list">
+                {jiraIssues.length ? jiraIssues.map((issue) => {
+                  const latestRun = almasRunsByIssue[issue.issue_key] || null;
+                  const latestManifest = latestRun?.manifest || null;
+                  const latestArtifacts = latestRun?.artifacts || null;
+                  return (
+                    <details className="jira-panel jira-ticket" key={issue.issue_key}>
+                      <summary className="jira-ticket__summary">
+                        <strong>{issue.issue_key}</strong>
+                        <span className="testing-muted">{issue.analysis?.summary || "No summary available."}</span>
+                      </summary>
+                      <div className="jira-ticket__content">
+                        <div className="pipeline-actions">
+                          <button type="button" className="button button--primary" onClick={() => startAlmasRunForIssue(issue.issue_key)} disabled={jiraBusy}>
+                            <span className="material-symbols-outlined">smart_toy</span>
+                            Start ALMAS run
+                          </button>
+                          <button type="button" className="button button--secondary" onClick={() => generateJiraIssuePlan(issue.issue_key)} disabled={jiraBusy}>
+                            <span className="material-symbols-outlined">rule</span>
+                            Generate plan
+                          </button>
+                          {latestManifest && ["blocked", "needs_review_revision", "failed", "needs_clarification"].includes(String(latestManifest.status || "")) ? (
+                            <button type="button" className="button button--ghost" onClick={() => retryAlmasRunForIssue(issue.issue_key, latestManifest.run_id)} disabled={jiraBusy}>
+                              <span className="material-symbols-outlined">replay</span>
+                              Retry run
+                            </button>
+                          ) : null}
+                          {latestManifest?.status === "needs_approval" ? (
+                            <button type="button" className="button button--primary" onClick={() => approveAlmasRunForIssue(issue.issue_key, latestManifest.run_id)} disabled={jiraBusy}>
+                              <span className="material-symbols-outlined">check_circle</span>
+                              Approve handoff
+                            </button>
+                          ) : null}
+                        </div>
+                        <div className="pipeline-artifact-meta">
+                          <span>Task: {issue.task_slug ? formatTaskLabel(issue.task_slug, issue.task_slug) : "—"}</span>
+                          <span>Jira status: {issue.jira_status || "—"}</span>
+                          <span>Priority: {issue.analysis?.priority || "—"}</span>
+                          <span>Updated: {formatTimestamp(issue.updated_at)}</span>
+                          <span>Latest run: {latestManifest ? `${latestManifest.run_id} · ${formatSeatClass(latestManifest.status)}` : "—"}</span>
+                        </div>
+                        <div className="jira-ticket__text">
+                          <p><strong>Summary:</strong> {issue.analysis?.summary || "No summary available."}</p>
+                          <p><strong>Description:</strong> {issue.analysis?.description || "No description available."}</p>
+                        </div>
+                        {jiraPlans[issue.issue_key] ? (
+                          <section className="jira-agent-card">
+                            <div className="jira-agent-card__head">
+                              <div>
+                                <span className="eyebrow">Plan Preview</span>
+                                <strong>Planner Agent</strong>
+                              </div>
+                            </div>
+                            <div className="jira-agent-card__body">
+                              <p><strong>Summary:</strong> {jiraPlans[issue.issue_key].summary}</p>
+                              <div>
+                                <strong>Implementation steps</strong>
+                                {renderSimpleList(jiraPlans[issue.issue_key].implementation_steps, `${issue.issue_key}-preview-step`)}
+                              </div>
+                              <div>
+                                <strong>Validation steps</strong>
+                                {renderSimpleList(jiraPlans[issue.issue_key].validation_steps, `${issue.issue_key}-preview-validation`)}
+                              </div>
+                              <div>
+                                <strong>Risks</strong>
+                                {renderSimpleList(jiraPlans[issue.issue_key].risks, `${issue.issue_key}-preview-risk`)}
+                              </div>
+                            </div>
+                          </section>
+                        ) : null}
+                        {latestManifest ? (
+                          <div className="jira-run-console">
+                            <p><strong>Run status:</strong> {formatSeatClass(latestManifest.status)} · {latestManifest.explanation || "No explanation available."}</p>
+                            {latestArtifacts?.analyzer_output ? (
+                              <section className="jira-agent-card">
+                                <div className="jira-agent-card__head">
+                                  <div>
+                                    <span className="eyebrow">Agent 1</span>
+                                    <strong>Analyzer Agent</strong>
+                                  </div>
+                                  <span className="status-pill">Confidence {Math.round(Number(latestArtifacts.analyzer_output.confidence || 0) * 100)}%</span>
+                                </div>
+                                <div className="jira-agent-card__body">
+                                  <p><strong>Goal:</strong> {latestArtifacts.analyzer_output.goal}</p>
+                                  <p><strong>Problem statement:</strong> {latestArtifacts.analyzer_output.problem_statement}</p>
+                                  <p><strong>Repository summary:</strong> {latestArtifacts.analyzer_output.repo_summary}</p>
+                                  <div>
+                                    <strong>Acceptance criteria</strong>
+                                    {renderSimpleList(latestArtifacts.analyzer_output.acceptance_criteria, `${latestManifest.run_id}-acceptance`)}
+                                  </div>
+                                  <div>
+                                    <strong>Constraints</strong>
+                                    {renderSimpleList(latestArtifacts.analyzer_output.constraints, `${latestManifest.run_id}-constraint`)}
+                                  </div>
+                                  <div>
+                                    <strong>Unknowns</strong>
+                                    {renderSimpleList(latestArtifacts.analyzer_output.unknowns, `${latestManifest.run_id}-unknown`)}
+                                  </div>
+                                  <div>
+                                    <strong>Localized files</strong>
+                                    {renderSimpleList(
+                                      latestArtifacts.analyzer_output.selected_files?.length
+                                        ? latestArtifacts.analyzer_output.selected_files
+                                        : latestArtifacts.analyzer_output.candidate_files,
+                                      `${latestManifest.run_id}-file`
+                                    )}
+                                  </div>
+                                  <div>
+                                    <strong>Selected symbols</strong>
+                                    {renderSimpleList(latestArtifacts.analyzer_output.selected_symbols, `${latestManifest.run_id}-symbol`)}
+                                  </div>
+                                  <div>
+                                    <strong>Localization rationale</strong>
+                                    {renderSimpleList(latestArtifacts.analyzer_output.localization_rationale, `${latestManifest.run_id}-rationale`)}
+                                  </div>
+                                </div>
+                              </section>
+                            ) : null}
+                            {latestArtifacts?.planner_output ? (
+                              <section className="jira-agent-card">
+                                <div className="jira-agent-card__head">
+                                  <div>
+                                    <span className="eyebrow">Agent 2</span>
+                                    <strong>Planner Agent</strong>
+                                  </div>
+                                </div>
+                                <div className="jira-agent-card__body">
+                                  <p><strong>Solution summary:</strong> {latestArtifacts.planner_output.solution_summary}</p>
+                                  <p><strong>Patch strategy:</strong> {latestArtifacts.planner_output.patch_strategy}</p>
+                                  <p><strong>Branch:</strong> {latestArtifacts.planner_output.branch_name}</p>
+                                  <div>
+                                    <strong>Implementation steps</strong>
+                                    {renderSimpleList(latestArtifacts.planner_output.implementation_steps, `${latestManifest.run_id}-impl`)}
+                                  </div>
+                                  <div>
+                                    <strong>Planned file changes</strong>
+                                    {Array.isArray(latestArtifacts.planner_output.planned_changes) && latestArtifacts.planner_output.planned_changes.length ? (
+                                      <ul className="jira-agent-card__list">
+                                        {latestArtifacts.planner_output.planned_changes.map((change, index) => (
+                                          <li key={`${latestManifest.run_id}-change-${index}`}>
+                                            <strong>{change.file_path}</strong>: {change.change_summary || change.rationale}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <p className="testing-muted">No planned changes.</p>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <strong>Validation steps</strong>
+                                    {renderSimpleList(latestArtifacts.planner_output.validation_steps, `${latestManifest.run_id}-validation`)}
+                                  </div>
+                                  <div>
+                                    <strong>Risks</strong>
+                                    {renderSimpleList(latestArtifacts.planner_output.risks, `${latestManifest.run_id}-risk`)}
+                                  </div>
+                                  <div>
+                                    <strong>Assumptions</strong>
+                                    {renderSimpleList(latestArtifacts.planner_output.assumptions, `${latestManifest.run_id}-assumption`)}
+                                  </div>
+                                </div>
+                              </section>
+                            ) : null}
+                            {latestArtifacts?.fixer_output ? (
+                              <section className="jira-agent-card">
+                                <div className="jira-agent-card__head">
+                                  <div>
+                                    <span className="eyebrow">Agent 3</span>
+                                    <strong>Fixer Agent</strong>
+                                  </div>
+                                  <span className="status-pill">{formatSeatClass(latestArtifacts.fixer_output.decision)}</span>
+                                </div>
+                                <div className="jira-agent-card__body">
+                                  <p><strong>Fix summary:</strong> {latestArtifacts.fixer_output.fix_summary || "No summary."}</p>
+                                  <div>
+                                    <strong>Approval reasons</strong>
+                                    {renderSimpleList(latestArtifacts.fixer_output.approval_reasons, `${latestManifest.run_id}-approval-reason`)}
+                                  </div>
+                                  <div>
+                                    <strong>Rejection reasons</strong>
+                                    {renderSimpleList(latestArtifacts.fixer_output.rejection_reasons, `${latestManifest.run_id}-rejection-reason`)}
+                                  </div>
+                                  <div>
+                                    <strong>Revision requests</strong>
+                                    {renderSimpleList(latestArtifacts.fixer_output.revision_requests, `${latestManifest.run_id}-review`)}
+                                  </div>
+                                  <div>
+                                    <strong>Missing checks</strong>
+                                    {renderSimpleList(latestArtifacts.fixer_output.missing_checks, `${latestManifest.run_id}-missing-check`)}
+                                  </div>
+                                  <div>
+                                    <strong>Security notes</strong>
+                                    {renderSimpleList(latestArtifacts.fixer_output.security_notes, `${latestManifest.run_id}-security-note`)}
+                                  </div>
+                                </div>
+                              </section>
+                            ) : null}
+                            {latestArtifacts?.github_handoff_package ? (
+                              <section className="jira-agent-card">
+                                <div className="jira-agent-card__head">
+                                  <div>
+                                    <span className="eyebrow">Handoff</span>
+                                    <strong>GitHub Package</strong>
+                                  </div>
+                                </div>
+                                <div className="jira-agent-card__body">
+                                  <p><strong>PR title:</strong> {latestArtifacts.github_handoff_package.pr_title}</p>
+                                  <p><strong>Branch flow:</strong> {latestArtifacts.github_handoff_package.branch_name} to {latestArtifacts.github_handoff_package.base_branch}</p>
+                                  <p><strong>Reviewer summary:</strong> {latestArtifacts.github_handoff_package.reviewer_summary}</p>
+                                  <div>
+                                    <strong>Changed files plan</strong>
+                                    {renderSimpleList(latestArtifacts.github_handoff_package.changed_files_plan, `${latestManifest.run_id}-handoff-file`)}
+                                  </div>
+                                </div>
+                              </section>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    </details>
+                  );
+                }) : (
+                  <article className="jira-panel">
+                    <p className="testing-muted">No Jira issues synced yet.</p>
+                  </article>
+                )}
+              </section>
+            </section>
+          </>
+        ) : screen === "refinement" ? (
+          <>
+            <header className="page-header">
+              <h1>Refinement</h1>
+              <p>Run the self-improvement pipeline from the UI, inspect each iteration as it unfolds, and review testing, evaluation, refinement, approval, code apply, deploy, and final outcome in one place.</p>
+            </header>
+
+            <section className="pipeline-page">
+              <section className="pipeline-control-bar">
+                <div className="pipeline-control-grid">
+                  <label className="pipeline-field">
+                    <span>Recent pipeline</span>
+                    <select
+                      value={selectedPipelineId || ""}
+                      onChange={(event) => setSelectedPipelineId(event.target.value || null)}
+                      className="testing-select testing-select--full"
+                      disabled={pipelineBusy || !testingPipelines.length}
+                    >
+                      <option value="">Select pipeline</option>
+                      {testingPipelines.map((pipeline) => (
+                        <option key={pipeline.pipeline_id} value={pipeline.pipeline_id}>
+                          {formatPipelineSelectorOption(pipeline)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="pipeline-field">
+                    <span>Task</span>
+                    <select
+                      value={pipelineCurrentTaskSlug}
+                      onChange={(event) => setPipelineTask(event.target.value)}
+                      className="testing-select testing-select--full"
+                      disabled={pipelineBusy || !testingTasks.length}
+                    >
+                      {testingTasks.map((task) => (
+                        <option key={task.slug} value={task.slug}>
+                          {formatTaskLabel(task.slug, task.slug)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="pipeline-field">
+                    <span>Target score</span>
+                    <input
+                      className="pipeline-input"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={pipelineForm.target_score}
+                      onChange={(event) =>
+                        setPipelineForm((current) => ({ ...current, target_score: event.target.value }))
+                      }
+                      disabled={pipelineBusy}
+                    />
+                  </label>
+                  <label className="pipeline-field">
+                    <span>Max iterations</span>
+                    <input
+                      className="pipeline-input"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={pipelineForm.max_iterations}
+                      onChange={(event) =>
+                        setPipelineForm((current) => ({ ...current, max_iterations: event.target.value }))
+                      }
+                      disabled={pipelineBusy}
+                    />
+                  </label>
+                </div>
+
+                <div className="pipeline-actions">
+                  <button type="button" className="button button--primary" onClick={startPipelineRun} disabled={pipelineBusy || !pipelineCurrentTaskSlug}>
+                    <span className="material-symbols-outlined">rocket_launch</span>
+                    Start pipeline
+                  </button>
+                  {selectedPipelineId && ACTIVE_PIPELINE_STATUSES.has(String(effectivePipelineSummary.status || "")) ? (
+                    <button type="button" className="button button--secondary" onClick={cancelSelectedPipeline} disabled={pipelineBusy}>
+                      <span className="material-symbols-outlined">cancel</span>
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
+
+                <details className="pipeline-advanced">
+                  <summary>Advanced settings</summary>
+                  <div className="pipeline-advanced__grid">
+                    <label className="pipeline-field">
+                      <span>Review model</span>
+                      <input
+                        className="pipeline-input"
+                        value={pipelineForm.review_model}
+                        onChange={(event) =>
+                          setPipelineForm((current) => ({ ...current, review_model: event.target.value }))
+                        }
+                        disabled={pipelineBusy}
+                      />
+                    </label>
+                    <label className="pipeline-field">
+                      <span>Fixer model</span>
+                      <input
+                        className="pipeline-input"
+                        value={pipelineForm.fixer_model}
+                        onChange={(event) =>
+                          setPipelineForm((current) => ({ ...current, fixer_model: event.target.value }))
+                        }
+                        disabled={pipelineBusy}
+                      />
+                    </label>
+                    <div className="pipeline-toggle pipeline-toggle--static">
+                      <span>Approval is automatic and database reset is disabled. Pipeline runs preserve existing data.</span>
+                    </div>
+                  </div>
+                </details>
+              </section>
+
+              <section className="pipeline-timeline-card">
+                <div className="pipeline-timeline-card__head">
+                  <div>
+                    <span className="eyebrow">Pipeline iterations</span>
+                    <strong>Iteration workflow</strong>
+                  </div>
+                  <span className="testing-muted">
+                    {pipelineIterationAccordions.length ? `${pipelineIterationAccordions.length} iteration${pipelineIterationAccordions.length === 1 ? "" : "s"}` : "No iterations yet"}
+                  </span>
+                </div>
+
+                <div className="pipeline-accordions" ref={pipelineConsoleRef}>
+                  {pipelineIterationAccordions.length ? (
+                    pipelineIterationAccordions.map((iteration) => {
+                      const expanded = expandedPipelineIterations.includes(Number(iteration.iterationNumber));
+                      return (
+                        <section className="pipeline-accordion" key={`iteration-${iteration.iterationNumber}`}>
+                          <button
+                            type="button"
+                            className="pipeline-accordion__trigger"
+                            onClick={() =>
+                              setExpandedPipelineIterations((current) =>
+                                current.includes(Number(iteration.iterationNumber))
+                                  ? current.filter((value) => Number(value) !== Number(iteration.iterationNumber))
+                                  : [...current, Number(iteration.iterationNumber)].sort((left, right) => left - right)
+                              )
+                            }
+                            aria-expanded={expanded}
+                          >
+                            <div className="pipeline-accordion__summary">
+                              <span className="eyebrow">Iteration {iteration.iterationNumber}</span>
+                              <strong>{formatTaskLabel(iteration.taskSlug || effectivePipelineSummary.latest_task_slug, "Pipeline Task")}</strong>
+                              <small>
+                                {formatSeatClass(iteration.record?.status || "running")}
+                                {typeof iteration.overallScore === "number" ? ` · ${iteration.overallScore}/10` : ""}
+                              </small>
+                            </div>
+                            <span className={expanded ? "pipeline-accordion__chevron pipeline-accordion__chevron--open" : "pipeline-accordion__chevron"}>
+                              <span className="material-symbols-outlined">expand_more</span>
+                            </span>
+                          </button>
+
+                          {expanded ? (
+                            <div className="pipeline-accordion__content">
+                              {iteration.sections.map((section) => {
+                                const sectionId = `${iteration.iterationNumber}:${section.key}`;
+                                const defaultSectionExpanded = ["testing", "analysis_planning", "implementation", "changed_snippets"].includes(section.key);
+                                const sectionExpanded = expandedPipelineSections[sectionId] ?? defaultSectionExpanded;
+                                const changedSnippets = iteration.codeChangeEntries || [];
+                                const changedSnippetCount = changedSnippets.filter((change) => change.applied).length;
+                                const evaluationSummary = iteration.evaluationCompletePayload || {};
+                                const sectionEventCount =
+                                  section.key === "testing"
+                                    ? (section.transcriptTurns?.length || 0) + (section.events?.length || 0)
+                                    : section.key === "changed_snippets"
+                                      ? changedSnippets.length
+                                      : section.key === "analysis_planning"
+                                        ? (section.analysisEvents?.length || 0) + (section.planningEvents?.length || 0)
+                                      : section.events.length;
+                                return (
+                                <section className={`pipeline-phase-section pipeline-phase-section--${section.key}`} key={`${iteration.iterationNumber}-${section.key}`}>
+                                  <button
+                                    type="button"
+                                    className="pipeline-phase-section__toggle"
+                                    onClick={() =>
+                                      setExpandedPipelineSections((current) => ({
+                                        ...current,
+                                        [sectionId]: !sectionExpanded,
+                                      }))
+                                    }
+                                    aria-expanded={sectionExpanded}
+                                  >
+                                    <div className="pipeline-phase-section__head">
+                                      <strong>{section.label}</strong>
+                                      <small>{sectionEventCount} item{sectionEventCount === 1 ? "" : "s"}</small>
+                                    </div>
+                                    <span className={sectionExpanded ? "pipeline-phase-section__chevron pipeline-phase-section__chevron--open" : "pipeline-phase-section__chevron"}>
+                                      <span className="material-symbols-outlined">expand_more</span>
+                                    </span>
+                                  </button>
+
+                                  {sectionExpanded ? (section.key === "testing" ? (
+                                    section.transcriptTurns && section.transcriptTurns.length ? (
+                                      <div className="pipeline-transcript pipeline-transcript--inline">
+                                        {section.transcriptTurns.map((item, index) => (
+                                          <article className={item.role === "user" ? "transcript-turn transcript-turn--user" : "transcript-turn transcript-turn--agent"} key={`${iteration.iterationNumber}-${item.role}-${item.timestamp || index}`}>
+                                            <div className="transcript-turn__meta">
+                                              <span>{item.role === "user" ? "User" : item.role === "agent" ? "Agent" : item.role}</span>
+                                              <time>{formatTimestamp(item.timestamp)}</time>
+                                            </div>
+                                            <p>{item.text}</p>
+                                          </article>
+                                        ))}
+                                      </div>
+                                    ) : section.events.length ? (
+                                      <div className="pipeline-section-card__list">
+                                        {section.events.map((event, index) => (
+                                          <article className={`pipeline-step-card pipeline-step-card--${pipelineEventCategory(event.type)}`} key={`${event.timestamp}-${event.type}-${index}`}>
+                                            <div className="pipeline-event-card__meta">
+                                              <span>{formatPipelineEventTitle(event.type)}</span>
+                                              <time>{formatTimestamp(event.timestamp)}</time>
+                                            </div>
+                                            <p>{formatPipelineEventBody(event)}</p>
+                                          </article>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="testing-muted">{section.emptyText}</p>
+                                    )
+                                  ) : section.key === "evaluation" ? (
+                                    <div className="pipeline-section-card__list">
+                                      {(typeof evaluationSummary.overall_score !== "undefined" || evaluationSummary.headline || evaluationSummary.primary_issue) ? (
+                                        <details className="pipeline-evaluation-details">
+                                          <summary className="pipeline-evaluation-details__summary">
+                                            <div className="pipeline-artifact-card__summary-copy">
+                                              <span className="eyebrow">Evaluation summary</span>
+                                              <strong>{evaluationSummary.goal_achieved ? "Goal achieved" : "Needs refinement"}</strong>
+                                              <small>{evaluationSummary.headline || "Open for the full evaluation summary."}</small>
+                                            </div>
+                                            {typeof evaluationSummary.overall_score !== "undefined" ? (
+                                              <span className={`pipeline-artifact-badge pipeline-artifact-badge--${getScoreTone(evaluationSummary.overall_score)}`}>
+                                                {evaluationSummary.overall_score}/10
+                                              </span>
+                                            ) : null}
+                                          </summary>
+                                          <article className="pipeline-evaluation-summary">
+                                            {evaluationSummary.headline ? <p>{evaluationSummary.headline}</p> : null}
+                                            {evaluationSummary.primary_issue ? (
+                                              <div className="pipeline-artifact-meta">
+                                                <span>{evaluationSummary.primary_issue}</span>
+                                                {typeof evaluationSummary.min_criterion_score !== "undefined" && evaluationSummary.min_criterion_score !== null ? (
+                                                  <span>Lowest metric {evaluationSummary.min_criterion_score}/10</span>
+                                                ) : null}
+                                              </div>
+                                            ) : null}
+                                          </article>
+                                        </details>
+                                      ) : null}
+                                      {iteration.evaluationCriteria.length ? (
+                                        <div className="pipeline-metric-grid">
+                                          {iteration.evaluationCriteria.map((metric) => (
+                                            <article className={`pipeline-metric-card pipeline-metric-card--${getScoreTone(metric.score)}`} key={`${iteration.iterationNumber}-${metric.criterion}`}>
+                                              <div className="pipeline-metric-card__head">
+                                                <strong>{metric.label}</strong>
+                                                <span>{metric.score}/10</span>
+                                              </div>
+                                              <p>{metric.summary}</p>
+                                            </article>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                      {iteration.evaluationCompleteEvent ? (
+                                        <article className="pipeline-detail-event">
+                                          <div className="pipeline-event-card__meta">
+                                            <span>Evaluation Summary</span>
+                                            <time>{formatTimestamp(iteration.evaluationCompleteEvent.timestamp)}</time>
+                                          </div>
+                                          <p>{formatPipelineEventBody(iteration.evaluationCompleteEvent)}</p>
+                                        </article>
+                                      ) : null}
+                                      {section.events
+                                        .filter((event) => !["evaluation_complete", "evaluation_criterion"].includes(String(event.type || "")))
+                                        .map((event, index) => (
+                                          <article className="pipeline-detail-event" key={`${event.timestamp}-${event.type}-${index}`}>
+                                            <div className="pipeline-event-card__meta">
+                                              <span>{formatPipelineEventTitle(event.type)}</span>
+                                              <time>{formatTimestamp(event.timestamp)}</time>
+                                            </div>
+                                            <p>{formatPipelineEventBody(event)}</p>
+                                          </article>
+                                        ))}
+                                      {!iteration.evaluationCriteria.length &&
+                                      !iteration.evaluationCompleteEvent &&
+                                      !section.events.filter((event) => !["evaluation_complete", "evaluation_criterion"].includes(String(event.type || ""))).length ? (
+                                        <p className="testing-muted">{section.emptyText}</p>
+                                      ) : null}
+                                    </div>
+                                  ) : section.key === "analysis_planning" ? (
+                                    <div className="pipeline-composite-stack">
+                                      <article className="pipeline-composite-card pipeline-composite-card--files">
+                                        <div className="pipeline-composite-card__head">
+                                          <div>
+                                            <span className="eyebrow">Files to change</span>
+                                            <strong>
+                                              {section.plannedChangedPaths?.length
+                                                ? `${section.plannedChangedPaths.length} file${section.plannedChangedPaths.length === 1 ? "" : "s"} planned`
+                                                : "No files planned yet"}
+                                            </strong>
+                                          </div>
+                                        </div>
+                                        {section.plannedChangedPaths?.length ? (
+                                          <div className="pipeline-file-chip-list">
+                                            {section.plannedChangedPaths.map((path) => (
+                                              <span className="pipeline-file-chip" key={`${sectionId}-${path}`}>{path}</span>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <p className="testing-muted">The fixer has not listed any file targets for this iteration yet.</p>
+                                        )}
+                                      </article>
+                                      <div className="pipeline-composite-grid">
+                                        <article className="pipeline-composite-card">
+                                          <div className="pipeline-composite-card__head">
+                                            <div>
+                                              <span className="eyebrow">Analysis</span>
+                                              <strong>Root cause</strong>
+                                            </div>
+                                            <small>{section.analysisEvents?.length || 0} item{(section.analysisEvents?.length || 0) === 1 ? "" : "s"}</small>
+                                          </div>
+                                          {section.analysisEvents?.length ? (
+                                            <div className="pipeline-section-card__list">
+                                              {section.analysisEvents.map((event, index) => (
+                                                <article className="pipeline-detail-event" key={`${event.timestamp}-${event.type}-${index}`}>
+                                                  <div className="pipeline-event-card__meta">
+                                                    <span>{formatPipelineEventTitle(event.type)}</span>
+                                                    <time>{formatTimestamp(event.timestamp)}</time>
+                                                  </div>
+                                                  <p>{formatPipelineEventBody(event)}</p>
+                                                </article>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <p className="testing-muted">No analysis output yet.</p>
+                                          )}
+                                        </article>
+                                        <article className="pipeline-composite-card">
+                                          <div className="pipeline-composite-card__head">
+                                            <div>
+                                              <span className="eyebrow">Planning</span>
+                                              <strong>Fix plan</strong>
+                                            </div>
+                                            <small>{section.planningEvents?.length || 0} item{(section.planningEvents?.length || 0) === 1 ? "" : "s"}</small>
+                                          </div>
+                                          {section.planningEvents?.length ? (
+                                            <div className="pipeline-section-card__list">
+                                              {section.planningEvents.map((event, index) => (
+                                                <article className="pipeline-detail-event" key={`${event.timestamp}-${event.type}-${index}`}>
+                                                  <div className="pipeline-event-card__meta">
+                                                    <span>{formatPipelineEventTitle(event.type)}</span>
+                                                    <time>{formatTimestamp(event.timestamp)}</time>
+                                                  </div>
+                                                  <p>{formatPipelineEventBody(event)}</p>
+                                                </article>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <p className="testing-muted">No planning output yet.</p>
+                                          )}
+                                        </article>
+                                      </div>
+                                    </div>
+                                  ) : section.key === "changed_snippets" ? (
+                                    <article className="pipeline-artifact-card pipeline-artifact-card--code pipeline-artifact-card--static">
+                                      <div className="pipeline-artifact-card__summary">
+                                        <div className="pipeline-artifact-card__summary-copy">
+                                          <span className="eyebrow">Changed snippets</span>
+                                          <strong>
+                                            {changedSnippets.length
+                                              ? `${changedSnippetCount} applied snippet${changedSnippetCount === 1 ? "" : "s"}`
+                                              : "No changed snippets"}
+                                          </strong>
+                                          <small>
+                                            {changedSnippets.length
+                                              ? `${changedSnippets.map((change) => change.path).filter(Boolean).slice(0, 3).join(" · ")}${changedSnippets.length > 3 ? " · ..." : ""}`
+                                              : "Only edited prompt/code snippets will appear here."}
+                                          </small>
+                                        </div>
+                                        <span className={`pipeline-artifact-badge pipeline-artifact-badge--${changedSnippets.length ? "success" : "neutral"}`}>
+                                          {changedSnippets.length ? `${changedSnippetCount} applied` : "empty"}
+                                        </span>
+                                      </div>
+                                      {changedSnippets.length ? (
+                                        <div className="pipeline-code-changes">
+                                          <div className="pipeline-code-summary">
+                                            <span>{changedSnippetCount} applied change{changedSnippetCount === 1 ? "" : "s"}</span>
+                                            {iteration.record?.git_commit_sha ? <span>Commit {formatCommitShort(iteration.record.git_commit_sha)}</span> : null}
+                                            {typeof iteration.applyResult?.compile_result?.success === "boolean" ? (
+                                              <span>Validation {iteration.applyResult.compile_result.success ? "passed" : "failed"}</span>
+                                            ) : null}
+                                          </div>
+                                          {changedSnippets.map((change, index) => (
+                                            <details className="pipeline-change-card" key={`${change.path}-${change.selector_value}-${index}`} open={changedSnippets.length === 1 || index === 0}>
+                                              <summary className="pipeline-change-card__summary">
+                                                <div className="pipeline-change-card__summary-copy">
+                                                  <strong>{change.path}</strong>
+                                                  <span>{change.selector_type}:{change.selector_value}</span>
+                                                </div>
+                                                <span>{change.applied ? "Applied" : "Not applied"}</span>
+                                              </summary>
+                                              {(() => {
+                                                const diffRows = buildSnippetDiffRows(change.before_content, change.after_content);
+                                                const diffSummary = summarizeSnippetDiff(diffRows);
+                                                return (
+                                                  <>
+                                                    <div className="pipeline-change-meta">
+                                                      <span className={`pipeline-change-pill pipeline-change-pill--${change.applied ? "success" : "neutral"}`}>
+                                                        {change.applied ? "Applied" : "Preview only"}
+                                                      </span>
+                                                      {diffSummary.added ? (
+                                                        <span className="pipeline-change-pill pipeline-change-pill--add">+{diffSummary.added} added</span>
+                                                      ) : null}
+                                                      {diffSummary.removed ? (
+                                                        <span className="pipeline-change-pill pipeline-change-pill--remove">-{diffSummary.removed} removed</span>
+                                                      ) : null}
+                                                    </div>
+                                                    {change.error ? <p className="testing-muted">{change.error}</p> : null}
+                                                    <div className="pipeline-change-diff pipeline-change-diff--unified">
+                                                      <div className="pipeline-change-diff__header">
+                                                        <span>Changed lines</span>
+                                                        <small>Showing the edited snippet only</small>
+                                                      </div>
+                                                      <div className="pipeline-diff-view">
+                                                        {diffRows.length ? diffRows.map((row, rowIndex) => (
+                                                          row.type === "skipped" ? (
+                                                            <div className="pipeline-diff-row pipeline-diff-row--skipped" key={`${change.path}-skipped-${rowIndex}`}>
+                                                              <span>{row.text}</span>
+                                                            </div>
+                                                          ) : (
+                                                            <div className={`pipeline-diff-row pipeline-diff-row--${row.type}`} key={`${change.path}-${row.type}-${rowIndex}`}>
+                                                              <span className="pipeline-diff-row__line">{row.oldNumber ?? " "}</span>
+                                                              <span className="pipeline-diff-row__line">{row.newNumber ?? " "}</span>
+                                                              <pre className="pipeline-diff-row__code">{row.text || " "}</pre>
+                                                            </div>
+                                                          )
+                                                        )) : (
+                                                          <div className="pipeline-diff-row pipeline-diff-row--context">
+                                                            <span className="pipeline-diff-row__line"> </span>
+                                                            <span className="pipeline-diff-row__line"> </span>
+                                                            <pre className="pipeline-diff-row__code">{change.after_content || change.before_content || "—"}</pre>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </>
+                                                );
+                                              })()}
+                                            </details>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p className="testing-muted">No changed code or prompt snippet was captured for this iteration.</p>
+                                      )}
+                                    </article>
+                                  ) : section.events.length ? (
+                                    <div className="pipeline-section-card__list">
+                                      {section.events.map((event, index) => (
+                                        <article className="pipeline-detail-event" key={`${event.timestamp}-${event.type}-${index}`}>
+                                          <div className="pipeline-event-card__meta">
+                                            <span>{formatPipelineEventTitle(event.type)}</span>
+                                            <time>{formatTimestamp(event.timestamp)}</time>
+                                          </div>
+                                          <p>{formatPipelineEventBody(event)}</p>
+                                        </article>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="testing-muted">{section.emptyText}</p>
+                                  )) : null}
+                                </section>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+                        </section>
+                      );
+                    })
+                  ) : (
+                    <p className="testing-muted">No pipeline iterations yet.</p>
+                  )}
+                </div>
+
+                {selectedPipelineId && String(effectivePipelineSummary.status || "") === "completed" ? (
+                  <div className="pipeline-reports-footer">
+                    <details className="pipeline-reports-menu">
+                      <summary className="pipeline-reports-menu__summary">
+                        <span className="material-symbols-outlined">description</span>
+                        <span>Reports</span>
+                      </summary>
+                      <div className="pipeline-reports-menu__body">
+                        <div className="pipeline-reports-menu__intro">
+                          <strong>Pipeline deliverables</strong>
+                          <small>Download the recorded run, structured log, and prompt snapshots.</small>
+                        </div>
+                        {pipelineDeliverablesError ? (
+                          <p className="testing-muted">{pipelineDeliverablesError}</p>
+                        ) : !pipelineDeliverables ? (
+                          <p className="testing-muted">Loading report links...</p>
+                        ) : (
+                          <div className="pipeline-reports-links">
+                            {[
+                              ["recorded_example_run", "Recorded example run"],
+                              ["pipeline_run_log", "Structured log"],
+                              ["starting_prompt", "Starting prompt"],
+                              ["final_prompt", "Final prompt"],
+                            ].map(([key, label]) => {
+                              const file = pipelineDeliverables?.files?.[key];
+                              const href = file?.exists ? getTestingPipelineDeliverableUrl(selectedPipelineId, key) : null;
+                              return href ? (
+                                <a
+                                  className="pipeline-report-link"
+                                  key={key}
+                                  href={href}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  <span>{label}</span>
+                                  <small>{file.filename}</small>
+                                </a>
+                              ) : (
+                                <span className="pipeline-report-link pipeline-report-link--disabled" key={key}>
+                                  <span>{label}</span>
+                                  <small>Not available</small>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  </div>
+                ) : null}
+              </section>
+
+            </section>
+          </>
+        ) : (
+          <>
+            <header className="page-header">
+              <h1>Testing</h1>
+              <p>Run a single live task or the full task set and inspect the live chat and execution flow without entering the pipeline loop.</p>
+              <div className="status-pill">Workspace: {testingStatus}</div>
+            </header>
+
+            <section className="pipeline-page">
+              <section className="testing-quickrun testing-quickrun--standalone">
+                <div className="testing-quickrun__content">
+                  <section className="testing-toolbar">
+                    <button type="button" className="button button--primary" onClick={() => executeTestingRun({ include_evaluation: false })} disabled={testingBusy}>
+                      <span className="material-symbols-outlined">play_arrow</span>
+                      Run all tasks
+                    </button>
+                    <select
+                      value={selectedTaskSlug}
+                      onChange={(event) => setSelectedTaskSlug(event.target.value)}
+                      className="testing-select testing-select--toolbar"
+                      disabled={testingBusy || !testingTasks.length}
+                    >
+                      {testingTasks.map((task) => (
+                        <option key={task.slug} value={task.slug}>
+                          {formatTaskLabel(task.slug, task.slug)}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="button button--secondary"
+                      onClick={() => executeTestingRun(selectedTaskSlug ? { task: selectedTaskSlug, include_evaluation: false } : { include_evaluation: false })}
+                      disabled={testingBusy || !selectedTaskSlug}
+                    >
+                      <span className="material-symbols-outlined">terminal</span>
+                      Run selected task
+                    </button>
+                  </section>
+
+                  <section className="testing-live">
+                    <div className="testing-live__header">
+                      <div>
+                        <span className="eyebrow">Live quick run</span>
+                        <strong>Per-test stream</strong>
+                      </div>
+                      <span className="status-pill status-pill--center">{testingBusy ? "Running..." : testingLiveActive ? "Streaming..." : "Idle"}</span>
+                    </div>
+                    {testingTaskBlocks.length ? (
+                      <div className="testing-task-blocks">
+                        {testingTaskBlocks.map((block) => (
+                          <article className="testing-task-block" key={block.task}>
+                            <div className="testing-task-block__header">
+                              <div>
+                                <span className="eyebrow">Test</span>
+                                <strong>{formatTaskLabel(block.task, block.task)}</strong>
+                              </div>
+                              <span className={`status-pill status-pill--center ${block.status === "failed" ? "status-pill--error" : ""}`}>
+                                {block.status === "completed" ? "Completed" : block.status === "failed" ? "Failed" : "Running"}
+                              </span>
+                            </div>
+                            <div className="testing-live__panels">
+                              <div className="testing-live__panel">
+                                <div className="testing-live__panel-head">
+                                  <span className="eyebrow">Conversation</span>
+                                  <strong>Readable chat</strong>
+                                </div>
+                                <div className="testing-transcript">
+                                  {block.conversation.length ? block.conversation.map((item, index) => (
+                                    <article className={item.role === "user" ? "transcript-turn transcript-turn--user" : "transcript-turn transcript-turn--agent"} key={`${block.task}-${item.role}-${item.timestamp || index}`}>
+                                      <div className="transcript-turn__meta">
+                                        <span>{item.role === "user" ? "User" : item.role === "agent" ? "Agent" : item.role}</span>
+                                        <time>{formatTimestamp(item.timestamp)}</time>
+                                      </div>
+                                      <p>{item.text}</p>
+                                    </article>
+                                  )) : <p className="testing-muted">Waiting for conversation turns...</p>}
+                                </div>
+                              </div>
+                              <div className="testing-live__panel">
+                                <div className="testing-live__panel-head">
+                                  <span className="eyebrow">Steps</span>
+                                  <strong>Execution flow</strong>
+                                </div>
+                                <div className="testing-steps" aria-live="polite">
+                                  {block.steps.length ? block.steps.map((line, index) => (
+                                    <div className={`testing-step ${line.tag === "error" ? "testing-step--error" : line.tag === "eval" ? "testing-step--eval" : line.tag === "status" ? "testing-step--status" : "testing-step--accent"}`} key={`${block.task}-${line.tag}-${index}`}>
+                                      <span className="testing-step__time">{formatTimestamp(line.timestamp)}</span>
+                                      <span className="testing-step__tag">{String(line.tag || "log").toUpperCase()}</span>
+                                      <span className="testing-step__text">{line.text}</span>
+                                    </div>
+                                  )) : <p className="testing-muted">[waiting] No step output yet.</p>}
+                                </div>
+                              </div>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="testing-muted">Start a run to create a live block for each test.</p>
+                    )}
+                  </section>
+                </div>
+              </section>
+            </section>
+          </>
+        )}
+      </main>
+
+      <nav className="mobile-nav" aria-label="Mobile primary">
+        <button type="button" className={screen === "search" ? "mobile-nav__item active" : "mobile-nav__item"} onClick={() => setScreen("search")}>
+          <span className="material-symbols-outlined">flight_takeoff</span>
+          <span>Search</span>
+        </button>
+        <button type="button" className={screen === "trips" ? "mobile-nav__item active" : "mobile-nav__item"} onClick={() => setScreen("trips")}>
+          <span className="material-symbols-outlined">badge</span>
+          <span>Trips</span>
+        </button>
+        <button type="button" className={screen === "account" ? "mobile-nav__item active" : "mobile-nav__item"} onClick={() => setScreen("account")}>
+          <span className="material-symbols-outlined">person</span>
+          <span>Account</span>
+        </button>
+        <button type="button" className={screen === "jira" ? "mobile-nav__item active" : "mobile-nav__item"} onClick={() => setScreen("jira")}>
+          <span className="material-symbols-outlined">bug_report</span>
+          <span>Jira</span>
+        </button>
+        {isScreenVisible("refinement") ? (
+          <button type="button" className={screen === "refinement" ? "mobile-nav__item active" : "mobile-nav__item"} onClick={() => setScreen("refinement")}>
+            <span className="material-symbols-outlined">auto_fix_high</span>
+            <span>Refinement</span>
+          </button>
+        ) : null}
+        {isScreenVisible("testing") ? (
+          <button type="button" className={screen === "testing" ? "mobile-nav__item active" : "mobile-nav__item"} onClick={() => setScreen("testing")}>
+            <span className="material-symbols-outlined">analytics</span>
+            <span>Testing</span>
+          </button>
+        ) : null}
+      </nav>
+    </div>
+  );
+}
+
+export default App;
