@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import difflib
+import json
 import logging
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -30,6 +31,7 @@ from app.services.jira_service import JiraIssueAnalysis, JiraPipelineService
 
 
 ANALYZER_CONFIDENCE_THRESHOLD = 0.55
+MAX_AUTOMATIC_REPAIR_PASSES = 3
 logger = logging.getLogger("app.almas")
 
 
@@ -71,6 +73,9 @@ class ALMASSupervisor:
 
     def latest_run_for_issue(self, issue_key: str) -> ALMASRunDetailRead | None:
         return self._store.latest_run_for_issue(issue_key)
+
+    def reset_issue(self, issue_key: str) -> list[str]:
+        return self._store.delete_runs_for_issue(issue_key)
 
     def start_run(self, issue_key: str) -> ALMASRunDetailRead:
         issue_payload = self._jira_service.create_client().get_issue(issue_key)
@@ -201,70 +206,57 @@ class ALMASSupervisor:
                 )
             if analyzer_artifact.blocked_reason:
                 return self._finish(manifest, "blocked", "analyzer", analyzer_artifact.blocked_reason)
-            planner_output = self._agents.run_planner(
-                analysis,
-                analyzer_artifact,
-                run_id=manifest.run_id,
-                branch_name=branch_name,
-                revision_requests=revision_requests,
-            )
-            self._write_artifact(manifest, "planner_output", planner_output)
-            manifest.status = "running"
-            manifest.current_stage = "planner"
-            manifest.explanation = "Planner output generated."
-            self._store.save_manifest(manifest)
+            next_revision_requests = revision_requests
+            seen_revision_signatures: set[str] = set()
+            seen_developer_signatures: set[str] = set()
 
-            developer_output, diff_previews, fixer_output = self._run_developer_and_fixer(
-                manifest,
-                analysis,
-                analyzer_artifact,
-                planner_output,
-            )
-            if fixer_output.decision == "approved":
-                return self._publish_approved_run(
-                    manifest,
-                    planner_output,
-                    developer_output,
-                    diff_previews,
-                )
-            if fixer_output.decision == "blocked":
-                reason = "; ".join(fixer_output.rejection_reasons or ["Fixer blocked the implementation."])
-                return self._finish(manifest, "blocked", "fixer", reason)
-
-            if manifest.revision_count < self._settings.almas_max_review_revisions:
-                manifest.revision_count += 1
-                self._store.save_manifest(manifest)
-                revised_planner = self._agents.run_planner(
+            while True:
+                planner_output = self._agents.run_planner(
                     analysis,
                     analyzer_artifact,
                     run_id=manifest.run_id,
                     branch_name=branch_name,
-                    revision_requests=fixer_output.revision_requests,
+                    revision_requests=next_revision_requests,
                 )
-                self._write_artifact(manifest, "planner_output", revised_planner)
-                developer_output, diff_previews, revised_fixer = self._run_developer_and_fixer(
+                self._write_artifact(manifest, "planner_output", planner_output)
+                manifest.status = "running"
+                manifest.current_stage = "planner"
+                manifest.explanation = "Planner output generated."
+                self._store.save_manifest(manifest)
+
+                developer_output, diff_previews, fixer_output = self._run_developer_and_fixer(
                     manifest,
                     analysis,
                     analyzer_artifact,
-                    revised_planner,
+                    planner_output,
                 )
-                if revised_fixer.decision == "approved":
+                if fixer_output.decision == "approved":
                     return self._publish_approved_run(
                         manifest,
-                        revised_planner,
+                        planner_output,
                         developer_output,
                         diff_previews,
                     )
-                if revised_fixer.decision == "blocked":
-                    reason = "; ".join(revised_fixer.rejection_reasons or ["Fixer blocked the revised implementation."])
+                if fixer_output.decision == "blocked":
+                    reason = "; ".join(fixer_output.rejection_reasons or ["Fixer blocked the implementation."])
                     return self._finish(manifest, "blocked", "fixer", reason)
 
-            return self._finish(
-                manifest,
-                "needs_review_revision",
-                "fixer",
-                "Fixer still requires revisions after the allowed retry loop.",
-            )
+                stop_reason = self._next_revision_stop_reason(
+                    manifest,
+                    developer_output,
+                    fixer_output,
+                    seen_revision_signatures=seen_revision_signatures,
+                    seen_developer_signatures=seen_developer_signatures,
+                )
+                if stop_reason:
+                    return self._finish(manifest, "needs_review_revision", "fixer", stop_reason)
+
+                manifest.revision_count += 1
+                manifest.status = "running"
+                manifest.current_stage = "planner"
+                manifest.explanation = f"Fixer requested revisions. Starting repair pass {manifest.revision_count + 1}."
+                self._store.save_manifest(manifest)
+                next_revision_requests = fixer_output.revision_requests
         except Exception as exc:
             return self._finish(manifest, "failed", manifest.current_stage or "pipeline", str(exc))
 
@@ -393,6 +385,35 @@ class ALMASSupervisor:
     def _build_branch_name(self, analysis: JiraIssueAnalysis) -> str:
         summary_slug = slugify_branch_component(analysis.summary or analysis.issue_key)
         return f"feature/{analysis.issue_key.upper()}-{summary_slug}"
+
+    def _next_revision_stop_reason(
+        self,
+        manifest: ALMASRunManifest,
+        developer_output: DeveloperOutput,
+        fixer_output: FixerOutput,
+        *,
+        seen_revision_signatures: set[str],
+        seen_developer_signatures: set[str],
+    ) -> str | None:
+        if not fixer_output.revision_requests:
+            return "Fixer requested revisions but did not provide actionable revision requests."
+        if manifest.revision_count >= MAX_AUTOMATIC_REPAIR_PASSES:
+            return (
+                "Fixer requested more revisions, but the automatic repair limit was reached "
+                f"after {MAX_AUTOMATIC_REPAIR_PASSES} revision pass"
+                f"{'' if MAX_AUTOMATIC_REPAIR_PASSES == 1 else 'es'}."
+            )
+
+        revision_signature = json.dumps(sorted(fixer_output.revision_requests))
+        if revision_signature in seen_revision_signatures:
+            return "Fixer repeated the same revision requests, so the run stopped to avoid looping indefinitely."
+        seen_revision_signatures.add(revision_signature)
+
+        developer_signature = json.dumps(developer_output.model_dump(mode="json"), sort_keys=True)
+        if developer_signature in seen_developer_signatures:
+            return "Developer produced the same file changes again after review feedback, so the run stopped."
+        seen_developer_signatures.add(developer_signature)
+        return None
 
     def _finish(
         self,

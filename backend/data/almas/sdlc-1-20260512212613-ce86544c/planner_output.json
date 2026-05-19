@@ -1,34 +1,37 @@
 {
-  "solution_summary": "Implement a feature in the booking system to ensure that user seat preferences (aisle or window) are honored throughout the booking flow and confirmed in the final response.",
+  "solution_summary": "Implement changes to the booking workflow to store and confirm user's seat preferences (aisle or window).",
   "implementation_steps": [
-    "Review existing booking workflow and identify points where seat preference needs to be passed along.",
-    "Update the Booking model to include a field for seat preferences.",
-    "Modify the booking service's methods to ensure that seat preferences are handled and passed through the flow correctly.",
-    "Ensure that the final response from the booking API includes the confirmed seat preference.",
-    "Add unit tests for various scenarios related to seat preferences, including edge cases.",
-    "Conduct thorough review to ensure existing functionalities are not impacted."
+    "Modify the booking model to include a field for seat preference.",
+    "Update the booking service to handle seat preference logic during the booking process.",
+    "Ensure that the final booking confirmation includes the user's seat preference."
   ],
   "planned_changes": [
     {
-      "file_path": "app/models/booking.py",
-      "change_summary": "Add seat preference field to Booking model",
-      "rationale": "The Booking model needs to store the seat preference to retain it throughout the workflow."
+      "file_path": "backend/app/models/booking.py",
+      "change_summary": "Add a seat preference field to the booking model.",
+      "rationale": "To store the user's preference for aisle or window."
     },
     {
-      "file_path": "app/services/booking_service.py",
-      "change_summary": "Modify booking methods to handle seat preference",
-      "rationale": "The booking service is responsible for processing bookings and needs to include seat preferences in its logic."
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Update booking service logic to retain and confirm seat preference.",
+      "rationale": "To ensure the business logic respects user preferences during the booking process."
     }
   ],
-  "patch_strategy": "1. Create a new branch from the main branch for the feature implementation. 2. Commit changes to the selected files and ensure they are properly linked to the Jira issue. 3. After testing and validation, create a pull request against the main branch for review.",
+  "patch_strategy": "Make incremental changes to both the booking model and the booking service to ensure functionality is tested during implementation.",
   "validation_steps": [
-    "Run unit tests to ensure new functionality works as expected.",
-    "Perform integration testing to check if seat preferences are honored throughout the booking workflow.",
-    "Review final API response to confirm it includes the correct seat preference."
+    "Unit tests must be created to check the retention of seat preferences in the booking process.",
+    "Integration tests should confirm that the final response includes the correct seat preference.",
+    "Manual testing to validate the user experience from start to finish including seat preference confirmation."
   ],
-  "branch_name": "feature/book_flight_with_seat_preference",
-  "pr_title": "SDLC-1: Implement seat preference in booking flow",
-  "pr_body": "This PR addresses the requirements of SDLC-1 to honor user seat preferences in the booking workflow. It modifies the Booking model and booking service to ensure that the preferences are retained and confirmed in the final response. This includes added unit tests and API documentation updates. Please review the changes and provide feedback.",
-  "risks": [],
-  "assumptions": []
+  "branch_name": "feature/SDLC-1-booking-flow-should-honor-seat-preference",
+  "pr_title": "Implement Seat Preference Retention in Booking Workflow",
+  "pr_body": "This pull request implements changes to the booking workflow allowing the system to honor and confirm the user's seat preference (aisle or window) during the flight booking process. It includes modifications to the booking model and service to support this feature, along with necessary tests to validate functionality.",
+  "risks": [
+    "Ensuring backward compatibility with existing booking flows could introduce potential regressions.",
+    "Inadequate testing of edge cases might lead to unexpected behavior during user booking."
+  ],
+  "assumptions": [
+    "Users will provide a seat preference during booking, and the system will need to account for this input.",
+    "The database schema can accommodate changes to the booking model without issues."
+  ]
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
@@ -153,6 +154,33 @@ class ALMASRunStore:
         if not matches:
             return None
         return self.load_run(matches[0].run_id)
+
+    def delete_run(self, run_id: str) -> None:
+        with self._lock:
+            run_dir = self._run_dir(run_id)
+            if run_dir.exists():
+                shutil.rmtree(run_dir)
+            index = self._read_index()
+            if run_id in index:
+                del index[run_id]
+                self._write_index(index)
+
+    def delete_runs_for_issue(self, issue_key: str) -> list[str]:
+        normalized = issue_key.upper()
+        with self._lock:
+            index = self._read_index()
+            run_ids = [
+                run_id
+                for run_id, item in index.items()
+                if str((item or {}).get("issue_key") or "").upper() == normalized
+            ]
+            for run_id in run_ids:
+                run_dir = self._run_dir(run_id)
+                if run_dir.exists():
+                    shutil.rmtree(run_dir)
+                index.pop(run_id, None)
+            self._write_index(index)
+        return run_ids
 
     def _run_dir(self, run_id: str) -> Path:
         return self._root / run_id

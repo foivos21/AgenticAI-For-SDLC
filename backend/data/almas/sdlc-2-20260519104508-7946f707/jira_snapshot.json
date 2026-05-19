@@ -54,13 +54,13 @@
         "startTime": {
           "iso8601": "2026-05-12T17:10:22+0300",
           "jira": "2026-05-12T17:10:22.554+0300",
-          "friendly": "Yesterday 5:10 PM",
+          "friendly": "12/May/26 5:10 PM",
           "epochMillis": 1778595022554
         },
         "breachTime": {
           "iso8601": "2026-05-13T13:00:00+0300",
           "jira": "2026-05-13T13:00:00.000+0300",
-          "friendly": "Today 1:00 PM",
+          "friendly": "Wednesday 1:00 PM",
           "epochMillis": 1778666400000
         },
         "breached": true,
@@ -71,12 +71,12 @@
           "friendly": "4h"
         },
         "elapsedTime": {
-          "millis": 24437052,
-          "friendly": "6h 47m"
+          "millis": 132308842,
+          "friendly": "36h 45m"
         },
         "remainingTime": {
-          "millis": -10037052,
-          "friendly": "-2h 47m"
+          "millis": -117908842,
+          "friendly": "-32h 45m"
         }
       }
     },
@@ -151,16 +151,16 @@
         "startTime": {
           "iso8601": "2026-05-12T17:10:22+0300",
           "jira": "2026-05-12T17:10:22.554+0300",
-          "friendly": "Yesterday 5:10 PM",
+          "friendly": "12/May/26 5:10 PM",
           "epochMillis": 1778595022554
         },
         "breachTime": {
-          "iso8601": "2026-05-14T17:00:00+0300",
-          "jira": "2026-05-14T17:00:00.000+0300",
-          "friendly": "14/May/26 5:00 PM",
-          "epochMillis": 1778767200000
+          "iso8601": "2026-05-15T09:00:00+0300",
+          "jira": "2026-05-15T09:00:00.000+0300",
+          "friendly": "Friday 9:00 AM",
+          "epochMillis": 1778824800000
         },
-        "breached": false,
+        "breached": true,
         "paused": false,
         "withinCalendarHours": true,
         "goalDuration": {
@@ -168,12 +168,12 @@
           "friendly": "16h"
         },
         "elapsedTime": {
-          "millis": 24437096,
-          "friendly": "6h 47m"
+          "millis": 132308867,
+          "friendly": "36h 45m"
         },
         "remainingTime": {
-          "millis": 33162904,
-          "friendly": "9h 12m"
+          "millis": -74708867,
+          "friendly": "-20h 45m"
         }
       }
     },

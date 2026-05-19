@@ -1,21 +1,16 @@
 {
-  "sdlc-3-20260512205547-d94dbb97": {
-    "run_id": "sdlc-3-20260512205547-d94dbb97",
-    "issue_key": "SDLC-3",
-    "status": "needs_approval",
-    "current_stage": "peer_review",
-    "revision_count": 0,
-    "updated_at": "2026-05-12T20:56:09.876474+00:00",
-    "explanation": "Peer review approved. Waiting for human approval before GitHub handoff."
-  },
   "sdlc-1-20260512212613-ce86544c": {
     "run_id": "sdlc-1-20260512212613-ce86544c",
     "issue_key": "SDLC-1",
     "status": "needs_review_revision",
     "current_stage": "fixer",
     "revision_count": 1,
-    "updated_at": "2026-05-12T21:26:40.923551+00:00",
-    "explanation": "Fixer still requires revisions after the allowed retry loop."
+    "updated_at": "2026-05-19T10:26:23.428703+00:00",
+    "explanation": "Fixer still requires revisions after the allowed retry loop.",
+    "branch_name": "",
+    "commit_sha": "",
+    "pr_number": null,
+    "pr_url": ""
   },
   "sdlc-4-20260513124708-65d94c20": {
     "run_id": "sdlc-4-20260513124708-65d94c20",
@@ -26,13 +21,30 @@
     "updated_at": "2026-05-13T12:47:41.167901+00:00",
     "explanation": "Fixer still requires revisions after the allowed retry loop."
   },
-  "sdlc-2-20260513124717-51cb5bf0": {
-    "run_id": "sdlc-2-20260513124717-51cb5bf0",
+  "sdlc-3-20260519103926-0ed918d7": {
+    "run_id": "sdlc-3-20260519103926-0ed918d7",
+    "issue_key": "SDLC-3",
+    "status": "created",
+    "current_stage": "created",
+    "revision_count": 0,
+    "updated_at": "2026-05-19T10:39:27.052350+00:00",
+    "explanation": "Run created.",
+    "branch_name": "feature/SDLC-3-need-better-support-for-premium-customer-segment",
+    "commit_sha": "",
+    "pr_number": null,
+    "pr_url": ""
+  },
+  "sdlc-2-20260519104508-7946f707": {
+    "run_id": "sdlc-2-20260519104508-7946f707",
     "issue_key": "SDLC-2",
-    "status": "needs_review_revision",
-    "current_stage": "fixer",
+    "status": "needs_approval",
+    "current_stage": "draft_pr_opened",
     "revision_count": 1,
-    "updated_at": "2026-05-13T12:47:42.878661+00:00",
-    "explanation": "Fixer still requires revisions after the allowed retry loop."
+    "updated_at": "2026-05-19T10:53:27.503758+00:00",
+    "explanation": "Draft pull request opened. Waiting for human approval to mark it ready for review.",
+    "branch_name": "feature/SDLC-2-customer-should-be-able-to-cancel-booking-for-refund",
+    "commit_sha": "6950bd26d1229b932c9e2f3e4d61a69f692b41af",
+    "pr_number": 1,
+    "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/1"
   }
 }

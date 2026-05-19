@@ -41,7 +41,7 @@ class FakeRepository:
 
 
 class FakeAgentSuite:
-    def __init__(self) -> None:
+    def __init__(self, fixer_decisions: list[str] | None = None) -> None:
         self.repository = FakeRepository()
         self.model_names = {
             "analyzer": "analyzer-model",
@@ -49,6 +49,10 @@ class FakeAgentSuite:
             "developer": "developer-model",
             "fixer": "fixer-model",
         }
+        self.fixer_decisions = fixer_decisions or ["approved"]
+        self.planner_revision_requests: list[list[str]] = []
+        self.developer_call_count = 0
+        self.fixer_call_count = 0
 
     def run_analyzer(self, issue, *, run_id: str) -> AnalyzerOutput:
         return AnalyzerOutput(
@@ -64,6 +68,7 @@ class FakeAgentSuite:
         )
 
     def run_planner(self, issue, analyzer_output, *, run_id: str, branch_name: str, revision_requests=None) -> PlannerOutput:
+        self.planner_revision_requests.append(list(revision_requests or []))
         return PlannerOutput(
             solution_summary="Implement seat preference",
             implementation_steps=["Update service"],
@@ -84,6 +89,7 @@ class FakeAgentSuite:
         )
 
     def run_developer(self, issue, analyzer_output, planner_output, *, run_id: str) -> DeveloperOutput:
+        self.developer_call_count += 1
         return DeveloperOutput(
             implementation_summary="summary",
             branch_name=planner_output.branch_name,
@@ -92,7 +98,7 @@ class FakeAgentSuite:
                 DeveloperFileChange(
                     path="app/services/booking_service.py",
                     operation="update",
-                    content="print('new')\n",
+                    content=f"print('new-{self.developer_call_count}')\n",
                     change_summary="Update service",
                     rationale="Needed",
                 )
@@ -102,10 +108,14 @@ class FakeAgentSuite:
         )
 
     def run_fixer(self, analyzer_output, planner_output, developer_output, diff_previews, *, run_id: str, issue_key: str) -> FixerOutput:
+        self.fixer_call_count += 1
+        decision = self.fixer_decisions[min(self.fixer_call_count - 1, len(self.fixer_decisions) - 1)]
         return FixerOutput(
-            decision="approved",
-            fix_summary="Looks good",
-            approval_reasons=["Approved"],
+            decision=decision,
+            fix_summary="Looks good" if decision == "approved" else "",
+            approval_reasons=["Approved"] if decision == "approved" else [],
+            rejection_reasons=["Needs another pass"] if decision == "blocked" else [],
+            revision_requests=["Handle edge cases", "Add tests"] if decision == "needs_revision" else [],
         )
 
 
@@ -215,6 +225,38 @@ class SupervisorAndTestingServiceTests(unittest.TestCase):
         self.assertEqual(approved.manifest.status, "completed")
         self.assertEqual(approved.manifest.current_stage, "ready_for_review")
         self.assertTrue(approved.artifacts.github_pull_request.ready_for_review)
+
+    def test_supervisor_retries_after_fixer_revision_then_succeeds(self) -> None:
+        retrying_agent_suite = FakeAgentSuite(fixer_decisions=["needs_revision", "approved"])
+        supervisor = ALMASSupervisor(
+            settings=self.settings,
+            agent_suite=retrying_agent_suite,  # type: ignore[arg-type]
+            store=self.store,
+            github_adapter=self.github_adapter,  # type: ignore[arg-type]
+        )
+
+        detail = supervisor.start_run_from_issue_payload(build_issue_payload())
+
+        self.assertEqual(detail.manifest.status, "needs_approval")
+        self.assertEqual(retrying_agent_suite.developer_call_count, 2)
+        self.assertEqual(retrying_agent_suite.planner_revision_requests[0], [])
+        self.assertEqual(retrying_agent_suite.planner_revision_requests[1], ["Handle edge cases", "Add tests"])
+        self.assertEqual(detail.manifest.revision_count, 1)
+
+    def test_supervisor_stops_when_revision_requests_repeat(self) -> None:
+        looping_agent_suite = FakeAgentSuite(fixer_decisions=["needs_revision", "needs_revision"])
+        supervisor = ALMASSupervisor(
+            settings=self.settings,
+            agent_suite=looping_agent_suite,  # type: ignore[arg-type]
+            store=self.store,
+            github_adapter=self.github_adapter,  # type: ignore[arg-type]
+        )
+
+        detail = supervisor.start_run_from_issue_payload(build_issue_payload())
+
+        self.assertEqual(detail.manifest.status, "needs_review_revision")
+        self.assertIn("repeated the same revision requests", detail.manifest.explanation)
+        self.assertEqual(looping_agent_suite.developer_call_count, 2)
 
     def test_testing_service_persists_pipeline(self) -> None:
         service = TestingService(settings=self.settings, supervisor=self.supervisor)

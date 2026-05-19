@@ -183,6 +183,27 @@ class JiraPipelineService:
             "pipeline_id": None,
         }
 
+    def reset_issue_link(self, issue_key: str) -> dict[str, Any]:
+        key = issue_key.strip().upper()
+        with self._store_lock:
+            store = self._read_store()
+            issues = store.setdefault("issues", {})
+            existing = issues.get(key)
+            if not isinstance(existing, dict):
+                payload = {"issue_key": key, "exists": False}
+                return payload
+            reset_payload = dict(existing)
+            reset_payload["state"] = "synced"
+            reset_payload["updated_at"] = _now()
+            reset_payload.pop("pipeline", None)
+            reset_payload.pop("pipeline_id", None)
+            reset_payload.pop("source", None)
+            reset_payload.pop("force", None)
+            issues[key] = reset_payload
+            self._write_store(store)
+        reset_payload["exists"] = True
+        return reset_payload
+
     def analyze_issue(self, issue_payload: dict[str, Any]) -> JiraIssueAnalysis:
         fields = issue_payload.get("fields") or {}
         issue_key = str(issue_payload.get("key") or "").strip().upper()

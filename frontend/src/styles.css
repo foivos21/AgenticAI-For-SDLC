@@ -1189,6 +1189,46 @@ button, input { font: inherit; }
 .jira-agent-card__list li {
   line-height: 1.5;
 }
+.jira-agent-card__stack {
+  display: grid;
+  gap: 0.7rem;
+}
+.jira-agent-card__detail {
+  border: 1px solid rgba(124, 138, 137, 0.14);
+  border-radius: 0.9rem;
+  background: rgba(246, 249, 248, 0.8);
+  padding: 0.8rem 0.95rem;
+}
+.jira-agent-card__detail summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--ink);
+}
+.jira-agent-card__detail summary::-webkit-details-marker {
+  display: none;
+}
+.jira-agent-card__code {
+  margin: 0.8rem 0 0;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  background: #132126;
+  color: #dbe7e4;
+  overflow: auto;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.jira-agent-card__link {
+  color: var(--primary);
+  font-weight: 800;
+}
+.jira-agent-card__link:hover {
+  color: var(--primary-strong);
+}
 .pipeline-control-bar,
 .pipeline-summary-card,
 .pipeline-timeline-card,

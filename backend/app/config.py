@@ -27,7 +27,6 @@ class Settings(BaseSettings):
     almas_planner_model: str = "openai:gpt-4o-mini"
     almas_developer_model: str = "openai:gpt-4o-mini"
     almas_fixer_model: str = "openai:gpt-4o-mini"
-    almas_max_review_revisions: int = 1
     almas_data_dir: str = ""
     almas_enable_color_logs: bool = True
     almas_log_payload_max_chars: int = 6000

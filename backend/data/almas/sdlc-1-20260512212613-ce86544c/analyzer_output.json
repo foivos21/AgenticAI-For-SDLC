@@ -1,29 +1,33 @@
 {
   "issue_key": "SDLC-1",
-  "problem_statement": "The booking workflow does not consistently honor the user's seat preference (aisle or window) throughout the booking process, failing to ensure that the preference is maintained and confirmed in the final response.",
-  "goal": "To update the booking flow to preserve and confirm seat preferences (aisle or window) throughout the entire booking process.",
+  "problem_statement": "The booking workflow does not maintain the user's seat preference (aisle or window) throughout the booking process and fails to confirm this preference in the final response.",
+  "goal": "Ensure that the booking flow honors and retains the seat preference (aisle or window) provided by the user, and includes a confirmation of this preference in the final response of the booking process.",
   "acceptance_criteria": [
-    "Seat preference should be retained from the initial selection to the confirmation stage.",
-    "The final booking response must include the confirmed seat preference."
+    "User's seat preference should be stored during the booking process.",
+    "The final confirmation should explicitly state the user's preferred seat type (aisle or window).",
+    "All relevant components of the booking workflow must support this feature."
   ],
   "constraints": [],
   "unknowns": [],
-  "repo_summary": "The repository includes files related to booking management and seat inventory, which are likely to contain the necessary logic to implement seat preference handling.",
+  "repo_summary": "README.md(1), backend(104), docker-compose.yml(1), frontend(8), run_backend.sh(1), run_frontend.sh(1), run_local.sh(1), scripts(7)",
   "candidate_files": [
-    "app/api/routes/bookings.py",
-    "app/models/booking.py",
-    "app/services/booking_service.py"
+    "backend/app/api/routes/bookings.py",
+    "backend/app/db/seat_inventory.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/booking_passenger.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/services/booking_service.py"
   ],
   "selected_files": [
-    "app/models/booking.py",
-    "app/services/booking_service.py"
+    "backend/app/models/booking.py",
+    "backend/app/services/booking_service.py"
   ],
   "selected_symbols": [],
   "localization_rationale": [
-    "The 'booking.py' model manages the structure and data tied to bookings, which will include seat preferences.",
-    "The 'booking_service.py' contains business logic for handling bookings, making it central to implementing the requested feature."
+    "The booking model likely contains logic related to user bookings and preferences.",
+    "The booking service is crucial for handling business logic related to bookings, including the retention of user preferences."
   ],
-  "confidence": 0.9,
+  "confidence": 0.8,
   "clarification_needed": false,
   "blocked_reason": ""
 }

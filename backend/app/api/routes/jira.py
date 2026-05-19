@@ -77,6 +77,15 @@ def run_jira_issue(issue_key: str, request: JiraManualRunRequest) -> JiraWebhook
     return JiraWebhookResponse(**result)
 
 
+@router.post("/issues/{issue_key}/reset", response_model=JiraIssueLinkRead)
+def reset_jira_issue(issue_key: str) -> JiraIssueLinkRead:
+    _validate_jira_enabled()
+    supervisor = _get_supervisor()
+    supervisor.reset_issue(issue_key)
+    payload = service.reset_issue_link(issue_key)
+    return JiraIssueLinkRead(payload=payload)
+
+
 @router.post("/issues/sync", response_model=JiraIssueListRead)
 def sync_jira_issues(request: JiraIssueSyncRequest) -> JiraIssueListRead:
     _validate_jira_enabled()

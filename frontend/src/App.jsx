@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  approveAlmasRun,
   approveTestingPipeline,
   cancelTestingPipeline,
   createBooking,
@@ -11,7 +10,6 @@ import {
   getTestingPipelineDeliverableUrl,
   getTestingPipelineEvents,
   getJiraIssue,
-  planJiraIssue,
   listAllTripsBooked,
   listAlmasRuns,
   listFlights,
@@ -19,8 +17,7 @@ import {
   listTestingPipelines,
   listTestingTasks,
   listTestingRuns,
-  retryAlmasRun,
-  runJiraIssue,
+  resetJiraIssue,
   runTestingTaskLive,
   searchFlights,
   startAlmasRun,
@@ -102,6 +99,16 @@ function renderSimpleList(items, keyPrefix) {
         <li key={`${keyPrefix}-${index}`}>{String(item)}</li>
       ))}
     </ul>
+  );
+}
+
+function renderCodePreview(value, keyPrefix) {
+  const lines = splitCodeLines(value).slice(0, 12);
+  if (!lines.length) return <p className="testing-muted">No preview.</p>;
+  return (
+    <pre className="jira-agent-card__code" key={keyPrefix}>
+      {lines.join("\n")}
+    </pre>
   );
 }
 
@@ -553,6 +560,143 @@ function summarizeSnippetDiff(rows) {
       return summary;
     },
     { added: 0, removed: 0 }
+  );
+}
+
+function renderUnifiedDiffRows(rows, keyPrefix, fallbackContent = "—") {
+  return (
+    <div className="pipeline-diff-view">
+      {rows.length ? rows.map((row, rowIndex) => (
+        row.type === "skipped" ? (
+          <div className="pipeline-diff-row pipeline-diff-row--skipped" key={`${keyPrefix}-skipped-${rowIndex}`}>
+            <span>{row.text}</span>
+          </div>
+        ) : (
+          <div className={`pipeline-diff-row pipeline-diff-row--${row.type}`} key={`${keyPrefix}-${row.type}-${rowIndex}`}>
+            <span className="pipeline-diff-row__line">{row.oldNumber ?? " "}</span>
+            <span className="pipeline-diff-row__line">{row.newNumber ?? " "}</span>
+            <pre className="pipeline-diff-row__code">{row.text || " "}</pre>
+          </div>
+        )
+      )) : (
+        <div className="pipeline-diff-row pipeline-diff-row--context">
+          <span className="pipeline-diff-row__line"> </span>
+          <span className="pipeline-diff-row__line"> </span>
+          <pre className="pipeline-diff-row__code">{fallbackContent || "—"}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function renderDeveloperChangeCards(changes, appliedChanges, keyPrefix) {
+  if (!Array.isArray(changes) || !changes.length) {
+    return <p className="testing-muted">No generated file changes.</p>;
+  }
+
+  const appliedChangeByPath = new Map(
+    (Array.isArray(appliedChanges) ? appliedChanges : []).map((change, index) => [`${change.path}-${index}`, change])
+  );
+
+  return (
+    <div className="pipeline-code-changes">
+      {changes.map((change, index) => {
+        const matchingPreview =
+          appliedChangeByPath.get(`${change.path}-${index}`) ||
+          (Array.isArray(appliedChanges) ? appliedChanges.find((item) => item.path === change.path) : null);
+        const beforeContent = matchingPreview?.before_content || "";
+        const afterContent = matchingPreview
+          ? matchingPreview.after_content || ""
+          : change.operation === "delete"
+            ? ""
+            : change.content || "";
+        const diffRows = matchingPreview ? buildSnippetDiffRows(beforeContent, afterContent) : [];
+        const diffSummary = summarizeSnippetDiff(diffRows);
+        return (
+          <details className="pipeline-change-card" key={`${keyPrefix}-${change.path}-${index}`} open={changes.length === 1 || index === 0}>
+            <summary className="pipeline-change-card__summary">
+              <div className="pipeline-change-card__summary-copy">
+                <strong>{change.path}</strong>
+                <span>{formatSeatClass(change.operation)}{change.change_summary ? ` · ${change.change_summary}` : ""}</span>
+              </div>
+              <span>{matchingPreview ? "Diff ready" : "Generated content"}</span>
+            </summary>
+            <div className="pipeline-change-meta">
+              <span className="pipeline-change-pill pipeline-change-pill--neutral">{formatSeatClass(change.operation)}</span>
+              {diffSummary.added ? <span className="pipeline-change-pill pipeline-change-pill--add">+{diffSummary.added} added</span> : null}
+              {diffSummary.removed ? <span className="pipeline-change-pill pipeline-change-pill--remove">-{diffSummary.removed} removed</span> : null}
+            </div>
+            {change.rationale ? <p><strong>Why:</strong> {change.rationale}</p> : null}
+            {matchingPreview ? (
+              <div className="pipeline-change-diff pipeline-change-diff--unified">
+                <div className="pipeline-change-diff__header">
+                  <span>Proposed changes</span>
+                  <small>{change.path}</small>
+                </div>
+                {renderUnifiedDiffRows(diffRows, `${keyPrefix}-${index}`, matchingPreview.diff || afterContent || beforeContent || "—")}
+              </div>
+            ) : (
+              <div className="pipeline-change-diff pipeline-change-diff--unified">
+                <div className="pipeline-change-diff__header">
+                  <span>Generated file content</span>
+                  <small>{change.path}</small>
+                </div>
+                <div className="pipeline-change-pane">
+                  <pre>{change.operation === "delete" ? "File will be deleted." : change.content || "No generated content."}</pre>
+                </div>
+              </div>
+            )}
+          </details>
+        );
+      })}
+    </div>
+  );
+}
+
+function renderAppliedChangeCards(appliedChanges, keyPrefix) {
+  if (!Array.isArray(appliedChanges) || !appliedChanges.length) {
+    return <p className="testing-muted">No diff previews captured.</p>;
+  }
+
+  return (
+    <div className="pipeline-code-changes">
+      {appliedChanges.map((change, index) => {
+        const diffRows = buildSnippetDiffRows(change.before_content, change.after_content);
+        const diffSummary = summarizeSnippetDiff(diffRows);
+        return (
+          <details className="pipeline-change-card" key={`${keyPrefix}-${change.path}-${index}`} open={appliedChanges.length === 1 || index === 0}>
+            <summary className="pipeline-change-card__summary">
+              <div className="pipeline-change-card__summary-copy">
+                <strong>{change.path}</strong>
+                <span>{formatSeatClass(change.operation)}</span>
+              </div>
+              <span>{change.operation === "delete" ? "Deleted" : "Updated"}</span>
+            </summary>
+            <div className="pipeline-change-meta">
+              <span className="pipeline-change-pill pipeline-change-pill--neutral">{formatSeatClass(change.operation)}</span>
+              {diffSummary.added ? <span className="pipeline-change-pill pipeline-change-pill--add">+{diffSummary.added} added</span> : null}
+              {diffSummary.removed ? <span className="pipeline-change-pill pipeline-change-pill--remove">-{diffSummary.removed} removed</span> : null}
+            </div>
+            <div className="pipeline-change-diff pipeline-change-diff--unified">
+              <div className="pipeline-change-diff__header">
+                <span>Exact file diff</span>
+                <small>{change.path}</small>
+              </div>
+              {renderUnifiedDiffRows(diffRows, `${keyPrefix}-${index}`, change.diff || change.after_content || change.before_content || "—")}
+            </div>
+            {change.diff ? (
+              <details className="jira-agent-card__detail">
+                <summary>
+                  <strong>Raw unified diff</strong>
+                  <span>{splitCodeLines(change.diff).length} lines</span>
+                </summary>
+                <pre className="jira-agent-card__code">{change.diff}</pre>
+              </details>
+            ) : null}
+          </details>
+        );
+      })}
+    </div>
   );
 }
 
@@ -1839,23 +1983,6 @@ function App() {
       });
   }
 
-  function runJiraIssueByKey(issueKey, force = false) {
-    if (!issueKey || jiraBusy) return;
-    setJiraBusy(true);
-    setJiraStatus(`Starting Jira issue ${issueKey}...`);
-    runJiraIssue(issueKey, force)
-      .then((response) => {
-        setJiraStatus(response.message || "Jira issue queued.");
-        return refreshJiraIssues(issueKey);
-      })
-      .catch((error) => {
-        setJiraStatus(error.message);
-      })
-      .finally(() => {
-        setJiraBusy(false);
-      });
-  }
-
   function syncTrackedJiraIssues() {
     if (jiraBusy) return;
     setJiraBusy(true);
@@ -1887,33 +2014,22 @@ function App() {
       });
   }
 
-  function generateJiraIssuePlan(issueKey) {
-    if (!issueKey || jiraBusy) return;
-    setJiraBusy(true);
-    setJiraStatus(`Generating plan for ${issueKey}...`);
-    planJiraIssue(issueKey, true)
-      .then((response) => {
-        setJiraPlans((current) => ({ ...current, [issueKey]: response }));
-        setJiraStatus(`Plan generated for ${issueKey}.`);
-      })
-      .catch((error) => {
-        setJiraStatus(error.message);
-      })
-      .finally(() => {
-        setJiraBusy(false);
-      });
-  }
-
   function startAlmasRunForIssue(issueKey) {
     if (!issueKey || jiraBusy) return;
     setJiraBusy(true);
-    setJiraStatus(`Starting ALMAS run for ${issueKey}...`);
+    setJiraStatus(`Starting flow for ${issueKey}...`);
     startAlmasRun(issueKey)
       .then((response) => {
         if (response?.payload) {
           setAlmasRunsByIssue((current) => ({ ...current, [issueKey]: response.payload }));
         }
-        setJiraStatus(response.message || `ALMAS run started for ${issueKey}.`);
+        setJiraPlans((current) => {
+          if (!(issueKey in current)) return current;
+          const next = { ...current };
+          delete next[issueKey];
+          return next;
+        });
+        setJiraStatus(response.message || `Flow started for ${issueKey}.`);
       })
       .catch((error) => {
         setJiraStatus(error.message);
@@ -1923,35 +2039,23 @@ function App() {
       });
   }
 
-  function retryAlmasRunForIssue(issueKey, runId) {
-    if (!issueKey || !runId || jiraBusy) return;
+  function resetJiraIssueFlow(issueKey) {
+    if (!issueKey || jiraBusy) return;
     setJiraBusy(true);
-    setJiraStatus(`Retrying ALMAS run ${runId}...`);
-    retryAlmasRun(runId, true)
-      .then((response) => {
-        if (response?.payload) {
-          setAlmasRunsByIssue((current) => ({ ...current, [issueKey]: response.payload }));
-        }
-        setJiraStatus(response.message || `ALMAS run retried for ${issueKey}.`);
+    setJiraStatus(`Resetting flow for ${issueKey}...`);
+    resetJiraIssue(issueKey)
+      .then(() => {
+        setJiraPlans((current) => {
+          if (!(issueKey in current)) return current;
+          const next = { ...current };
+          delete next[issueKey];
+          return next;
+        });
+        setAlmasRunsByIssue((current) => ({ ...current, [issueKey]: null }));
+        return refreshJiraIssues(issueKey);
       })
-      .catch((error) => {
-        setJiraStatus(error.message);
-      })
-      .finally(() => {
-        setJiraBusy(false);
-      });
-  }
-
-  function approveAlmasRunForIssue(issueKey, runId) {
-    if (!issueKey || !runId || jiraBusy) return;
-    setJiraBusy(true);
-    setJiraStatus(`Approving ALMAS run ${runId}...`);
-    approveAlmasRun(runId, { approved_by: "platform_user", notes: "Approved from Jira monitor UI." })
-      .then((response) => {
-        if (response?.payload) {
-          setAlmasRunsByIssue((current) => ({ ...current, [issueKey]: response.payload }));
-        }
-        setJiraStatus(response.message || `ALMAS run approved for ${issueKey}.`);
+      .then(() => {
+        setJiraStatus(`Flow reset for ${issueKey}.`);
       })
       .catch((error) => {
         setJiraStatus(error.message);
@@ -2995,31 +3099,12 @@ function App() {
                         <div className="pipeline-actions">
                           <button type="button" className="button button--primary" onClick={() => startAlmasRunForIssue(issue.issue_key)} disabled={jiraBusy}>
                             <span className="material-symbols-outlined">smart_toy</span>
-                            Start ALMAS run
+                            Start flow
                           </button>
-                          <button type="button" className="button button--secondary" onClick={() => generateJiraIssuePlan(issue.issue_key)} disabled={jiraBusy}>
-                            <span className="material-symbols-outlined">rule</span>
-                            Generate plan
+                          <button type="button" className="button button--secondary" onClick={() => resetJiraIssueFlow(issue.issue_key)} disabled={jiraBusy}>
+                            <span className="material-symbols-outlined">restart_alt</span>
+                            Reset flow
                           </button>
-                          {latestManifest && ["blocked", "needs_review_revision", "failed", "needs_clarification"].includes(String(latestManifest.status || "")) ? (
-                            <button type="button" className="button button--ghost" onClick={() => retryAlmasRunForIssue(issue.issue_key, latestManifest.run_id)} disabled={jiraBusy}>
-                              <span className="material-symbols-outlined">replay</span>
-                              Retry run
-                            </button>
-                          ) : null}
-                          {latestManifest?.status === "needs_approval" ? (
-                            <button type="button" className="button button--primary" onClick={() => approveAlmasRunForIssue(issue.issue_key, latestManifest.run_id)} disabled={jiraBusy}>
-                              <span className="material-symbols-outlined">check_circle</span>
-                              Approve handoff
-                            </button>
-                          ) : null}
-                        </div>
-                        <div className="pipeline-artifact-meta">
-                          <span>Task: {issue.task_slug ? formatTaskLabel(issue.task_slug, issue.task_slug) : "—"}</span>
-                          <span>Jira status: {issue.jira_status || "—"}</span>
-                          <span>Priority: {issue.analysis?.priority || "—"}</span>
-                          <span>Updated: {formatTimestamp(issue.updated_at)}</span>
-                          <span>Latest run: {latestManifest ? `${latestManifest.run_id} · ${formatSeatClass(latestManifest.status)}` : "—"}</span>
                         </div>
                         <div className="jira-ticket__text">
                           <p><strong>Summary:</strong> {issue.analysis?.summary || "No summary available."}</p>
@@ -3053,6 +3138,12 @@ function App() {
                         {latestManifest ? (
                           <div className="jira-run-console">
                             <p><strong>Run status:</strong> {formatSeatClass(latestManifest.status)} · {latestManifest.explanation || "No explanation available."}</p>
+                            <div className="pipeline-artifact-meta">
+                              <span>Branch: {latestManifest.branch_name || "—"}</span>
+                              <span>Commit: {latestManifest.commit_sha ? formatCommitShort(latestManifest.commit_sha) : "—"}</span>
+                              <span>PR: {latestManifest.pr_number ? `#${latestManifest.pr_number}` : "—"}</span>
+                              <span>Stage: {latestManifest.current_stage || "—"}</span>
+                            </div>
                             {latestArtifacts?.analyzer_output ? (
                               <section className="jira-agent-card">
                                 <div className="jira-agent-card__head">
@@ -3143,11 +3234,42 @@ function App() {
                                 </div>
                               </section>
                             ) : null}
-                            {latestArtifacts?.fixer_output ? (
+                            {latestArtifacts?.developer_output ? (
                               <section className="jira-agent-card">
                                 <div className="jira-agent-card__head">
                                   <div>
                                     <span className="eyebrow">Agent 3</span>
+                                    <strong>Developer Agent</strong>
+                                  </div>
+                                  <span className="status-pill">{latestArtifacts.developer_output.changes?.length || 0} change{latestArtifacts.developer_output.changes?.length === 1 ? "" : "s"}</span>
+                                </div>
+                                <div className="jira-agent-card__body">
+                                  <p><strong>Implementation summary:</strong> {latestArtifacts.developer_output.implementation_summary || "No summary."}</p>
+                                  <p><strong>Commit message:</strong> {latestArtifacts.developer_output.commit_message || "No commit message."}</p>
+                                  <div>
+                                    <strong>Generated file changes</strong>
+                                    {renderDeveloperChangeCards(
+                                      latestArtifacts.developer_output.changes,
+                                      latestArtifacts.apply_result?.applied_changes,
+                                      `${latestManifest.run_id}-developer-change`
+                                    )}
+                                  </div>
+                                  <div>
+                                    <strong>Validation notes</strong>
+                                    {renderSimpleList(latestArtifacts.developer_output.validation_notes, `${latestManifest.run_id}-developer-validation`)}
+                                  </div>
+                                  <div>
+                                    <strong>Assumptions</strong>
+                                    {renderSimpleList(latestArtifacts.developer_output.assumptions, `${latestManifest.run_id}-developer-assumption`)}
+                                  </div>
+                                </div>
+                              </section>
+                            ) : null}
+                            {latestArtifacts?.fixer_output ? (
+                              <section className="jira-agent-card">
+                                <div className="jira-agent-card__head">
+                                  <div>
+                                    <span className="eyebrow">Agent 4</span>
                                     <strong>Fixer Agent</strong>
                                   </div>
                                   <span className="status-pill">{formatSeatClass(latestArtifacts.fixer_output.decision)}</span>
@@ -3174,6 +3296,66 @@ function App() {
                                     <strong>Security notes</strong>
                                     {renderSimpleList(latestArtifacts.fixer_output.security_notes, `${latestManifest.run_id}-security-note`)}
                                   </div>
+                                </div>
+                              </section>
+                            ) : null}
+                            {latestArtifacts?.apply_result ? (
+                              <section className="jira-agent-card">
+                                <div className="jira-agent-card__head">
+                                  <div>
+                                    <span className="eyebrow">Execution</span>
+                                    <strong>Applied Changes</strong>
+                                  </div>
+                                  <span className="status-pill">{latestArtifacts.apply_result.success ? "Committed" : "Pending"}</span>
+                                </div>
+                                <div className="jira-agent-card__body">
+                                  <p><strong>Branch:</strong> {latestArtifacts.apply_result.branch_name || "—"}</p>
+                                  <p><strong>Commit SHA:</strong> {latestArtifacts.apply_result.commit_sha ? formatCommitShort(latestArtifacts.apply_result.commit_sha) : "—"}</p>
+                                  <div>
+                                    <strong>Changed files</strong>
+                                    {renderSimpleList(latestArtifacts.apply_result.changed_paths, `${latestManifest.run_id}-apply-path`)}
+                                  </div>
+                                  <div>
+                                    <strong>Per-file changes</strong>
+                                    {renderAppliedChangeCards(
+                                      latestArtifacts.apply_result.applied_changes,
+                                      `${latestManifest.run_id}-apply-change`
+                                    )}
+                                  </div>
+                                </div>
+                              </section>
+                            ) : null}
+                            {latestArtifacts?.github_pull_request ? (
+                              <section className="jira-agent-card">
+                                <div className="jira-agent-card__head">
+                                  <div>
+                                    <span className="eyebrow">GitHub</span>
+                                    <strong>Pull Request</strong>
+                                  </div>
+                                  <span className="status-pill">
+                                    {latestArtifacts.github_pull_request.ready_for_review
+                                      ? "Ready for review"
+                                      : latestArtifacts.github_pull_request.draft
+                                        ? "Draft"
+                                        : formatSeatClass(latestArtifacts.github_pull_request.state)}
+                                  </span>
+                                </div>
+                                <div className="jira-agent-card__body">
+                                  <p><strong>PR number:</strong> {latestArtifacts.github_pull_request.number ? `#${latestArtifacts.github_pull_request.number}` : "—"}</p>
+                                  <p><strong>State:</strong> {formatSeatClass(latestArtifacts.github_pull_request.state || "draft")}</p>
+                                  {latestArtifacts.github_pull_request.html_url || latestArtifacts.github_pull_request.url ? (
+                                    <p>
+                                      <strong>Link:</strong>{" "}
+                                      <a
+                                        className="jira-agent-card__link"
+                                        href={latestArtifacts.github_pull_request.html_url || latestArtifacts.github_pull_request.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        Open pull request
+                                      </a>
+                                    </p>
+                                  ) : null}
                                 </div>
                               </section>
                             ) : null}

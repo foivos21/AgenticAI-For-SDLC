@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-2-customer-should-be-able-to-cancel-booking-for-refund",
+  "base_branch": "main",
+  "base_sha": "8c25172006d1d4086166597abb49e36be9ac44b8",
+  "ref": "refs/heads/feature/SDLC-2-customer-should-be-able-to-cancel-booking-for-refund",
+  "created": true
+}

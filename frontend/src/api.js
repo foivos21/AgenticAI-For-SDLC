@@ -293,6 +293,16 @@ export function runJiraIssue(issueKey, force = false) {
   );
 }
 
+export function resetJiraIssue(issueKey) {
+  return request(
+    `/api/jira/issues/${encodeURIComponent(issueKey)}/reset`,
+    {
+      method: "POST",
+    },
+    getPipelineApiBase(),
+  );
+}
+
 export function syncJiraIssues({ jql = null, max_results = 25 } = {}) {
   return request(
     "/api/jira/issues/sync",
