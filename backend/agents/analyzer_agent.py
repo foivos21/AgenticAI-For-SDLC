@@ -1,27 +1,30 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from pydantic_ai import Agent
 
 from agents.prompts import ANALYZER_AGENT_SYSTEM_PROMPT
-from agents.tools import build_repo_context
+from app.config import Settings
 from app.schemas.almas import AnalyzerOutput
+from app.services.almas.logging import log_stage_payload
+from app.services.almas.repository import RepositoryReader
 from app.services.jira_service import JiraIssueAnalysis
 
 
 class AnalyzerAgent:
-    def __init__(self, model_name: str, repo_root: Path) -> None:
-        self._repo_root = repo_root
+    def __init__(self, model_name: str, repository: RepositoryReader, settings: Settings) -> None:
+        self._repository = repository
+        self._settings = settings
+        self._model_name = model_name
         self._agent = Agent(
             model_name,
             output_type=AnalyzerOutput,
             system_prompt=ANALYZER_AGENT_SYSTEM_PROMPT,
         )
 
-    def run(self, issue: JiraIssueAnalysis) -> AnalyzerOutput:
-        repo_context = build_repo_context(self._repo_root, issue)
+    def run(self, issue: JiraIssueAnalysis, *, run_id: str) -> AnalyzerOutput:
+        repo_context = self._repository.build_repo_context(issue)
         prompt = (
             f"Issue key: {issue.issue_key}\n"
             f"Summary: {issue.summary}\n"
@@ -32,4 +35,23 @@ class AnalyzerAgent:
             f"{json.dumps(repo_context, indent=2)}\n\n"
             "Return a single analyzer output that explains the problem and localizes the likely implementation area."
         )
-        return self._agent.run_sync(prompt).output
+        log_stage_payload(
+            self._settings,
+            run_id=run_id,
+            issue_key=issue.issue_key,
+            agent="analyzer",
+            stage="input",
+            model=self._model_name,
+            payload={"prompt": prompt},
+        )
+        output = self._agent.run_sync(prompt).output
+        log_stage_payload(
+            self._settings,
+            run_id=run_id,
+            issue_key=issue.issue_key,
+            agent="analyzer",
+            stage="output",
+            model=self._model_name,
+            payload=output,
+        )
+        return output

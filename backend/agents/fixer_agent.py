@@ -5,11 +5,15 @@ import json
 from pydantic_ai import Agent
 
 from agents.prompts import FIXER_AGENT_SYSTEM_PROMPT
-from app.schemas.almas import AnalyzerOutput, FixerOutput, PlannerOutput
+from app.config import Settings
+from app.schemas.almas import AnalyzerOutput, DeveloperOutput, FileDiffPreview, FixerOutput, PlannerOutput
+from app.services.almas.logging import log_stage_payload
 
 
 class FixerAgent:
-    def __init__(self, model_name: str) -> None:
+    def __init__(self, model_name: str, settings: Settings) -> None:
+        self._settings = settings
+        self._model_name = model_name
         self._agent = Agent(
             model_name,
             output_type=FixerOutput,
@@ -20,13 +24,39 @@ class FixerAgent:
         self,
         analyzer_output: AnalyzerOutput,
         planner_output: PlannerOutput,
+        developer_output: DeveloperOutput,
+        diff_previews: list[FileDiffPreview],
+        *,
+        run_id: str,
+        issue_key: str,
     ) -> FixerOutput:
         prompt_payload = {
             "analyzer_output": analyzer_output.model_dump(mode="json"),
             "planner_output": planner_output.model_dump(mode="json"),
+            "developer_output": developer_output.model_dump(mode="json"),
+            "diff_previews": [item.model_dump(mode="json") for item in diff_previews],
         }
         prompt = (
-            "Review this proposed implementation plan and act as the final fixer/checkpoint.\n"
+            "Review this proposed implementation and its file changes.\n"
             f"{json.dumps(prompt_payload, indent=2)}"
         )
-        return self._agent.run_sync(prompt).output
+        log_stage_payload(
+            self._settings,
+            run_id=run_id,
+            issue_key=issue_key,
+            agent="fixer",
+            stage="input",
+            model=self._model_name,
+            payload={"prompt": prompt},
+        )
+        output = self._agent.run_sync(prompt).output
+        log_stage_payload(
+            self._settings,
+            run_id=run_id,
+            issue_key=issue_key,
+            agent="fixer",
+            stage="output",
+            model=self._model_name,
+            payload=output,
+        )
+        return output

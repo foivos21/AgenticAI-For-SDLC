@@ -12,12 +12,17 @@ ALMASRunStatus = Literal[
     "needs_review_revision",
     "needs_approval",
     "approved",
+    "branch_created",
+    "code_generated",
+    "code_applied",
+    "draft_pr_opened",
     "completed",
     "blocked",
     "failed",
 ]
 
 ALMASFixerDecision = Literal["approved", "needs_revision", "blocked"]
+DeveloperChangeOperation = Literal["create", "update", "delete"]
 
 
 class AnalyzerOutput(BaseModel):
@@ -56,6 +61,31 @@ class PlannerOutput(BaseModel):
     assumptions: list[str] = Field(default_factory=list)
 
 
+class DeveloperFileChange(BaseModel):
+    path: str
+    operation: DeveloperChangeOperation
+    content: str = ""
+    change_summary: str = ""
+    rationale: str = ""
+
+
+class DeveloperOutput(BaseModel):
+    implementation_summary: str
+    branch_name: str
+    commit_message: str
+    changes: list[DeveloperFileChange] = Field(default_factory=list)
+    validation_notes: list[str] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+
+
+class FileDiffPreview(BaseModel):
+    path: str
+    operation: DeveloperChangeOperation
+    before_content: str = ""
+    after_content: str = ""
+    diff: str = ""
+
+
 class FixerOutput(BaseModel):
     decision: ALMASFixerDecision
     fix_summary: str = ""
@@ -67,6 +97,32 @@ class FixerOutput(BaseModel):
     revision_requests: list[str] = Field(default_factory=list)
 
 
+class GitHubBranchResult(BaseModel):
+    branch_name: str
+    base_branch: str
+    base_sha: str
+    ref: str
+    created: bool = True
+
+
+class GitHubApplyResult(BaseModel):
+    branch_name: str
+    commit_sha: str = ""
+    commit_url: str = ""
+    applied_changes: list[FileDiffPreview] = Field(default_factory=list)
+    changed_paths: list[str] = Field(default_factory=list)
+    success: bool = False
+
+
+class GitHubPullRequestResult(BaseModel):
+    number: int | None = None
+    url: str = ""
+    html_url: str = ""
+    state: str = ""
+    draft: bool = True
+    ready_for_review: bool = False
+
+
 class GitHubHandoffPackage(BaseModel):
     branch_name: str
     base_branch: str
@@ -75,6 +131,8 @@ class GitHubHandoffPackage(BaseModel):
     reviewer_summary: str
     changed_files_plan: list[str] = Field(default_factory=list)
     publish_ready: bool = True
+    pr_url: str = ""
+    commit_sha: str = ""
 
 
 class ApprovalDecision(BaseModel):
@@ -96,6 +154,10 @@ class ALMASRunManifest(BaseModel):
     model_names: dict[str, str] = Field(default_factory=dict)
     artifact_files: dict[str, str] = Field(default_factory=dict)
     latest_fixer_decision: str = ""
+    branch_name: str = ""
+    commit_sha: str = ""
+    pr_number: int | None = None
+    pr_url: str = ""
 
 
 class ALMASRunSummaryRead(BaseModel):
@@ -106,14 +168,22 @@ class ALMASRunSummaryRead(BaseModel):
     revision_count: int = 0
     updated_at: str
     explanation: str = ""
+    branch_name: str = ""
+    commit_sha: str = ""
+    pr_number: int | None = None
+    pr_url: str = ""
 
 
 class ALMASRunArtifacts(BaseModel):
     jira_snapshot: dict[str, Any] | None = None
     analyzer_output: AnalyzerOutput | None = None
     planner_output: PlannerOutput | None = None
+    developer_output: DeveloperOutput | None = None
     fixer_output: FixerOutput | None = None
     approval_decision: ApprovalDecision | None = None
+    github_branch: GitHubBranchResult | None = None
+    apply_result: GitHubApplyResult | None = None
+    github_pull_request: GitHubPullRequestResult | None = None
     github_handoff_package: GitHubHandoffPackage | None = None
 
 

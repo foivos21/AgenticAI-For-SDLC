@@ -25,12 +25,18 @@ class Settings(BaseSettings):
     jira_planner_model: str = "openai:gpt-4o-mini"
     almas_analyzer_model: str = "openai:gpt-4o-mini"
     almas_planner_model: str = "openai:gpt-4o-mini"
+    almas_developer_model: str = "openai:gpt-4o-mini"
     almas_fixer_model: str = "openai:gpt-4o-mini"
     almas_max_review_revisions: int = 1
     almas_data_dir: str = ""
+    almas_enable_color_logs: bool = True
+    almas_log_payload_max_chars: int = 6000
+    almas_redact_sensitive_logs: bool = True
+    almas_repository_mode: str = "auto"
     github_token: str = ""
     github_repo: str = ""
     github_base_branch: str = "main"
+    github_api_base_url: str = "https://api.github.com"
 
     @property
     def cors_allow_origins_list(self) -> list[str]:
@@ -60,6 +66,10 @@ class Settings(BaseSettings):
         if self.almas_data_dir.strip():
             return Path(self.almas_data_dir).expanduser()
         return Path(__file__).resolve().parents[1] / "data" / "almas"
+
+    @property
+    def github_integration_enabled(self) -> bool:
+        return bool(self.github_token.strip() and self.github_repo.strip())
 
     model_config = SettingsConfigDict(
         env_file=".env",

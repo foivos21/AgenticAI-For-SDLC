@@ -16,8 +16,12 @@ from app.schemas.almas import (
     ALMASRunSummaryRead,
     AnalyzerOutput,
     ApprovalDecision,
+    DeveloperOutput,
     FixerOutput,
+    GitHubApplyResult,
+    GitHubBranchResult,
     GitHubHandoffPackage,
+    GitHubPullRequestResult,
     PlannerOutput,
 )
 
@@ -69,6 +73,10 @@ class ALMASRunStore:
                 revision_count=manifest.revision_count,
                 updated_at=manifest.updated_at,
                 explanation=manifest.explanation,
+                branch_name=manifest.branch_name,
+                commit_sha=manifest.commit_sha,
+                pr_number=manifest.pr_number,
+                pr_url=manifest.pr_url,
             ).model_dump(mode="json")
             self._write_index(index)
         return manifest
@@ -103,10 +111,18 @@ class ALMASRunStore:
                 artifacts.analyzer_output = AnalyzerOutput.model_validate(raw)
             elif artifact_name == "planner_output":
                 artifacts.planner_output = PlannerOutput.model_validate(raw)
+            elif artifact_name == "developer_output":
+                artifacts.developer_output = DeveloperOutput.model_validate(raw)
             elif artifact_name == "fixer_output":
                 artifacts.fixer_output = FixerOutput.model_validate(raw)
             elif artifact_name == "approval_decision":
                 artifacts.approval_decision = ApprovalDecision.model_validate(raw)
+            elif artifact_name == "github_branch":
+                artifacts.github_branch = GitHubBranchResult.model_validate(raw)
+            elif artifact_name == "apply_result":
+                artifacts.apply_result = GitHubApplyResult.model_validate(raw)
+            elif artifact_name == "github_pull_request":
+                artifacts.github_pull_request = GitHubPullRequestResult.model_validate(raw)
             elif artifact_name == "github_handoff_package":
                 artifacts.github_handoff_package = GitHubHandoffPackage.model_validate(raw)
             elif artifact_name == "sprint_work_package":

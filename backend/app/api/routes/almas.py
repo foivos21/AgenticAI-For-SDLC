@@ -49,6 +49,7 @@ def start_almas_run(issue_key: str) -> ALMASRunActionResponse:
     except JiraApiError as exc:
         logger.exception("ALMAS Jira fetch failed for issue %s", issue_key)
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    
     return ALMASRunActionResponse(
         accepted=True,
         run_id=detail.manifest.run_id,

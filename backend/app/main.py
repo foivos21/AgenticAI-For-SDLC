@@ -16,6 +16,7 @@ from app.api.routes.bookings import router as bookings_router
 from app.api.routes.flights import router as flights_router
 from app.api.routes.jira import router as jira_router
 from app.api.routes.knowledge import router as knowledge_router
+from app.api.routes.testing import router as testing_router
 from app.api.errors import integrity_error_response
 from app.db.flight_schema import ensure_flight_seat_columns
 from app.db.seat_inventory import sync_seat_inventory
@@ -100,6 +101,7 @@ app.include_router(bookings_router, prefix=settings.api_prefix)
 app.include_router(knowledge_router, prefix=settings.api_prefix)
 app.include_router(jira_router, prefix=settings.api_prefix)
 app.include_router(almas_router, prefix=settings.api_prefix)
+app.include_router(testing_router, prefix=settings.api_prefix)
 
 
 @app.exception_handler(IntegrityError)
