@@ -86,6 +86,7 @@ class Booking(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+    seat_preference: Mapped[str | None] = mapped_column(String(32))  # New field for seat preference
 
     flight = relationship("Flight", back_populates="bookings")
     rescheduled_from = relationship("Booking", remote_side=[id], back_populates="rescheduled_to")

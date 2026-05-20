@@ -24,7 +24,7 @@ class BookingPassenger(Base):
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     date_of_birth: Mapped[date] = mapped_column(Date, nullable=False)
     passenger_type: Mapped[str] = mapped_column(String(32), nullable=False, default="adult", server_default="adult")
-    seat_preference: Mapped[str | None] = mapped_column(String(32))
+    seat_preference: Mapped[str | None] = mapped_column(String(32))  # Updated to match Booking class
     seat_number: Mapped[str | None] = mapped_column(String(8))
     assistance_type: Mapped[str | None] = mapped_column(String(64))
     assistance_notes: Mapped[str | None] = mapped_column(Text)

@@ -105,6 +105,7 @@ class BookingService:
             total_price=Decimal("0.00"),
             status=BookingStatus.CONFIRMED,
             refund_status=RefundStatus.NOT_REQUESTED,
+            seat_preference=payload.passengers[0].seat_preference,  # Retaining seat preference from the first passenger
         )
         self.session.add(booking)
         self.session.flush()
@@ -249,6 +250,7 @@ class BookingService:
             total_price=Decimal("0.00"),
             status=BookingStatus.CONFIRMED,
             refund_status=RefundStatus.NOT_REQUESTED,
+            seat_preference=current_booking.seat_preference,  # Retaining seat preference from original booking
         )
         self.session.add(new_booking)
         self.session.flush()
