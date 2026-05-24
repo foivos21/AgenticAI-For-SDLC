@@ -26,7 +26,6 @@ def list_bookings(
     service = BookingService(session)
     return [BookingSummaryRead.model_validate(booking) for booking in service.list_bookings(limit=limit)]
 
-
 @router.get("/all-trips-booked", response_model=list[BookedTripRead])
 def list_all_trips_booked(
     limit: int = Query(default=500, ge=1, le=500),
@@ -41,7 +40,6 @@ def create_booking(payload: BookingCreate, session: Session = Depends(get_db_ses
     service = BookingService(session)
     booking = service.create_booking(payload)
     return BookingRead.model_validate(booking)
-
 
 @router.get("/{booking_reference}", response_model=BookingRead)
 def get_booking(booking_reference: str, session: Session = Depends(get_db_session)) -> BookingRead:
