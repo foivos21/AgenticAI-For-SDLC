@@ -30,6 +30,10 @@ class GitHubAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def delete_branch(self, *, branch_name: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     def apply_changes(
         self,
         *,
@@ -96,6 +100,17 @@ class GitHubApiAdapter(GitHubAdapter):
             payload=result,
         )
         return result
+
+    def delete_branch(self, *, branch_name: str) -> None:
+        try:
+            self._request(
+                "DELETE",
+                f"/git/refs/heads/{branch_name}",
+            )
+        except GitHubAdapterError as exc:
+            if "Reference does not exist" in str(exc) or "404" in str(exc):
+                return
+            raise
 
     def apply_changes(
         self,
@@ -310,6 +325,9 @@ class DisabledGitHubAdapter(GitHubAdapter):
         self._settings = settings or get_settings()
 
     def create_branch(self, *, issue_key: str, run_id: str, branch_name: str) -> GitHubBranchResult:
+        raise GitHubAdapterError("GitHub integration is disabled. Configure GITHUB_TOKEN and GITHUB_REPO.")
+
+    def delete_branch(self, *, branch_name: str) -> None:
         raise GitHubAdapterError("GitHub integration is disabled. Configure GITHUB_TOKEN and GITHUB_REPO.")
 
     def apply_changes(

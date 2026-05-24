@@ -75,6 +75,15 @@ class ALMASSupervisor:
         return self._store.latest_run_for_issue(issue_key)
 
     def reset_issue(self, issue_key: str) -> list[str]:
+        try:
+            detail = self._store.latest_run_for_issue(issue_key)
+            if detail and detail.manifest and detail.manifest.branch_name:
+                try:
+                    self._github_adapter.delete_branch(branch_name=detail.manifest.branch_name)
+                except Exception:
+                    pass
+        except Exception:
+            pass
         return self._store.delete_runs_for_issue(issue_key)
 
     def start_run(self, issue_key: str) -> ALMASRunDetailRead:
