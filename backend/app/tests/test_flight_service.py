@@ -28,15 +28,23 @@ class _SessionStub:
         return None
 
 
-def _make_flight(*, flight_id: int, origin: str = "ATH", destination: str = "LHR", departure_time: datetime | None = None) -> Flight:
+def _make_flight(
+    *,
+    flight_id: int,
+    origin: str = "ATH",
+    destination: str = "LHR",
+    departure_time: datetime | None = None,
+    price: float = 120.0,
+) -> Flight:
+    departure_time = departure_time or datetime(2026, 6, 10, 12, 0, 0)
     return Flight(
         id=flight_id,
         flight_number=f"FL{flight_id:03d}",
         origin_airport=origin,
         destination_airport=destination,
-        departure_time=departure_time or datetime(2026, 6, 10, 12, 0, 0),
-        arrival_time=(departure_time or datetime(2026, 6, 10, 12, 0, 0)),
-        price=120.0,
+        departure_time=departure_time,
+        arrival_time=departure_time,
+        price=price,
         status=FlightStatus.SCHEDULED,
         seat_class=SeatClass.ECONOMY,
     )
@@ -73,6 +81,34 @@ def test_search_flights_preserves_uppercase_origin_input():
 
     assert session.last_statement is not None
     assert str(session.last_statement).upper().find("ATH") != -1
+
+
+def test_search_flights_sorts_by_price_when_requested():
+    flights = [
+        _make_flight(flight_id=1, departure_time=datetime(2026, 6, 10, 14, 0, 0), price=250.0),
+        _make_flight(flight_id=2, departure_time=datetime(2026, 6, 10, 10, 0, 0), price=100.0),
+        _make_flight(flight_id=3, departure_time=datetime(2026, 6, 10, 12, 0, 0), price=175.0),
+    ]
+    session = _SessionStub(flights)
+    service = FlightService(session)
+
+    result = service.search_flights(sort_by="price")
+
+    assert [flight.id for flight in result] == [2, 3, 1]
+
+
+def test_search_flights_defaults_to_departure_time_sort():
+    flights = [
+        _make_flight(flight_id=1, departure_time=datetime(2026, 6, 10, 14, 0, 0), price=100.0),
+        _make_flight(flight_id=2, departure_time=datetime(2026, 6, 10, 10, 0, 0), price=250.0),
+        _make_flight(flight_id=3, departure_time=datetime(2026, 6, 10, 12, 0, 0), price=175.0),
+    ]
+    session = _SessionStub(flights)
+    service = FlightService(session)
+
+    result = service.search_flights()
+
+    assert [flight.id for flight in result] == [2, 3, 1]
 
 
 def test_seat_inventory_counts_available_seats_use_total_minus_booked():
