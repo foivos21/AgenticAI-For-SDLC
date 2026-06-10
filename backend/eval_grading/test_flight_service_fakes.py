@@ -32,7 +32,7 @@ def test_destination_filter_is_case_insensitive(flight_service, make_flight):
 
 
 def test_sort_by_price_orders_cheapest_first(flight_service, make_flight):
-    # flight-sort-by-price-inverted — prices intentionally out of order vs time
+    # flight-sort-by-price-inverted D prices intentionally out of order vs time
     make_flight(price="300.00", departure=datetime(2030, 1, 1, 6, 0, tzinfo=timezone.utc))
     make_flight(price="100.00", departure=datetime(2030, 1, 2, 6, 0, tzinfo=timezone.utc))
     make_flight(price="200.00", departure=datetime(2030, 1, 3, 6, 0, tzinfo=timezone.utc))
