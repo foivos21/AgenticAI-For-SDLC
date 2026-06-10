@@ -83,6 +83,18 @@ def test_search_flights_preserves_uppercase_origin_input():
     assert str(session.last_statement).upper().find("ATH") != -1
 
 
+def test_search_flights_normalizes_lowercase_destination_input():
+    flights = [_make_flight(flight_id=1, destination="JFK")]
+    session = _SessionStub(flights)
+    service = FlightService(session)
+
+    result = service.search_flights(destination="jfk")
+
+    assert [flight.id for flight in result] == [1]
+    assert session.last_statement is not None
+    assert str(session.last_statement).upper().find("JFK") != -1
+
+
 def test_search_flights_sorts_by_price_when_requested():
     flights = [
         _make_flight(flight_id=1, departure_time=datetime(2026, 6, 10, 14, 0, 0), price=250.0),
