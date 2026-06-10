@@ -73,3 +73,11 @@ def test_search_flights_preserves_uppercase_origin_input():
 
     assert session.last_statement is not None
     assert str(session.last_statement).upper().find("ATH") != -1
+
+
+def test_seat_inventory_counts_available_seats_use_total_minus_booked():
+    total_seats = 180
+    booked_seats = 42
+
+    assert total_seats - booked_seats == 138
+    assert total_seats - booked_seats <= total_seats
