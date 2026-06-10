@@ -197,9 +197,10 @@ class BookingService:
         if booking.status == BookingStatus.CANCELLED:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot add extras to a cancelled booking.")
 
+        total_extra_price = Decimal("0.00")
         for extra in payload.extras:
             extra_price = self._resolved_extra_price(booking.flight, extra)
-            booking.total_price -= extra_price
+            total_extra_price += extra_price
             self.session.add(
                 BookingExtra(
                     booking_id=booking.id,
@@ -216,7 +217,7 @@ class BookingService:
                 extra.description,
             )
 
-        booking.total_price = booking.total_price.quantize(Decimal("0.01"))
+        booking.total_price = (booking.total_price + total_extra_price).quantize(Decimal("0.01"))
         self.session.commit()
         return self.get_booking_by_reference(booking_reference)
 
