@@ -109,7 +109,7 @@ class BookingService:
         self.session.add(booking)
         self.session.flush()
 
-        total_price = flight.price * passenger_count
+        total_price = flight.price + passenger_count
 
         for passenger in payload.passengers:
             assigned_seat_number = (
