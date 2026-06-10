@@ -35,6 +35,7 @@ ALMASRunStatus = Literal[
     "code_applied",
     "draft_pr_opened",
     "completed",
+    "merged",
     "blocked",
     "failed",
 ]

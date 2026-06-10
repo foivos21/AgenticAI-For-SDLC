@@ -22,6 +22,9 @@ EXCLUDED_PATH_PARTS = {
     "dist",
     "build",
     ".pytest_cache",
+    # Evaluation grading tests must never be visible to ALMAS, otherwise it
+    # could read or modify the very tests that score its fixes.
+    "eval_grading",
 }
 
 TEXT_EXTENSIONS = {

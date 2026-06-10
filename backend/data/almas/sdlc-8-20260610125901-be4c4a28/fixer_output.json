@@ -1,0 +1,13 @@
+{
+  "decision": "needs_revision",
+  "fix_summary": "",
+  "approval_reasons": [],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": [
+    "Please provide the actual code changes made in the `backend/app/services/flight_service.py` file to assess whether the filter logic was correctly implemented.",
+    "Share the new unit tests that were added in `tests/test_flight_service.py` to ensure they thoroughly test the max price filter functionality. Without seeing these, it's difficult to approve the implementation."
+  ]
+}

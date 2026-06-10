@@ -155,6 +155,7 @@ class ALMASAgentSuite:
         *,
         run_id: str,
         issue_key: str,
+        test_results: dict | None = None,
     ) -> FixerOutput:
         start_time = time.time()
         try:
@@ -165,6 +166,7 @@ class ALMASAgentSuite:
                 diff_previews,
                 run_id=run_id,
                 issue_key=issue_key,
+                test_results=test_results,
             )
             end_time = time.time()
             self._timing_history.append(AgentTimingInfo(

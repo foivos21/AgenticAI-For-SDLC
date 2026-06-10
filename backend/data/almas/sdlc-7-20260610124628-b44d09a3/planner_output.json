@@ -1,0 +1,36 @@
+{
+  "solution_summary": "Fix the flight search functionality to ensure the 'max price' filter returns flights with prices that are less than or equal to the specified maximum price.",
+  "implementation_steps": [
+    "Identify the current logic in the search_flights function in flight_service.py that processes the max_price filter.",
+    "Modify this logic to ensure that flights priced at or below the max_price are returned instead of flights priced above it.",
+    "Add or update unit tests to validate the correct behavior of the search functionality with respect to the max_price filter."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Update the search_flights function to return flights whose prices are less than or equal to max_price.",
+      "rationale": "To correct the error in the max price filter logic that currently returns flights over the specified price limit."
+    },
+    {
+      "file_path": "backend/eval_grading/test_flight_service_fakes.py",
+      "change_summary": "Add or modify unit tests for the search_flights function to ensure the max price filter behaves as expected.",
+      "rationale": "To validate that the corrected logic in the search_flights function works as intended."
+    }
+  ],
+  "patch_strategy": "Create a new branch 'feature/SDLC-7-flight-search-max-price-filter-returns-the-most-expensive-flights' from the main branch. Apply the modifications to flight_service.py and unit tests as planned. Commit the changes with an appropriate message. Push the branch to the remote repository and create a pull request.",
+  "validation_steps": [
+    "Run existing unit tests to ensure no other functionality is broken.",
+    "Add new unit tests for the max price filter functionality.",
+    "Run all tests to ensure they pass and validate the expected behavior."
+  ],
+  "branch_name": "feature/SDLC-7-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix max price filter in flight search functionality",
+  "pr_body": "This PR addresses the issue described in SDLC-7 where the max price filter in the flight search functionality incorrectly returns flights that exceed the specified maximum price. The logic in the search_flights function has been updated to ensure it only returns flights priced at or below the given max price. Additionally, unit tests have been updated/added to validate this behavior.",
+  "risks": [
+    "Potentially breaking existing functionality if the logic changes conflict with other filters in the search_flights function.",
+    "Insufficient test coverage could lead to undiscovered bugs if other related functionality is affected."
+  ],
+  "assumptions": [
+    "The existing unit tests are comprehensive enough to catch any unintended effects of the changes made."
+  ]
+}

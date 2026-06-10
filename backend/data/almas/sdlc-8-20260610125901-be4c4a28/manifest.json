@@ -1,0 +1,129 @@
+{
+  "run_id": "sdlc-8-20260610125901-be4c4a28",
+  "issue_key": "SDLC-8",
+  "status": "needs_review_revision",
+  "current_stage": "fixer",
+  "revision_count": 3,
+  "created_at": "2026-06-10T12:59:01.834544+00:00",
+  "updated_at": "2026-06-10T13:03:33.576264+00:00",
+  "explanation": "Fixer requested more revisions, but the automatic repair limit was reached after 3 revision passes.",
+  "model_names": {
+    "analyzer": "openai:gpt-4o-mini",
+    "planner": "openai:gpt-4o-mini",
+    "developer": "openai:gpt-4o-mini",
+    "fixer": "openai:gpt-4o-mini"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json"
+  },
+  "latest_fixer_decision": "needs_revision",
+  "branch_name": "feature/SDLC-8-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "commit_sha": "",
+  "pr_number": null,
+  "pr_url": "",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781096341.836171,
+      "end_time": 1781096342.9386308,
+      "duration_seconds": 1.102,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781096342.94144,
+      "end_time": 1781096350.594678,
+      "duration_seconds": 7.653,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781096350.596413,
+      "end_time": 1781096355.637644,
+      "duration_seconds": 5.041,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781096355.640003,
+      "end_time": 1781096381.6860921,
+      "duration_seconds": 26.046,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781096381.689596,
+      "end_time": 1781096388.362879,
+      "duration_seconds": 6.673,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781096388.366956,
+      "end_time": 1781096393.456393,
+      "duration_seconds": 5.089,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781096393.459435,
+      "end_time": 1781096468.8911119,
+      "duration_seconds": 75.432,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781096468.896084,
+      "end_time": 1781096477.450125,
+      "duration_seconds": 8.554,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781096477.453856,
+      "end_time": 1781096485.8188338,
+      "duration_seconds": 8.365,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781096485.8202088,
+      "end_time": 1781096553.376178,
+      "duration_seconds": 67.556,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781096553.379149,
+      "end_time": 1781096557.659062,
+      "duration_seconds": 4.28,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781096557.664299,
+      "end_time": 1781096564.210995,
+      "duration_seconds": 6.547,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781096564.214637,
+      "end_time": 1781096611.484781,
+      "duration_seconds": 47.27,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781096611.4874592,
+      "end_time": 1781096613.572052,
+      "duration_seconds": 2.085,
+      "status": "success"
+    }
+  ]
+}

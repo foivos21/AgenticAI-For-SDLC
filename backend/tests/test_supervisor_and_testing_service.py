@@ -107,7 +107,7 @@ class FakeAgentSuite:
             assumptions=[],
         )
 
-    def run_fixer(self, analyzer_output, planner_output, developer_output, diff_previews, *, run_id: str, issue_key: str) -> FixerOutput:
+    def run_fixer(self, analyzer_output, planner_output, developer_output, diff_previews, *, run_id: str, issue_key: str, test_results: dict | None = None) -> FixerOutput:
         self.fixer_call_count += 1
         decision = self.fixer_decisions[min(self.fixer_call_count - 1, len(self.fixer_decisions) - 1)]
         return FixerOutput(

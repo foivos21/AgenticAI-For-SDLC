@@ -42,6 +42,23 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _preview(text: str | None, limit: int = 100) -> str:
+    """Collapse text to a single short line for step output."""
+    flattened = " ".join((text or "").split())
+    if len(flattened) <= limit:
+        return flattened or "—"
+    return flattened[:limit].rstrip() + "…"
+
+
+# Paths ALMAS must never modify (e.g. the tests that grade its own fixes).
+_PROTECTED_PATH_PARTS = {"eval_grading"}
+
+
+def _is_protected_path(path: str) -> bool:
+    parts = {part for part in path.replace("\\", "/").split("/") if part}
+    return bool(parts & _PROTECTED_PATH_PARTS)
+
+
 class ALMASSupervisor:
     def __init__(
         self,
@@ -62,8 +79,12 @@ class ALMASSupervisor:
         else:
             self._github_adapter = DisabledGitHubAdapter(self._settings)
         self._progress: Callable[[str, str], None] | None = None
+        self._test_runner: Callable[[DeveloperOutput], dict] | None = None
 
     def _emit(self, stage: str, message: str) -> None:
+        # Always log the step so the backend log clearly shows where we are…
+        logger.info("[ALMAS][STEP][%s] %s", stage.upper(), message)
+        # …and additionally forward to any live progress sink (e.g. the CLI).
         callback = self._progress
         if callback is not None:
             try:
@@ -124,17 +145,22 @@ class ALMASSupervisor:
         issue_key: str,
         *,
         progress: Callable[[str, str], None] | None = None,
+        test_runner: Callable[[DeveloperOutput], dict] | None = None,
     ) -> ALMASRunDetailRead:
         issue_payload = self._jira_service.create_client().get_issue(issue_key)
-        return self.start_run_from_issue_payload(issue_payload, progress=progress)
+        return self.start_run_from_issue_payload(
+            issue_payload, progress=progress, test_runner=test_runner
+        )
 
     def start_run_from_issue_payload(
         self,
         issue_payload: dict,
         *,
         progress: Callable[[str, str], None] | None = None,
+        test_runner: Callable[[DeveloperOutput], dict] | None = None,
     ) -> ALMASRunDetailRead:
         self._progress = progress
+        self._test_runner = test_runner
         try:
             analysis = self._jira_service.analyze_issue(issue_payload)
             run_id = self._new_run_id(analysis.issue_key)
@@ -158,6 +184,7 @@ class ALMASSupervisor:
             return self._run_pipeline(manifest, analysis, branch_name=branch_name)
         finally:
             self._progress = None
+            self._test_runner = None
 
     def retry_run(self, run_id: str, refresh_from_jira: bool = True) -> ALMASRunDetailRead:
         detail = self._store.load_run(run_id)
@@ -330,7 +357,8 @@ class ALMASSupervisor:
                 self._store.save_manifest(manifest)
                 self._emit(
                     "planner",
-                    f"Planner done ({len(planner_output.planned_changes)} file change(s) planned) in {duration}s",
+                    f"Planner done in {duration}s — {len(planner_output.planned_changes)} change(s); "
+                    f"summary: {_preview(planner_output.solution_summary)}",
                 )
 
                 developer_output, diff_previews, fixer_output = self._run_developer_and_fixer(
@@ -365,6 +393,12 @@ class ALMASSupervisor:
                 manifest.current_stage = "planner"
                 manifest.explanation = f"Fixer requested revisions. Starting repair pass {manifest.revision_count + 1}."
                 self._store.save_manifest(manifest)
+                self._emit(
+                    "revision",
+                    f"↻ Fixer requested changes — repair pass "
+                    f"{manifest.revision_count + 1} (limit {MAX_AUTOMATIC_REPAIR_PASSES + 1}); "
+                    "looping back to Planner",
+                )
                 next_revision_requests = fixer_output.revision_requests
         except Exception as exc:
             return self._finish(manifest, "failed", manifest.current_stage or "pipeline", str(exc))
@@ -382,7 +416,9 @@ class ALMASSupervisor:
         self._store.save_manifest(manifest)
         self._emit(
             "analyzer",
-            f"Analyzer done (confidence={analyzer_artifact.confidence:.2f}) in {duration}s",
+            f"Analyzer done in {duration}s — confidence {analyzer_artifact.confidence:.2f}; "
+            f"goal: {_preview(analyzer_artifact.goal)}; "
+            f"files: {', '.join(analyzer_artifact.candidate_files[:3]) or 'n/a'}",
         )
         return analyzer_artifact
 
@@ -402,6 +438,12 @@ class ALMASSupervisor:
             run_id=manifest.run_id,
         )
         duration = self._record_timing(manifest, "developer", _started)
+        _dropped = [c.path for c in developer_output.changes if _is_protected_path(c.path)]
+        if _dropped:
+            developer_output.changes = [
+                c for c in developer_output.changes if not _is_protected_path(c.path)
+            ]
+            self._emit("developer", f"Ignored protected paths (not applied): {', '.join(_dropped)}")
         self._write_artifact(manifest, "developer_output", developer_output)
         manifest.status = "code_generated"
         manifest.current_stage = "developer"
@@ -409,10 +451,25 @@ class ALMASSupervisor:
         self._store.save_manifest(manifest)
         self._emit(
             "developer",
-            f"Developer done ({len(developer_output.changes)} file(s) changed) in {duration}s",
+            f"Developer done in {duration}s — changed: "
+            f"{', '.join(change.path for change in developer_output.changes) or 'none'}",
         )
 
         diff_previews = self._build_diff_previews(manifest, developer_output)
+
+        test_results: dict | None = None
+        if self._test_runner is not None:
+            self._emit("test", "Running grading tests against the proposed fix")
+            try:
+                test_results = self._test_runner(developer_output)
+            except Exception as exc:  # never let test execution break the run
+                test_results = {"ran": False, "reason": str(exc)}
+            if test_results.get("ran"):
+                verdict = "PASSED" if test_results.get("passed") else "FAILED"
+                self._emit("test", f"Grading tests {verdict}")
+            else:
+                self._emit("test", f"Grading tests not run ({test_results.get('reason')})")
+
         self._emit("fixer", "Fixer reviewing the generated changes")
         _started = time.time()
         fixer_output = self._agents.run_fixer(
@@ -422,6 +479,7 @@ class ALMASSupervisor:
             diff_previews,
             run_id=manifest.run_id,
             issue_key=analysis.issue_key,
+            test_results=test_results,
         )
         duration = self._record_timing(manifest, "fixer", _started)
         self._write_artifact(manifest, "fixer_output", fixer_output)
@@ -429,7 +487,16 @@ class ALMASSupervisor:
         manifest.current_stage = "fixer"
         manifest.explanation = "Fixer reviewed the generated changes."
         self._store.save_manifest(manifest)
-        self._emit("fixer", f"Fixer decision: {fixer_output.decision} (in {duration}s)")
+        _fixer_reasons = (
+            fixer_output.approval_reasons
+            if fixer_output.decision == "approved"
+            else (fixer_output.rejection_reasons or fixer_output.revision_requests)
+        )
+        self._emit(
+            "fixer",
+            f"Fixer decision: {fixer_output.decision} in {duration}s"
+            + (f" — {_preview(_fixer_reasons[0])}" if _fixer_reasons else ""),
+        )
         return developer_output, diff_previews, fixer_output
 
     def _publish_approved_run(

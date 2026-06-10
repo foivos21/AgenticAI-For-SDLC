@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
+import random
 import statistics
 import sys
 import time
@@ -21,6 +23,31 @@ from datetime import datetime
 
 from app.eval import BUG_FIXTURES, BugFixture, get_fixture
 from app.eval import harness
+
+
+_ANSI_RESET = "\033[0m"
+# Bright ANSI foreground colour codes used to tell agents apart at a glance.
+_COLOR_PALETTE = [31, 32, 33, 34, 35, 36, 91, 92, 93, 94, 95, 96]
+_STAGE_COLORS: dict[str, str] = {}
+_SHUFFLED_PALETTE: list[int] = []
+
+
+def _color_for(stage: str) -> str:
+    """Assign a stable, randomly-chosen colour to each distinct agent/stage."""
+    if os.environ.get("NO_COLOR") or not sys.stdout.isatty():
+        return ""
+    if not _SHUFFLED_PALETTE:
+        _SHUFFLED_PALETTE.extend(_COLOR_PALETTE)
+        random.shuffle(_SHUFFLED_PALETTE)
+    if stage not in _STAGE_COLORS:
+        code = _SHUFFLED_PALETTE[len(_STAGE_COLORS) % len(_SHUFFLED_PALETTE)]
+        _STAGE_COLORS[stage] = f"\033[{code}m"
+    return _STAGE_COLORS[stage]
+
+
+def _paint(stage: str, text: str) -> str:
+    color = _color_for(stage)
+    return f"{color}{text}{_ANSI_RESET}" if color else text
 
 
 def _print_timings(manifest) -> None:
@@ -113,11 +140,15 @@ def _cmd_flow(args: argparse.Namespace) -> int:
     supervisor = ALMASSupervisor()
 
     def printer(stage: str, message: str) -> None:
-        print(f"   └─ [{stage}] {message}")
+        print(_paint(stage, f"   └─ [{stage}] {message}"), flush=True)
 
     print(f"[flow] starting ALMAS pipeline for {issue_key} …")
     flow_started = time.time()
-    detail = supervisor.start_run(issue_key, progress=printer)
+    detail = supervisor.start_run(
+        issue_key,
+        progress=printer,
+        test_runner=lambda dev: harness.run_grading_with_changes(fixture, dev),
+    )
     manifest = detail.manifest
     print(f"[flow] pipeline finished: status={manifest.status}")
     _print_timings(manifest)
@@ -166,9 +197,17 @@ def _bench_trial(fixture: BugFixture, *, merge: bool) -> dict:
     harness.inject(fixture)
     harness.git_commit_push(fixture, action="inject")
     ticket = harness.create_ticket(fixture)
+    print(f"      ticket {ticket.issue_key} created; running pipeline…", flush=True)
+
+    def printer(stage: str, message: str) -> None:
+        print(_paint(stage, f"      └─ [{stage}] {message}"), flush=True)
 
     supervisor = ALMASSupervisor()
-    detail = supervisor.start_run(ticket.issue_key)  # quiet: no live printing
+    detail = supervisor.start_run(
+        ticket.issue_key,
+        progress=printer,
+        test_runner=lambda dev: harness.run_grading_with_changes(fixture, dev),
+    )
     manifest = detail.manifest
     pipeline_seconds = round(sum(t.duration_seconds for t in (manifest.timing_history or [])), 3)
 

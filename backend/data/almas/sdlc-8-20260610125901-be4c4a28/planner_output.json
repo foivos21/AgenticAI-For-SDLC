@@ -1,0 +1,35 @@
+{
+  "solution_summary": "Implement a fix for the flight search 'max price' filter to correctly return flights priced at or below the specified maximum price. Add unit tests to validate the implementation.",
+  "implementation_steps": [
+    "Modify the `search_flights` function in `backend/app/services/flight_service.py` to correct the filter logic for `max_price`.",
+    "Add necessary validation to ensure flights are filtered based on 'price <= max_price' rather than 'price > max_price'.",
+    "Create unit tests in `tests/test_flight_service.py` to validate that the max price filter works as intended."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Corrected the logic for max price filtering in the search_flights function.",
+      "rationale": "The current implementation incorrectly returns flights with prices above the specified max price, which needs to be fixed to meet the expected behavior."
+    },
+    {
+      "file_path": "tests/test_flight_service.py",
+      "change_summary": "Added unit tests for the max price filter functionality.",
+      "rationale": "To validate the correct implementation of the max price filter and ensure that it returns the expected results."
+    }
+  ],
+  "patch_strategy": "Create a new feature branch from the development branch, apply the changes for the flight price filter logic, and commit them. Then, push the branch to the remote repository and open a PR.",
+  "validation_steps": [
+    "Run existing unit tests to ensure no broken functionality exists before changes.",
+    "Execute the newly added unit tests for the max price filter to confirm the changes work as expected.",
+    "Review the flight search API with different max price values to validate output."
+  ],
+  "branch_name": "feature/SDLC-8-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix: Flight search 'max price' filter returns correct flights",
+  "pr_body": "This PR addresses the issue where the flight search max price filter incorrectly returned flights priced above the specified limit. The filter logic has been corrected to return only flights at or below the specified max price. Additionally, unit tests have been added to verify the functionality.",
+  "risks": [
+    "Changes to filter logic may inadvertently affect other filters in the search functionality if not properly scoped."
+  ],
+  "assumptions": [
+    "Assuming that the rest of the flight search service logic remains consistent and unaffected by this change."
+  ]
+}

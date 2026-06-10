@@ -37,16 +37,13 @@ def _validate_jira_enabled() -> None:
     )
 
 
-def _log_step(stage: str, message: str) -> None:
-    logger.info("[ALMAS][STEP][%s] %s", stage.upper(), message)
-
-
 @router.post("/issues/{issue_key}/runs", response_model=ALMASRunActionResponse)
 def start_almas_run(issue_key: str) -> ALMASRunActionResponse:
     _validate_jira_enabled()
     supervisor = _get_supervisor()
     try:
-        detail = supervisor.start_run(issue_key, progress=_log_step)
+        # Steps are logged centrally by the supervisor (_emit → logger).
+        detail = supervisor.start_run(issue_key)
     except RuntimeError as exc:
         logger.exception("ALMAS start failed for issue %s", issue_key)
         raise HTTPException(status_code=503, detail=str(exc)) from exc

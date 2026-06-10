@@ -41,13 +41,16 @@ def git_commit_push(fixture: BugFixture, *, action: str, push: bool = True) -> s
     tree so ALMAS branches from the same (broken) base it is asked to fix.
     """
     message = f"eval: {action} {fixture.slug} bug"
-    add = _git(["add", fixture.target_file])
+    add = _git(["add", "--", fixture.target_file])
     if add.returncode != 0:
         raise HarnessError(f"git add failed: {add.stderr.strip()}")
-    commit = _git(["commit", "-m", message])
+    # If nothing is staged for this file, there is nothing to commit. This is
+    # robust across git's varied wording ("nothing to commit", "no changes
+    # added to commit", …) and avoids sweeping in other unrelated changes.
+    if _git(["diff", "--cached", "--quiet", "--", fixture.target_file]).returncode == 0:
+        return "nothing to commit (already in sync)"
+    commit = _git(["commit", "-m", message, "--", fixture.target_file])
     if commit.returncode != 0:
-        if "nothing to commit" in (commit.stdout + commit.stderr).lower():
-            return "nothing to commit (already in sync)"
         raise HarnessError(f"git commit failed: {(commit.stdout + commit.stderr).strip()}")
     if not push:
         return f"committed locally: {message}"
@@ -168,3 +171,76 @@ def verify(fixture: BugFixture) -> tuple[bool | None, str]:
     output = (completed.stdout + completed.stderr).strip()
     tail = "\n".join(output.splitlines()[-8:])
     return completed.returncode == 0, tail
+
+
+def run_grading_with_changes(fixture: BugFixture, developer_output) -> dict:
+    """Apply the developer's proposed changes, run the grading test, then restore.
+
+    Returns ``{"ran": bool, "passed": bool, "output": str}`` (or
+    ``{"ran": False, "reason": str}`` when there is no grading test). The working
+    tree is always restored to its prior state, even on failure.
+    """
+    if not fixture.test_file:
+        return {"ran": False, "reason": "no grading test for this fixture"}
+
+    # path -> (existed_before, original_text_or_None)
+    backups: dict[str, tuple[bool, str | None]] = {}
+    try:
+        for change in getattr(developer_output, "changes", []):
+            target = REPO_ROOT / change.path
+            existed = target.exists()
+            backups[change.path] = (
+                existed,
+                target.read_text(encoding="utf-8") if existed else None,
+            )
+            if change.operation == "delete":
+                if existed:
+                    target.unlink()
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(change.content, encoding="utf-8")
+
+        passed, output = verify(fixture)
+        return {"ran": passed is not None, "passed": bool(passed), "output": output}
+    finally:
+        for rel_path, (existed, original) in backups.items():
+            target = REPO_ROOT / rel_path
+            if existed:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(original or "", encoding="utf-8")
+            elif target.exists():
+                target.unlink()
+
+
+def run_grading_with_changes(fixture: BugFixture, developer_output) -> dict:
+    """Apply the developer's proposed changes, run the grading test, then revert.
+
+    Returns a dict the Fixer can read: ``{ran, passed, output}``. The working
+    tree is always restored to its prior state, even if the test errors.
+    """
+    if not fixture.test_file:
+        return {"ran": False, "reason": "no grading test for this fixture"}
+
+    backups: dict[str, tuple[bool, str | None]] = {}
+    try:
+        for change in developer_output.changes:
+            path = REPO_ROOT / change.path
+            existed = path.exists()
+            backups[change.path] = (existed, path.read_text(encoding="utf-8") if existed else None)
+            if change.operation == "delete":
+                if existed:
+                    path.unlink()
+            else:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(change.content, encoding="utf-8")
+
+        passed, output = verify(fixture)
+        return {"ran": True, "passed": bool(passed), "output": output}
+    finally:
+        for rel_path, (existed, content) in backups.items():
+            path = REPO_ROOT / rel_path
+            if existed:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content or "", encoding="utf-8")
+            elif path.exists():
+                path.unlink()

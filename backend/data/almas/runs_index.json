@@ -59,5 +59,31 @@
     "commit_sha": "9099fb774ceb3595b92a9540e2fbf532fc055013",
     "pr_number": 4,
     "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/4"
+  },
+  "sdlc-7-20260610124628-b44d09a3": {
+    "run_id": "sdlc-7-20260610124628-b44d09a3",
+    "issue_key": "SDLC-7",
+    "status": "needs_approval",
+    "current_stage": "draft_pr_opened",
+    "revision_count": 0,
+    "updated_at": "2026-06-10T12:48:20.065877+00:00",
+    "explanation": "Draft pull request opened. Waiting for human approval to mark it ready for review.",
+    "branch_name": "feature/SDLC-7-flight-search-max-price-filter-returns-the-most-expensive-flights",
+    "commit_sha": "333b793964ca926d4d7f577da426aa4b70b4bce7",
+    "pr_number": 5,
+    "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/5"
+  },
+  "sdlc-8-20260610125901-be4c4a28": {
+    "run_id": "sdlc-8-20260610125901-be4c4a28",
+    "issue_key": "SDLC-8",
+    "status": "needs_review_revision",
+    "current_stage": "fixer",
+    "revision_count": 3,
+    "updated_at": "2026-06-10T13:03:33.576264+00:00",
+    "explanation": "Fixer requested more revisions, but the automatic repair limit was reached after 3 revision passes.",
+    "branch_name": "feature/SDLC-8-flight-search-max-price-filter-returns-the-most-expensive-flights",
+    "commit_sha": "",
+    "pr_number": null,
+    "pr_url": ""
   }
 }

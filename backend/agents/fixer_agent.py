@@ -29,6 +29,7 @@ class FixerAgent:
         *,
         run_id: str,
         issue_key: str,
+        test_results: dict | None = None,
     ) -> FixerOutput:
         prompt_payload = {
             "analyzer_output": analyzer_output.model_dump(mode="json"),
@@ -36,6 +37,8 @@ class FixerAgent:
             "developer_output": developer_output.model_dump(mode="json"),
             "diff_previews": [item.model_dump(mode="json") for item in diff_previews],
         }
+        if test_results is not None:
+            prompt_payload["automated_test_results"] = test_results
         prompt = (
             "Review this proposed implementation and its file changes.\n"
             f"{json.dumps(prompt_payload, indent=2)}"
