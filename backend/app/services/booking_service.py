@@ -137,7 +137,7 @@ class BookingService:
 
         for extra in payload.extras:
             extra_price = self._resolved_extra_price(flight, extra)
-            total_price -= extra_price
+            total_price += extra_price
             self.session.add(
                 BookingExtra(
                     booking_id=booking.id,
