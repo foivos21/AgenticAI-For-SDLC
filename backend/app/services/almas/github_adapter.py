@@ -61,6 +61,16 @@ class GitHubAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def merge_pull_request(
+        self,
+        *,
+        number: int,
+        commit_title: str | None = None,
+        merge_method: str = "squash",
+    ) -> dict[str, Any]:
+        raise NotImplementedError
+
+    @abstractmethod
     def prepare_handoff(
         self,
         implementation: PlannerOutput,
@@ -255,6 +265,55 @@ class GitHubApiAdapter(GitHubAdapter):
         )
         return result
 
+    def merge_pull_request(
+        self,
+        *,
+        number: int,
+        commit_title: str | None = None,
+        merge_method: str = "squash",
+    ) -> dict[str, Any]:
+        # GitHub refuses to merge a draft PR, so promote it to ready first.
+        self._ensure_ready_for_review(number)
+        payload: dict[str, Any] = {"merge_method": merge_method}
+        if commit_title:
+            payload["commit_title"] = commit_title
+        return self._request("PUT", f"/pulls/{number}/merge", payload)
+
+    def _ensure_ready_for_review(self, number: int) -> None:
+        pull_request = self._request("GET", f"/pulls/{number}")
+        if not pull_request.get("draft"):
+            return
+        node_id = pull_request.get("node_id")
+        if not node_id:
+            return
+        query = (
+            "mutation($id:ID!){markPullRequestReadyForReview(input:{pullRequestId:$id})"
+            "{pullRequest{isDraft}}}"
+        )
+        self._graphql(query, {"id": node_id})
+
+    def _graphql(self, query: str, variables: dict[str, Any]) -> dict[str, Any]:
+        body = json.dumps({"query": query, "variables": variables}).encode("utf-8")
+        request = Request(
+            f"{self._api_base}/graphql",
+            data=body,
+            method="POST",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {self._settings.github_token.strip()}",
+                "Content-Type": "application/json",
+            },
+        )
+        try:
+            with urlopen(request, timeout=30) as response:
+                raw = response.read().decode("utf-8")
+        except HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise GitHubAdapterError(f"GitHub GraphQL HTTP {exc.code}: {detail}") from exc
+        except URLError as exc:
+            raise GitHubAdapterError(f"GitHub GraphQL network error: {exc}") from exc
+        return json.loads(raw) if raw.strip() else {}
+
     def prepare_handoff(
         self,
         implementation: PlannerOutput,
@@ -352,6 +411,15 @@ class DisabledGitHubAdapter(GitHubAdapter):
         raise GitHubAdapterError("GitHub integration is disabled. Configure GITHUB_TOKEN and GITHUB_REPO.")
 
     def mark_pr_ready_for_review(self, *, issue_key: str, run_id: str, pull_request: GitHubPullRequestResult) -> GitHubPullRequestResult:
+        raise GitHubAdapterError("GitHub integration is disabled. Configure GITHUB_TOKEN and GITHUB_REPO.")
+
+    def merge_pull_request(
+        self,
+        *,
+        number: int,
+        commit_title: str | None = None,
+        merge_method: str = "squash",
+    ) -> dict[str, Any]:
         raise GitHubAdapterError("GitHub integration is disabled. Configure GITHUB_TOKEN and GITHUB_REPO.")
 
     def prepare_handoff(

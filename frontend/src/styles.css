@@ -1160,23 +1160,68 @@ button, input { font: inherit; }
   gap: 0.8rem;
   padding: 1rem 1.05rem;
   border-radius: 1.05rem;
-  border: 1px solid rgba(124, 138, 137, 0.14);
+  border: 1px solid #000;
   background: rgba(255, 255, 255, 0.96);
 }
 .jira-agent-card__head {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   gap: 1rem;
 }
 .jira-agent-card__head strong {
   display: block;
   margin-top: 0.12rem;
-  font-size: 1rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+.agent-timing {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  background: rgba(0, 128, 128, 0.08);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-left: auto;
+  white-space: nowrap;
 }
 .jira-agent-card__body {
   display: grid;
   gap: 0.75rem;
+}
+.agent-flow-arrow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  color: var(--primary);
+  margin: 0.5rem 0;
+  font-weight: 800;
+}
+.pipeline-milestone {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.95rem;
+  color: #0066cc;
+  margin: 1rem 0 0.3rem 0;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.git-flow-connector {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  color: #0066cc;
+  margin: 0.3rem 0 0.5rem 0;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+.jira-agent-card--git {
+  border: 1px solid #0066cc;
 }
 .jira-agent-card__body p {
   margin: 0;
@@ -1228,6 +1273,11 @@ button, input { font: inherit; }
 }
 .jira-agent-card__link:hover {
   color: var(--primary-strong);
+}
+.jira-agent-card__actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
 }
 .pipeline-control-bar,
 .pipeline-summary-card,

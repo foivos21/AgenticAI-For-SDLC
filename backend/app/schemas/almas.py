@@ -5,6 +5,24 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
+class TargetedSymbol(BaseModel):
+    file_path: str
+    symbol_name: str
+    symbol_type: str  # "function", "class", "method", etc.
+    reason: str
+    line_start: int | None = None
+    line_end: int | None = None
+    related_symbols: list[str] = Field(default_factory=list)
+
+
+class AgentTimingInfo(BaseModel):
+    agent_name: str
+    start_time: float
+    end_time: float
+    duration_seconds: float
+    status: str  # "success", "error", "partial"
+
+
 ALMASRunStatus = Literal[
     "created",
     "running",
@@ -36,6 +54,7 @@ class AnalyzerOutput(BaseModel):
     candidate_files: list[str] = Field(default_factory=list)
     selected_files: list[str] = Field(default_factory=list)
     selected_symbols: list[str] = Field(default_factory=list)
+    targeted_symbols: list[TargetedSymbol] = Field(default_factory=list)
     localization_rationale: list[str] = Field(default_factory=list)
     confidence: float = 0.0
     clarification_needed: bool = False
@@ -158,6 +177,7 @@ class ALMASRunManifest(BaseModel):
     commit_sha: str = ""
     pr_number: int | None = None
     pr_url: str = ""
+    timing_history: list[AgentTimingInfo] = Field(default_factory=list)
 
 
 class ALMASRunSummaryRead(BaseModel):

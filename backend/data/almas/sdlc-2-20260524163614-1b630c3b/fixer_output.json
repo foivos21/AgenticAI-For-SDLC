@@ -1,0 +1,14 @@
+{
+  "decision": "approved",
+  "fix_summary": "",
+  "approval_reasons": [
+    "Implementation aligns with the specified goal and acceptance criteria.",
+    "The code changes are complete and coherent, implementing the booking cancellation feature as intended.",
+    "Documentation updates are included to guide users on the refund process."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

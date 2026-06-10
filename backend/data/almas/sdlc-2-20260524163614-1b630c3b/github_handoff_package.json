@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-2-customer-should-be-able-to-cancel-booking-for-refund",
+  "base_branch": "main",
+  "pr_title": "Implement Booking Cancellation Feature for Refund",
+  "pr_body": "This PR implements a new feature allowing customers to cancel their bookings for refunds. The cancellation workflow includes verifying booking statuses and providing clear information regarding refund processes.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/api/routes/bookings.py: committed in 7195a2702119a142d2398879f01ffa9590921afb",
+    "backend/app/services/booking_service.py: committed in 7195a2702119a142d2398879f01ffa9590921afb"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/3",
+  "commit_sha": "7195a2702119a142d2398879f01ffa9590921afb"
+}

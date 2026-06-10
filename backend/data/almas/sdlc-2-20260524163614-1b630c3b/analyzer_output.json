@@ -1,0 +1,29 @@
+{
+  "issue_key": "SDLC-2",
+  "problem_statement": "The system currently lacks a mechanism for customers to cancel their bookings and receive a refund. The cancellation workflow needs to verify the booking status, perform the cancellation, and provide clear explanations regarding the refund process.",
+  "goal": "Implement a customer-facing cancellation feature that verifies bookings, processes cancellations, and clearly communicates refund outcomes.",
+  "acceptance_criteria": [
+    "User can successfully cancel a booking if eligible for a refund.",
+    "System verifies booking status before allowing cancellation.",
+    "User receives a clear explanation of the refund process and outcome after cancellation."
+  ],
+  "constraints": [],
+  "unknowns": [],
+  "repo_summary": "README.md(1), backend(99), docker-compose.yml(1), frontend(8), run_backend.sh(1), run_frontend.sh(1), run_local.sh(1), scripts(7)",
+  "candidate_files": [
+    "backend/app/api/routes/bookings.py",
+    "backend/app/models/booking.py",
+    "backend/app/services/booking_service.py"
+  ],
+  "selected_files": [
+    "backend/app/api/routes/bookings.py",
+    "backend/app/services/booking_service.py"
+  ],
+  "selected_symbols": [],
+  "localization_rationale": [
+    "The bookings route will handle the API requests for cancelling bookings, while the booking service will contain the business logic for processing cancellations and applying any refund rules."
+  ],
+  "confidence": 0.9,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

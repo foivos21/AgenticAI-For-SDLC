@@ -1,96 +1,29 @@
 {
   "issues": {
-    "SDLC-4": {
-      "issue_key": "SDLC-4",
+    "SDLC-6": {
+      "issue_key": "SDLC-6",
       "state": "synced",
-      "jira_status": "Waiting for support",
-      "task_slug": null,
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
       "analysis": {
-        "issue_key": "SDLC-4",
-        "summary": "Unknown mapped task test",
-        "description": "This ticket is intentionally invalid to test mapping failure behavior.",
-        "labels": [],
-        "priority": "Medium",
-        "reporter": "Epameinondas Douros",
-        "created_at": "2026-05-12T17:12:14.081+0300",
-        "updated_at": "2026-05-12T17:12:14.890+0300",
-        "task_slug": null,
-        "analysis_notes": [],
-        "validation_errors": []
-      },
-      "mapping_valid": true,
-      "updated_at": "2026-05-12T17:12:14.890+0300",
-      "synced_at": "2026-05-12T20:29:02.410924+00:00"
-    },
-    "SDLC-3": {
-      "issue_key": "SDLC-3",
-      "state": "synced",
-      "jira_status": "Waiting for support",
-      "task_slug": null,
-      "analysis": {
-        "issue_key": "SDLC-3",
-        "summary": "Need better support for premium customer segment",
-        "description": "We want to introduce a premium customer segment with differentiated behavior.",
-        "labels": [],
-        "priority": "Medium",
-        "reporter": "Epameinondas Douros",
-        "created_at": "2026-05-12T17:11:29.313+0300",
-        "updated_at": "2026-05-12T17:11:30.025+0300",
-        "task_slug": null,
-        "analysis_notes": [],
-        "validation_errors": []
-      },
-      "mapping_valid": true,
-      "updated_at": "2026-05-19T10:39:19.981775+00:00",
-      "synced_at": "2026-05-12T20:29:02.411580+00:00"
-    },
-    "SDLC-2": {
-      "issue_key": "SDLC-2",
-      "state": "synced",
-      "jira_status": "Waiting for support",
-      "task_slug": "cancel_booking_for_refund",
-      "analysis": {
-        "issue_key": "SDLC-2",
-        "summary": "Customer should be able to cancel booking for refund",
-        "description": "The cancellation workflow should verify the booking, cancel it, and explain the refund outcome clearly",
+        "issue_key": "SDLC-6",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
         "labels": [
-          "ai_task:cancel_booking_for_refund"
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
         ],
         "priority": "Medium",
         "reporter": "Epameinondas Douros",
-        "created_at": "2026-05-12T17:10:22.554+0300",
-        "updated_at": "2026-05-12T17:10:52.656+0300",
-        "task_slug": "cancel_booking_for_refund",
+        "created_at": "2026-06-10T13:15:19.380+0300",
+        "updated_at": "2026-06-10T13:15:19.468+0300",
+        "task_slug": "flight-price-filter-inverted",
         "analysis_notes": [],
         "validation_errors": []
       },
       "mapping_valid": true,
-      "updated_at": "2026-05-19T10:45:05.103941+00:00",
-      "synced_at": "2026-05-12T20:29:02.412227+00:00"
-    },
-    "SDLC-1": {
-      "issue_key": "SDLC-1",
-      "state": "synced",
-      "jira_status": "Waiting for support",
-      "task_slug": "book_flight_with_seat_preference",
-      "analysis": {
-        "issue_key": "SDLC-1",
-        "summary": "Booking flow should honor seat preference",
-        "description": "The booking workflow should keep the requested aisle or window preference throughout the flow and confirm it in the final response.",
-        "labels": [
-          "ai_task:book_flight_with_seat_preference"
-        ],
-        "priority": "Medium",
-        "reporter": "Epameinondas Douros",
-        "created_at": "2026-05-12T17:09:51.061+0300",
-        "updated_at": "2026-05-12T17:09:53.036+0300",
-        "task_slug": "book_flight_with_seat_preference",
-        "analysis_notes": [],
-        "validation_errors": []
-      },
-      "mapping_valid": true,
-      "updated_at": "2026-05-12T17:09:53.036+0300",
-      "synced_at": "2026-05-12T20:29:02.412564+00:00"
+      "updated_at": "2026-06-10T13:15:19.468+0300",
+      "synced_at": "2026-06-10T10:15:40.359780+00:00"
     }
   }
 }

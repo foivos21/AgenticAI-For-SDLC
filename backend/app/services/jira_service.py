@@ -20,6 +20,62 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _is_bullet(line: str) -> bool:
+    return line.lstrip().startswith(("- ", "* "))
+
+
+def text_to_adf(text: str) -> dict[str, Any]:
+    """Convert plain text into a minimal Atlassian Document Format document.
+
+    Blank lines separate blocks. Within a block, consecutive bullet lines
+    (starting with ``-`` or ``*``) become a bullet list, and consecutive
+    non-bullet lines become a single paragraph. This keeps a "header:" line
+    immediately followed by bullets rendering correctly.
+    """
+    import re
+
+    def _bullet_list(lines: list[str]) -> dict[str, Any]:
+        return {
+            "type": "bulletList",
+            "content": [
+                {
+                    "type": "listItem",
+                    "content": [
+                        {
+                            "type": "paragraph",
+                            "content": [{"type": "text", "text": line.lstrip()[2:].strip()}],
+                        }
+                    ],
+                }
+                for line in lines
+            ],
+        }
+
+    def _paragraph(lines: list[str]) -> dict[str, Any]:
+        joined = " ".join(line.strip() for line in lines)
+        return {"type": "paragraph", "content": [{"type": "text", "text": joined}]}
+
+    content: list[dict[str, Any]] = []
+    for raw_block in re.split(r"\n\s*\n", (text or "").strip()):
+        lines = [line for line in raw_block.splitlines() if line.strip()]
+        if not lines:
+            continue
+        run: list[str] = []
+        run_is_bullet = _is_bullet(lines[0])
+        for line in lines:
+            if _is_bullet(line) == run_is_bullet:
+                run.append(line)
+                continue
+            content.append(_bullet_list(run) if run_is_bullet else _paragraph(run))
+            run = [line]
+            run_is_bullet = _is_bullet(line)
+        if run:
+            content.append(_bullet_list(run) if run_is_bullet else _paragraph(run))
+    if not content:
+        content = [{"type": "paragraph", "content": [{"type": "text", "text": text.strip() or " "}]}]
+    return {"type": "doc", "version": 1, "content": content}
+
+
 @dataclass
 class JiraIssueAnalysis:
     issue_key: str
@@ -78,6 +134,28 @@ class JiraClient:
 
     def get_issue(self, issue_key: str) -> dict[str, Any]:
         return self._request("GET", f"/rest/api/3/issue/{issue_key}")
+
+    def create_issue(
+        self,
+        *,
+        project_key: str,
+        summary: str,
+        description: Any,
+        issue_type: str = "Task",
+        labels: list[str] | None = None,
+        priority: str | None = None,
+    ) -> dict[str, Any]:
+        fields: dict[str, Any] = {
+            "project": {"key": project_key},
+            "summary": summary,
+            "description": description,
+            "issuetype": {"name": issue_type},
+        }
+        if labels:
+            fields["labels"] = labels
+        if priority:
+            fields["priority"] = {"name": priority}
+        return self._request("POST", "/rest/api/3/issue", {"fields": fields})
 
     def search_issues(self, *, jql: str, max_results: int = 25) -> list[dict[str, Any]]:
         payload = self._request(
@@ -181,6 +259,40 @@ class JiraPipelineService:
             "queued": False,
             "duplicate": False,
             "pipeline_id": None,
+        }
+
+    def create_issue(
+        self,
+        *,
+        summary: str,
+        description: str,
+        issue_type: str = "Task",
+        labels: list[str] | None = None,
+        priority: str | None = None,
+        project_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a Jira issue from plain text and return ``{key, id, url}``."""
+        key = (project_key or self._settings.jira_project_key).strip()
+        if not key:
+            raise JiraApiError("JIRA_PROJECT_KEY is not configured.")
+        client = self.create_client()
+        created = client.create_issue(
+            project_key=key,
+            summary=summary,
+            description=text_to_adf(description),
+            issue_type=issue_type,
+            labels=labels,
+            priority=priority,
+        )
+        issue_key = str(created.get("key") or "")
+        browse_url = (
+            f"{self._settings.jira_base_url.rstrip('/')}/browse/{issue_key}" if issue_key else ""
+        )
+        return {
+            "issue_key": issue_key,
+            "id": created.get("id"),
+            "self": created.get("self"),
+            "browse_url": browse_url,
         }
 
     def reset_issue_link(self, issue_key: str) -> dict[str, Any]:

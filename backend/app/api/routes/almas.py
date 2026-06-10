@@ -37,12 +37,16 @@ def _validate_jira_enabled() -> None:
     )
 
 
+def _log_step(stage: str, message: str) -> None:
+    logger.info("[ALMAS][STEP][%s] %s", stage.upper(), message)
+
+
 @router.post("/issues/{issue_key}/runs", response_model=ALMASRunActionResponse)
 def start_almas_run(issue_key: str) -> ALMASRunActionResponse:
     _validate_jira_enabled()
     supervisor = _get_supervisor()
     try:
-        detail = supervisor.start_run(issue_key)
+        detail = supervisor.start_run(issue_key, progress=_log_step)
     except RuntimeError as exc:
         logger.exception("ALMAS start failed for issue %s", issue_key)
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -91,6 +95,29 @@ def approve_almas_run(run_id: str, request: ALMASApprovalRequest) -> ALMASRunAct
     return ALMASRunActionResponse(
         accepted=True,
         run_id=detail.manifest.run_id,
+        status=detail.manifest.status,
+        message=detail.manifest.explanation,
+        payload=detail,
+    )
+
+
+@router.post("/runs/{run_id}/merge", response_model=ALMASRunActionResponse)
+def merge_almas_run(run_id: str, delete_branch: bool = False) -> ALMASRunActionResponse:
+    supervisor = _get_supervisor()
+    try:
+        result = supervisor.merge_run(run_id, delete_branch=delete_branch)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=f"ALMAS run '{run_id}' was not found.") from exc
+    except ValueError as exc:
+        logger.warning("ALMAS merge rejected for run %s: %s", run_id, exc)
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        logger.exception("ALMAS merge failed for run %s", run_id)
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    detail = supervisor.get_run(run_id)
+    return ALMASRunActionResponse(
+        accepted=bool(result.get("merged")),
+        run_id=run_id,
         status=detail.manifest.status,
         message=detail.manifest.explanation,
         payload=detail,

@@ -1,0 +1,32 @@
+{
+  "run_id": "sdlc-2-20260524163614-1b630c3b",
+  "issue_key": "SDLC-2",
+  "status": "needs_approval",
+  "current_stage": "draft_pr_opened",
+  "revision_count": 2,
+  "created_at": "2026-05-24T16:36:14.844290+00:00",
+  "updated_at": "2026-05-24T16:40:17.582982+00:00",
+  "explanation": "Draft pull request opened. Waiting for human approval to mark it ready for review.",
+  "model_names": {
+    "analyzer": "openai:gpt-4o-mini",
+    "planner": "openai:gpt-4o-mini",
+    "developer": "openai:gpt-4o-mini",
+    "fixer": "openai:gpt-4o-mini"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-2-customer-should-be-able-to-cancel-booking-for-refund",
+  "commit_sha": "7195a2702119a142d2398879f01ffa9590921afb",
+  "pr_number": 3,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/3"
+}

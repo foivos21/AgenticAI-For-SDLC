@@ -354,6 +354,17 @@ export function approveAlmasRun(runId, payload = {}) {
   );
 }
 
+export function mergeAlmasRun(runId, deleteBranch = false) {
+  const query = deleteBranch ? "?delete_branch=true" : "";
+  return request(
+    `/api/almas/runs/${encodeURIComponent(runId)}/merge${query}`,
+    {
+      method: "POST",
+    },
+    getPipelineApiBase(),
+  );
+}
+
 export function retryAlmasRun(runId, refresh_from_jira = true) {
   return request(
     `/api/almas/runs/${encodeURIComponent(runId)}/retry`,

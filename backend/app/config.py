@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     almas_fixer_model: str = "openai:gpt-4o-mini"
     almas_data_dir: str = ""
     almas_enable_color_logs: bool = True
-    almas_log_payload_max_chars: int = 6000
+    almas_log_payload_max_chars: int = 1000
     almas_redact_sensitive_logs: bool = True
     almas_repository_mode: str = "auto"
     github_token: str = ""

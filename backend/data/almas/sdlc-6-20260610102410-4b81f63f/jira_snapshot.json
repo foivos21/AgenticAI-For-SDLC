@@ -1,19 +1,19 @@
 {
   "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
-  "id": "10107",
-  "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/10107",
-  "key": "SDLC-2",
+  "id": "10143",
+  "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/10143",
+  "key": "SDLC-6",
   "fields": {
-    "statuscategorychangedate": "2026-05-12T17:10:23.025+0300",
+    "statuscategorychangedate": "2026-06-10T13:15:19.772+0300",
     "issuetype": {
-      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issuetype/10108",
-      "id": "10108",
-      "description": "Request received from your email support channel.",
-      "iconUrl": "https://dourosepameinondas.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10791?size=medium",
-      "name": "Email request",
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issuetype/10109",
+      "id": "10109",
+      "description": "Submit a request or report a problem.",
+      "iconUrl": "https://dourosepameinondas.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10306?size=medium",
+      "name": "Submit a request or incident",
       "subtask": false,
-      "avatarId": 10791,
-      "entityId": "b9f57499-66bc-40a8-925d-21b1f33e95eb",
+      "avatarId": 10306,
+      "entityId": "72251d9d-45c7-4897-a2ec-eb39644f6fa8",
       "hierarchyLevel": 0
     },
     "timespent": null,
@@ -37,33 +37,33 @@
     "fixVersions": [],
     "aggregatetimespent": null,
     "statusCategory": {
-      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/statuscategory/4",
-      "id": 4,
-      "key": "indeterminate",
-      "colorName": "yellow",
-      "name": "In Progress"
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/statuscategory/2",
+      "id": 2,
+      "key": "new",
+      "colorName": "blue-gray",
+      "name": "To Do"
     },
     "customfield_10111": {
       "id": "4",
       "name": "Time to first response",
       "_links": {
-        "self": "https://dourosepameinondas.atlassian.net/rest/servicedeskapi/request/10107/sla/4"
+        "self": "https://dourosepameinondas.atlassian.net/rest/servicedeskapi/request/10143/sla/4"
       },
       "completedCycles": [],
       "ongoingCycle": {
         "startTime": {
-          "iso8601": "2026-05-12T17:10:22+0300",
-          "jira": "2026-05-12T17:10:22.554+0300",
-          "friendly": "12/May/26 5:10 PM",
-          "epochMillis": 1778595022554
+          "iso8601": "2026-06-10T13:15:19+0300",
+          "jira": "2026-06-10T13:15:19.380+0300",
+          "friendly": "Today 1:15 PM",
+          "epochMillis": 1781086519380
         },
         "breachTime": {
-          "iso8601": "2026-05-13T13:00:00+0300",
-          "jira": "2026-05-13T13:00:00.000+0300",
-          "friendly": "Wednesday 1:00 PM",
-          "epochMillis": 1778666400000
+          "iso8601": "2026-06-11T09:15:19+0300",
+          "jira": "2026-06-11T09:15:19.380+0300",
+          "friendly": "11/Jun/26 9:15 AM",
+          "epochMillis": 1781158519380
         },
-        "breached": true,
+        "breached": false,
         "paused": false,
         "withinCalendarHours": true,
         "goalDuration": {
@@ -71,12 +71,12 @@
           "friendly": "4h"
         },
         "elapsedTime": {
-          "millis": 132308842,
-          "friendly": "36h 45m"
+          "millis": 531377,
+          "friendly": "8m"
         },
         "remainingTime": {
-          "millis": -117908842,
-          "friendly": "-32h 45m"
+          "millis": 13868623,
+          "friendly": "3h 51m"
         }
       }
     },
@@ -87,12 +87,12 @@
     "resolutiondate": null,
     "workratio": -1,
     "watches": {
-      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/SDLC-2/watchers",
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/SDLC-6/watchers",
       "watchCount": 1,
       "isWatching": true
     },
-    "lastViewed": "2026-05-12T17:10:38.607+0300",
-    "created": "2026-05-12T17:10:22.554+0300",
+    "lastViewed": null,
+    "created": "2026-06-10T13:15:19.380+0300",
     "priority": {
       "self": "https://dourosepameinondas.atlassian.net/rest/api/3/priority/3",
       "iconUrl": "https://dourosepameinondas.atlassian.net/images/icons/priorities/medium_new.svg",
@@ -101,26 +101,27 @@
     },
     "customfield_10103": [],
     "labels": [
-      "ai_task:cancel_booking_for_refund"
+      "ai_task:flight-price-filter-inverted",
+      "almas-eval"
     ],
     "timeestimate": null,
     "aggregatetimeoriginalestimate": null,
     "versions": [],
     "issuelinks": [],
     "assignee": null,
-    "updated": "2026-05-12T17:10:52.656+0300",
+    "updated": "2026-06-10T13:15:19.468+0300",
     "status": {
-      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/status/10073",
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/status/10078",
       "description": "",
       "iconUrl": "https://dourosepameinondas.atlassian.net/",
-      "name": "Waiting for support",
-      "id": "10073",
+      "name": "To Do",
+      "id": "10078",
       "statusCategory": {
-        "self": "https://dourosepameinondas.atlassian.net/rest/api/3/statuscategory/4",
-        "id": 4,
-        "key": "indeterminate",
-        "colorName": "yellow",
-        "name": "In Progress"
+        "self": "https://dourosepameinondas.atlassian.net/rest/api/3/statuscategory/2",
+        "id": 2,
+        "key": "new",
+        "colorName": "blue-gray",
+        "name": "To Do"
       }
     },
     "components": [],
@@ -134,7 +135,105 @@
           "content": [
             {
               "type": "text",
-              "text": "The cancellation workflow should verify the booking, cancel it, and explain the refund outcome clearly"
+              "text": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Steps to reproduce:"
+            }
+          ]
+        },
+        {
+          "type": "bulletList",
+          "content": [
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Call GET /flights/search?max_price=200"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Observe that only flights priced above 200 are returned"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Expected behaviour:"
+            }
+          ]
+        },
+        {
+          "type": "bulletList",
+          "content": [
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "The results include only flights whose price is less than or equal to the given max_price."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Affected file:"
+            }
+          ]
+        },
+        {
+          "type": "bulletList",
+          "content": [
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "backend/app/services/flight_service.py (search_flights)"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -144,23 +243,23 @@
       "id": "3",
       "name": "Time to done",
       "_links": {
-        "self": "https://dourosepameinondas.atlassian.net/rest/servicedeskapi/request/10107/sla/3"
+        "self": "https://dourosepameinondas.atlassian.net/rest/servicedeskapi/request/10143/sla/3"
       },
       "completedCycles": [],
       "ongoingCycle": {
         "startTime": {
-          "iso8601": "2026-05-12T17:10:22+0300",
-          "jira": "2026-05-12T17:10:22.554+0300",
-          "friendly": "12/May/26 5:10 PM",
-          "epochMillis": 1778595022554
+          "iso8601": "2026-06-10T13:15:19+0300",
+          "jira": "2026-06-10T13:15:19.380+0300",
+          "friendly": "Today 1:15 PM",
+          "epochMillis": 1781086519380
         },
         "breachTime": {
-          "iso8601": "2026-05-15T09:00:00+0300",
-          "jira": "2026-05-15T09:00:00.000+0300",
-          "friendly": "Friday 9:00 AM",
-          "epochMillis": 1778824800000
+          "iso8601": "2026-06-12T13:15:19+0300",
+          "jira": "2026-06-12T13:15:19.380+0300",
+          "friendly": "12/Jun/26 1:15 PM",
+          "epochMillis": 1781259319380
         },
-        "breached": true,
+        "breached": false,
         "paused": false,
         "withinCalendarHours": true,
         "goalDuration": {
@@ -168,12 +267,12 @@
           "friendly": "16h"
         },
         "elapsedTime": {
-          "millis": 132308867,
-          "friendly": "36h 45m"
+          "millis": 531392,
+          "friendly": "8m"
         },
         "remainingTime": {
-          "millis": -74708867,
-          "friendly": "-20h 45m"
+          "millis": 57068608,
+          "friendly": "15h 51m"
         }
       }
     },
@@ -181,7 +280,7 @@
     "security": null,
     "attachment": [],
     "aggregatetimeestimate": null,
-    "summary": "Customer should be able to cancel booking for refund",
+    "summary": "Flight search 'max price' filter returns the most expensive flights",
     "creator": {
       "self": "https://dourosepameinondas.atlassian.net/rest/api/3/user?accountId=712020%3A5a87061d-28b4-425f-8687-cd5d099bc3e9",
       "accountId": "712020:5a87061d-28b4-425f-8687-cd5d099bc3e9",
@@ -225,13 +324,13 @@
       "total": 0
     },
     "votes": {
-      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/SDLC-2/votes",
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/SDLC-6/votes",
       "votes": 0,
       "hasVoted": false
     },
     "comment": {
       "comments": [],
-      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/10107/comment",
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/10143/comment",
       "maxResults": 0,
       "total": 0,
       "startAt": 0

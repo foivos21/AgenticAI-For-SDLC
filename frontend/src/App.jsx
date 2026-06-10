@@ -17,6 +17,7 @@ import {
   listTestingPipelines,
   listTestingTasks,
   listTestingRuns,
+  mergeAlmasRun,
   resetJiraIssue,
   runTestingTaskLive,
   searchFlights,
@@ -89,6 +90,23 @@ function formatJson(value) {
   if (value === null || value === undefined || value === "") return "—";
   if (typeof value === "string") return value;
   return JSON.stringify(value, null, 2);
+}
+
+function formatDuration(seconds) {
+  if (!seconds) return "—";
+  const num = Number(seconds);
+  if (!Number.isFinite(num)) return "—";
+  if (num < 1) return `${(num * 1000).toFixed(0)}ms`;
+  if (num < 60) return `${num.toFixed(1)}s`;
+  const minutes = Math.floor(num / 60);
+  const secs = num - minutes * 60;
+  return `${minutes}m ${secs.toFixed(0)}s`;
+}
+
+function getAgentTiming(manifest, agentName) {
+  if (!manifest || !Array.isArray(manifest.timing_history)) return null;
+  const timing = manifest.timing_history.find(t => t.agent_name === agentName);
+  return timing ? timing.duration_seconds : null;
 }
 
 function renderSimpleList(items, keyPrefix) {
@@ -2039,6 +2057,26 @@ function App() {
       });
   }
 
+  function mergeAlmasRunForIssue(issueKey, runId) {
+    if (!issueKey || !runId || jiraBusy) return;
+    if (!window.confirm(`Merge the pull request for ${issueKey} into main?`)) return;
+    setJiraBusy(true);
+    setJiraStatus(`Merging pull request for ${issueKey}...`);
+    mergeAlmasRun(runId)
+      .then((response) => {
+        if (response?.payload) {
+          setAlmasRunsByIssue((current) => ({ ...current, [issueKey]: response.payload }));
+        }
+        setJiraStatus(response.message || `Pull request merged for ${issueKey}.`);
+      })
+      .catch((error) => {
+        setJiraStatus(error.message);
+      })
+      .finally(() => {
+        setJiraBusy(false);
+      });
+  }
+
   function resetJiraIssueFlow(issueKey) {
     if (!issueKey || jiraBusy) return;
     setJiraBusy(true);
@@ -3147,67 +3185,89 @@ function App() {
                             {latestArtifacts?.analyzer_output ? (
                               <section className="jira-agent-card">
                                 <div className="jira-agent-card__head">
-                                  <div>
-                                    <span className="eyebrow">Agent 1</span>
-                                    <strong>Analyzer Agent</strong>
-                                  </div>
-                                  <span className="status-pill">Confidence {Math.round(Number(latestArtifacts.analyzer_output.confidence || 0) * 100)}%</span>
+                                  <strong>Analyzer Agent</strong>
+                                  {getAgentTiming(latestManifest, "analyzer") && (
+                                    <span className="agent-timing">{formatDuration(getAgentTiming(latestManifest, "analyzer"))}</span>
+                                  )}
                                 </div>
                                 <div className="jira-agent-card__body">
-                                  <p><strong>Goal:</strong> {latestArtifacts.analyzer_output.goal}</p>
-                                  <p><strong>Problem statement:</strong> {latestArtifacts.analyzer_output.problem_statement}</p>
-                                  <p><strong>Repository summary:</strong> {latestArtifacts.analyzer_output.repo_summary}</p>
-                                  <div>
-                                    <strong>Acceptance criteria</strong>
-                                    {renderSimpleList(latestArtifacts.analyzer_output.acceptance_criteria, `${latestManifest.run_id}-acceptance`)}
-                                  </div>
-                                  <div>
-                                    <strong>Constraints</strong>
-                                    {renderSimpleList(latestArtifacts.analyzer_output.constraints, `${latestManifest.run_id}-constraint`)}
-                                  </div>
-                                  <div>
-                                    <strong>Unknowns</strong>
-                                    {renderSimpleList(latestArtifacts.analyzer_output.unknowns, `${latestManifest.run_id}-unknown`)}
-                                  </div>
-                                  <div>
-                                    <strong>Localized files</strong>
-                                    {renderSimpleList(
-                                      latestArtifacts.analyzer_output.selected_files?.length
-                                        ? latestArtifacts.analyzer_output.selected_files
-                                        : latestArtifacts.analyzer_output.candidate_files,
-                                      `${latestManifest.run_id}-file`
-                                    )}
-                                  </div>
-                                  <div>
-                                    <strong>Selected symbols</strong>
-                                    {renderSimpleList(latestArtifacts.analyzer_output.selected_symbols, `${latestManifest.run_id}-symbol`)}
-                                  </div>
-                                  <div>
-                                    <strong>Localization rationale</strong>
-                                    {renderSimpleList(latestArtifacts.analyzer_output.localization_rationale, `${latestManifest.run_id}-rationale`)}
-                                  </div>
+                                  <p><strong>Goal:</strong></p>
+                                  <p>{latestArtifacts.analyzer_output.goal}</p>
+                                  <p><strong>Problem statement:</strong></p>
+                                  <p>{latestArtifacts.analyzer_output.problem_statement}</p>
+                                  <p><strong>Repository summary:</strong></p>
+                                  <p>{latestArtifacts.analyzer_output.repo_summary}</p>
+                                  {Array.isArray(latestArtifacts.analyzer_output.acceptance_criteria) && latestArtifacts.analyzer_output.acceptance_criteria.length > 0 ? (
+                                    <div>
+                                      <p><strong>Acceptance criteria</strong></p>
+                                      {renderSimpleList(latestArtifacts.analyzer_output.acceptance_criteria, `${latestManifest.run_id}-acceptance`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.analyzer_output.constraints) && latestArtifacts.analyzer_output.constraints.length > 0 ? (
+                                    <div>
+                                      <p><strong>Constraints</strong></p>
+                                      {renderSimpleList(latestArtifacts.analyzer_output.constraints, `${latestManifest.run_id}-constraint`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.analyzer_output.unknowns) && latestArtifacts.analyzer_output.unknowns.length > 0 ? (
+                                    <div>
+                                      <p><strong>Unknowns</strong></p>
+                                      {renderSimpleList(latestArtifacts.analyzer_output.unknowns, `${latestManifest.run_id}-unknown`)}
+                                    </div>
+                                  ) : null}
+                                  {(latestArtifacts.analyzer_output.selected_files?.length || latestArtifacts.analyzer_output.candidate_files?.length) ? (
+                                    <div>
+                                      <p><strong>Localized files</strong></p>
+                                      {renderSimpleList(
+                                        latestArtifacts.analyzer_output.selected_files?.length
+                                          ? latestArtifacts.analyzer_output.selected_files
+                                          : latestArtifacts.analyzer_output.candidate_files,
+                                        `${latestManifest.run_id}-file`
+                                      )}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.analyzer_output.selected_symbols) && latestArtifacts.analyzer_output.selected_symbols.length > 0 ? (
+                                    <div>
+                                      <p><strong>Selected symbols</strong></p>
+                                      {renderSimpleList(latestArtifacts.analyzer_output.selected_symbols, `${latestManifest.run_id}-symbol`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.analyzer_output.localization_rationale) && latestArtifacts.analyzer_output.localization_rationale.length > 0 ? (
+                                    <div>
+                                      <p><strong>Localization rationale</strong></p>
+                                      {renderSimpleList(latestArtifacts.analyzer_output.localization_rationale, `${latestManifest.run_id}-rationale`)}
+                                    </div>
+                                  ) : null}
                                 </div>
                               </section>
+                            ) : null}
+                            {latestArtifacts?.analyzer_output && latestArtifacts?.planner_output ? (
+                              <div className="agent-flow-arrow">↓</div>
                             ) : null}
                             {latestArtifacts?.planner_output ? (
                               <section className="jira-agent-card">
                                 <div className="jira-agent-card__head">
-                                  <div>
-                                    <span className="eyebrow">Agent 2</span>
-                                    <strong>Planner Agent</strong>
-                                  </div>
+                                  <strong>Planner Agent</strong>
+                                  {getAgentTiming(latestManifest, "planner") && (
+                                    <span className="agent-timing">{formatDuration(getAgentTiming(latestManifest, "planner"))}</span>
+                                  )}
                                 </div>
                                 <div className="jira-agent-card__body">
-                                  <p><strong>Solution summary:</strong> {latestArtifacts.planner_output.solution_summary}</p>
-                                  <p><strong>Patch strategy:</strong> {latestArtifacts.planner_output.patch_strategy}</p>
-                                  <p><strong>Branch:</strong> {latestArtifacts.planner_output.branch_name}</p>
-                                  <div>
-                                    <strong>Implementation steps</strong>
-                                    {renderSimpleList(latestArtifacts.planner_output.implementation_steps, `${latestManifest.run_id}-impl`)}
-                                  </div>
-                                  <div>
-                                    <strong>Planned file changes</strong>
-                                    {Array.isArray(latestArtifacts.planner_output.planned_changes) && latestArtifacts.planner_output.planned_changes.length ? (
+                                  <p><strong>Solution summary:</strong></p>
+                                  <p>{latestArtifacts.planner_output.solution_summary}</p>
+                                  <p><strong>Patch strategy:</strong></p>
+                                  <p>{latestArtifacts.planner_output.patch_strategy}</p>
+                                  <p><strong>Branch:</strong></p>
+                                  <p>{latestArtifacts.planner_output.branch_name}</p>
+                                  {Array.isArray(latestArtifacts.planner_output.implementation_steps) && latestArtifacts.planner_output.implementation_steps.length > 0 ? (
+                                    <div>
+                                      <p><strong>Implementation steps</strong></p>
+                                      {renderSimpleList(latestArtifacts.planner_output.implementation_steps, `${latestManifest.run_id}-impl`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.planner_output.planned_changes) && latestArtifacts.planner_output.planned_changes.length ? (
+                                    <div>
+                                      <p><strong>Planned file changes</strong></p>
                                       <ul className="jira-agent-card__list">
                                         {latestArtifacts.planner_output.planned_changes.map((change, index) => (
                                           <li key={`${latestManifest.run_id}-change-${index}`}>
@@ -3215,92 +3275,127 @@ function App() {
                                           </li>
                                         ))}
                                       </ul>
-                                    ) : (
-                                      <p className="testing-muted">No planned changes.</p>
-                                    )}
-                                  </div>
-                                  <div>
-                                    <strong>Validation steps</strong>
-                                    {renderSimpleList(latestArtifacts.planner_output.validation_steps, `${latestManifest.run_id}-validation`)}
-                                  </div>
-                                  <div>
-                                    <strong>Risks</strong>
-                                    {renderSimpleList(latestArtifacts.planner_output.risks, `${latestManifest.run_id}-risk`)}
-                                  </div>
-                                  <div>
-                                    <strong>Assumptions</strong>
-                                    {renderSimpleList(latestArtifacts.planner_output.assumptions, `${latestManifest.run_id}-assumption`)}
-                                  </div>
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.planner_output.validation_steps) && latestArtifacts.planner_output.validation_steps.length > 0 ? (
+                                    <div>
+                                      <p><strong>Validation steps</strong></p>
+                                      {renderSimpleList(latestArtifacts.planner_output.validation_steps, `${latestManifest.run_id}-validation`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.planner_output.risks) && latestArtifacts.planner_output.risks.length > 0 ? (
+                                    <div>
+                                      <p><strong>Risks</strong></p>
+                                      {renderSimpleList(latestArtifacts.planner_output.risks, `${latestManifest.run_id}-risk`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.planner_output.assumptions) && latestArtifacts.planner_output.assumptions.length > 0 ? (
+                                    <div>
+                                      <p><strong>Assumptions</strong></p>
+                                      {renderSimpleList(latestArtifacts.planner_output.assumptions, `${latestManifest.run_id}-assumption`)}
+                                    </div>
+                                  ) : null}
                                 </div>
                               </section>
+                            ) : null}
+                            {latestArtifacts?.planner_output && latestArtifacts?.developer_output ? (
+                              <div className="agent-flow-arrow">↓</div>
                             ) : null}
                             {latestArtifacts?.developer_output ? (
                               <section className="jira-agent-card">
                                 <div className="jira-agent-card__head">
-                                  <div>
-                                    <span className="eyebrow">Agent 3</span>
-                                    <strong>Developer Agent</strong>
-                                  </div>
+                                  <strong>Developer Agent</strong>
+                                  {getAgentTiming(latestManifest, "developer") && (
+                                    <span className="agent-timing">{formatDuration(getAgentTiming(latestManifest, "developer"))}</span>
+                                  )}
                                   <span className="status-pill">{latestArtifacts.developer_output.changes?.length || 0} change{latestArtifacts.developer_output.changes?.length === 1 ? "" : "s"}</span>
                                 </div>
                                 <div className="jira-agent-card__body">
-                                  <p><strong>Implementation summary:</strong> {latestArtifacts.developer_output.implementation_summary || "No summary."}</p>
-                                  <p><strong>Commit message:</strong> {latestArtifacts.developer_output.commit_message || "No commit message."}</p>
-                                  <div>
-                                    <strong>Generated file changes</strong>
-                                    {renderDeveloperChangeCards(
-                                      latestArtifacts.developer_output.changes,
-                                      latestArtifacts.apply_result?.applied_changes,
-                                      `${latestManifest.run_id}-developer-change`
-                                    )}
-                                  </div>
-                                  <div>
-                                    <strong>Validation notes</strong>
-                                    {renderSimpleList(latestArtifacts.developer_output.validation_notes, `${latestManifest.run_id}-developer-validation`)}
-                                  </div>
-                                  <div>
-                                    <strong>Assumptions</strong>
-                                    {renderSimpleList(latestArtifacts.developer_output.assumptions, `${latestManifest.run_id}-developer-assumption`)}
-                                  </div>
+                                  <p><strong>Implementation summary:</strong></p>
+                                  <p>{latestArtifacts.developer_output.implementation_summary || "No summary."}</p>
+                                  <p><strong>Commit message:</strong></p>
+                                  <p>{latestArtifacts.developer_output.commit_message || "No commit message."}</p>
+                                  {Array.isArray(latestArtifacts.developer_output.changes) && latestArtifacts.developer_output.changes.length > 0 ? (
+                                    <div>
+                                      <p><strong>Generated file changes</strong></p>
+                                      {renderDeveloperChangeCards(
+                                        latestArtifacts.developer_output.changes,
+                                        latestArtifacts.apply_result?.applied_changes,
+                                        `${latestManifest.run_id}-developer-change`
+                                      )}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.developer_output.validation_notes) && latestArtifacts.developer_output.validation_notes.length > 0 ? (
+                                    <div>
+                                      <p><strong>Validation notes</strong></p>
+                                      {renderSimpleList(latestArtifacts.developer_output.validation_notes, `${latestManifest.run_id}-developer-validation`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.developer_output.assumptions) && latestArtifacts.developer_output.assumptions.length > 0 ? (
+                                    <div>
+                                      <p><strong>Assumptions</strong></p>
+                                      {renderSimpleList(latestArtifacts.developer_output.assumptions, `${latestManifest.run_id}-developer-assumption`)}
+                                    </div>
+                                  ) : null}
                                 </div>
                               </section>
+                            ) : null}
+                            {latestArtifacts?.developer_output && latestArtifacts?.fixer_output ? (
+                              <div className="agent-flow-arrow">↓</div>
                             ) : null}
                             {latestArtifacts?.fixer_output ? (
                               <section className="jira-agent-card">
                                 <div className="jira-agent-card__head">
-                                  <div>
-                                    <span className="eyebrow">Agent 4</span>
-                                    <strong>Fixer Agent</strong>
-                                  </div>
+                                  <strong>Fixer Agent</strong>
+                                  {getAgentTiming(latestManifest, "fixer") && (
+                                    <span className="agent-timing">{formatDuration(getAgentTiming(latestManifest, "fixer"))}</span>
+                                  )}
                                   <span className="status-pill">{formatSeatClass(latestArtifacts.fixer_output.decision)}</span>
                                 </div>
                                 <div className="jira-agent-card__body">
-                                  <p><strong>Fix summary:</strong> {latestArtifacts.fixer_output.fix_summary || "No summary."}</p>
-                                  <div>
-                                    <strong>Approval reasons</strong>
-                                    {renderSimpleList(latestArtifacts.fixer_output.approval_reasons, `${latestManifest.run_id}-approval-reason`)}
-                                  </div>
-                                  <div>
-                                    <strong>Rejection reasons</strong>
-                                    {renderSimpleList(latestArtifacts.fixer_output.rejection_reasons, `${latestManifest.run_id}-rejection-reason`)}
-                                  </div>
-                                  <div>
-                                    <strong>Revision requests</strong>
-                                    {renderSimpleList(latestArtifacts.fixer_output.revision_requests, `${latestManifest.run_id}-review`)}
-                                  </div>
-                                  <div>
-                                    <strong>Missing checks</strong>
-                                    {renderSimpleList(latestArtifacts.fixer_output.missing_checks, `${latestManifest.run_id}-missing-check`)}
-                                  </div>
-                                  <div>
-                                    <strong>Security notes</strong>
-                                    {renderSimpleList(latestArtifacts.fixer_output.security_notes, `${latestManifest.run_id}-security-note`)}
-                                  </div>
+                                  <p><strong>Fix summary:</strong></p>
+                                  <p>{latestArtifacts.fixer_output.fix_summary || "No summary."}</p>
+                                  {Array.isArray(latestArtifacts.fixer_output.approval_reasons) && latestArtifacts.fixer_output.approval_reasons.length > 0 ? (
+                                    <div>
+                                      <p><strong>Approval reasons</strong></p>
+                                      {renderSimpleList(latestArtifacts.fixer_output.approval_reasons, `${latestManifest.run_id}-approval-reason`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.fixer_output.rejection_reasons) && latestArtifacts.fixer_output.rejection_reasons.length > 0 ? (
+                                    <div>
+                                      <p><strong>Rejection reasons</strong></p>
+                                      {renderSimpleList(latestArtifacts.fixer_output.rejection_reasons, `${latestManifest.run_id}-rejection-reason`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.fixer_output.revision_requests) && latestArtifacts.fixer_output.revision_requests.length > 0 ? (
+                                    <div>
+                                      <p><strong>Revision requests</strong></p>
+                                      {renderSimpleList(latestArtifacts.fixer_output.revision_requests, `${latestManifest.run_id}-review`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.fixer_output.missing_checks) && latestArtifacts.fixer_output.missing_checks.length > 0 ? (
+                                    <div>
+                                      <p><strong>Missing checks</strong></p>
+                                      {renderSimpleList(latestArtifacts.fixer_output.missing_checks, `${latestManifest.run_id}-missing-check`)}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(latestArtifacts.fixer_output.security_notes) && latestArtifacts.fixer_output.security_notes.length > 0 ? (
+                                    <div>
+                                      <p><strong>Security notes</strong></p>
+                                      {renderSimpleList(latestArtifacts.fixer_output.security_notes, `${latestManifest.run_id}-security-note`)}
+                                    </div>
+                                  ) : null}
                                 </div>
                               </section>
                             ) : null}
+                            {latestArtifacts?.fixer_output && latestArtifacts?.apply_result ? (
+                              <>
+                                <div className="pipeline-milestone">AI Pipeline Complete</div>
+                                <div className="git-flow-connector">━━━━━━━━━━━━━━</div>
+                              </>
+                            ) : null}
                             {latestArtifacts?.apply_result ? (
-                              <section className="jira-agent-card">
+                              <section className="jira-agent-card jira-agent-card--git">
                                 <div className="jira-agent-card__head">
                                   <div>
                                     <span className="eyebrow">Execution</span>
@@ -3326,7 +3421,7 @@ function App() {
                               </section>
                             ) : null}
                             {latestArtifacts?.github_pull_request ? (
-                              <section className="jira-agent-card">
+                              <section className="jira-agent-card jira-agent-card--git">
                                 <div className="jira-agent-card__head">
                                   <div>
                                     <span className="eyebrow">GitHub</span>
@@ -3355,6 +3450,18 @@ function App() {
                                         Open pull request
                                       </a>
                                     </p>
+                                  ) : null}
+                                  {latestArtifacts.github_pull_request.number ? (
+                                    <div className="jira-agent-card__actions">
+                                      <button
+                                        type="button"
+                                        className="button button--primary"
+                                        onClick={() => mergeAlmasRunForIssue(issue.issue_key, latestManifest.run_id)}
+                                        disabled={jiraBusy || latestManifest.status === "merged"}
+                                      >
+                                        {latestManifest.status === "merged" ? "Merged ✓" : "Merge PR"}
+                                      </button>
+                                    </div>
                                   ) : null}
                                 </div>
                               </section>

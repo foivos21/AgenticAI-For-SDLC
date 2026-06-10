@@ -3,12 +3,15 @@ from __future__ import annotations
 import difflib
 import json
 import logging
+import time
+from collections.abc import Callable
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from agents import ALMASAgentSuite
 from app.config import Settings, get_settings
 from app.schemas.almas import (
+    AgentTimingInfo,
     ALMASRunDetailRead,
     ALMASRunManifest,
     AnalyzerOutput,
@@ -58,6 +61,36 @@ class ALMASSupervisor:
             self._github_adapter = LocalGitHubAdapter(self._settings)
         else:
             self._github_adapter = DisabledGitHubAdapter(self._settings)
+        self._progress: Callable[[str, str], None] | None = None
+
+    def _emit(self, stage: str, message: str) -> None:
+        callback = self._progress
+        if callback is not None:
+            try:
+                callback(stage, message)
+            except Exception:  # never let a progress sink break a run
+                pass
+
+    def _record_timing(
+        self,
+        manifest: ALMASRunManifest,
+        agent_name: str,
+        start_time: float,
+        *,
+        status: str = "success",
+    ) -> float:
+        end_time = time.time()
+        duration = round(end_time - start_time, 3)
+        manifest.timing_history.append(
+            AgentTimingInfo(
+                agent_name=agent_name,
+                start_time=start_time,
+                end_time=end_time,
+                duration_seconds=duration,
+                status=status,
+            )
+        )
+        return duration
 
     @property
     def _agents(self) -> ALMASAgentSuite:
@@ -86,28 +119,45 @@ class ALMASSupervisor:
             pass
         return self._store.delete_runs_for_issue(issue_key)
 
-    def start_run(self, issue_key: str) -> ALMASRunDetailRead:
+    def start_run(
+        self,
+        issue_key: str,
+        *,
+        progress: Callable[[str, str], None] | None = None,
+    ) -> ALMASRunDetailRead:
         issue_payload = self._jira_service.create_client().get_issue(issue_key)
-        return self.start_run_from_issue_payload(issue_payload)
+        return self.start_run_from_issue_payload(issue_payload, progress=progress)
 
-    def start_run_from_issue_payload(self, issue_payload: dict) -> ALMASRunDetailRead:
-        analysis = self._jira_service.analyze_issue(issue_payload)
-        run_id = self._new_run_id(analysis.issue_key)
-        manifest = self._store.create_run(run_id, analysis.issue_key, self._agents.model_names)
-        branch_name = self._build_branch_name(analysis)
-        manifest.branch_name = branch_name
-        self._write_artifact(manifest, "jira_snapshot", issue_payload)
-        branch_result = self._github_adapter.create_branch(
-            issue_key=analysis.issue_key,
-            run_id=run_id,
-            branch_name=branch_name,
-        )
-        manifest.status = "branch_created"
-        manifest.current_stage = "branch_created"
-        manifest.explanation = f"Created branch {branch_name}."
-        self._write_artifact(manifest, "github_branch", branch_result)
-        self._store.save_manifest(manifest)
-        return self._run_pipeline(manifest, analysis, branch_name=branch_name)
+    def start_run_from_issue_payload(
+        self,
+        issue_payload: dict,
+        *,
+        progress: Callable[[str, str], None] | None = None,
+    ) -> ALMASRunDetailRead:
+        self._progress = progress
+        try:
+            analysis = self._jira_service.analyze_issue(issue_payload)
+            run_id = self._new_run_id(analysis.issue_key)
+            manifest = self._store.create_run(run_id, analysis.issue_key, self._agents.model_names)
+            branch_name = self._build_branch_name(analysis)
+            manifest.branch_name = branch_name
+            self._write_artifact(manifest, "jira_snapshot", issue_payload)
+            self._emit("branch", f"Creating branch {branch_name} from {self._settings.github_base_branch}")
+            _branch_started = time.time()
+            branch_result = self._github_adapter.create_branch(
+                issue_key=analysis.issue_key,
+                run_id=run_id,
+                branch_name=branch_name,
+            )
+            self._record_timing(manifest, "branch", _branch_started)
+            manifest.status = "branch_created"
+            manifest.current_stage = "branch_created"
+            manifest.explanation = f"Created branch {branch_name}."
+            self._write_artifact(manifest, "github_branch", branch_result)
+            self._store.save_manifest(manifest)
+            return self._run_pipeline(manifest, analysis, branch_name=branch_name)
+        finally:
+            self._progress = None
 
     def retry_run(self, run_id: str, refresh_from_jira: bool = True) -> ALMASRunDetailRead:
         detail = self._store.load_run(run_id)
@@ -160,6 +210,49 @@ class ALMASSupervisor:
         manifest.explanation = f"Approved by {approved_by}. Pull request is ready for review."
         self._store.save_manifest(manifest)
         return self._store.load_run(run_id)
+
+    def merge_run(
+        self,
+        run_id: str,
+        *,
+        merge_method: str = "squash",
+        delete_branch: bool = False,
+    ) -> dict:
+        """Merge the pull request produced by a run into the base branch."""
+        detail = self._store.load_run(run_id)
+        manifest = detail.manifest
+        pull_request = detail.artifacts.github_pull_request
+        if not pull_request or pull_request.number is None:
+            raise ValueError(f"Run {run_id} has no pull request to merge.")
+
+        self._emit("merge", f"Merging PR #{pull_request.number}")
+        result = self._github_adapter.merge_pull_request(
+            number=pull_request.number,
+            merge_method=merge_method,
+            commit_title=f"{manifest.issue_key}: merge ALMAS fix (#{pull_request.number})",
+        )
+        merged = bool(result.get("merged"))
+        if merged:
+            manifest.status = "merged"
+            manifest.current_stage = "merged"
+            manifest.explanation = (
+                f"Pull request #{pull_request.number} merged into {self._settings.github_base_branch}."
+            )
+            self._store.save_manifest(manifest)
+            if delete_branch and manifest.branch_name:
+                try:
+                    self._github_adapter.delete_branch(branch_name=manifest.branch_name)
+                except Exception:
+                    pass
+        self._emit("merge", "Merged" if merged else f"Merge not completed: {result.get('message')}")
+        return {
+            "merged": merged,
+            "pr_number": pull_request.number,
+            "sha": result.get("sha"),
+            "message": result.get("message"),
+            "branch_name": manifest.branch_name,
+            "base_branch": self._settings.github_base_branch,
+        }
 
     def preview_implementation(self, issue_key: str) -> PlannerOutput:
         logger.info("ALMAS preview started | issue_key=%s mode=fresh_jira", issue_key)
@@ -220,6 +313,8 @@ class ALMASSupervisor:
             seen_developer_signatures: set[str] = set()
 
             while True:
+                self._emit("planner", "Planning the fix (steps and files to change)")
+                _started = time.time()
                 planner_output = self._agents.run_planner(
                     analysis,
                     analyzer_artifact,
@@ -227,11 +322,16 @@ class ALMASSupervisor:
                     branch_name=branch_name,
                     revision_requests=next_revision_requests,
                 )
+                duration = self._record_timing(manifest, "planner", _started)
                 self._write_artifact(manifest, "planner_output", planner_output)
                 manifest.status = "running"
                 manifest.current_stage = "planner"
                 manifest.explanation = "Planner output generated."
                 self._store.save_manifest(manifest)
+                self._emit(
+                    "planner",
+                    f"Planner done ({len(planner_output.planned_changes)} file change(s) planned) in {duration}s",
+                )
 
                 developer_output, diff_previews, fixer_output = self._run_developer_and_fixer(
                     manifest,
@@ -271,12 +371,19 @@ class ALMASSupervisor:
 
     def _run_analyzer(self, manifest: ALMASRunManifest, analysis: JiraIssueAnalysis) -> AnalyzerOutput:
         logger.info("ALMAS analyzer agent started | issue_key=%s run_id=%s", analysis.issue_key, manifest.run_id)
+        self._emit("analyzer", "Analyzing the issue and locating the relevant code")
+        _started = time.time()
         analyzer_artifact = self._agents.run_analyzer(analysis, run_id=manifest.run_id)
+        duration = self._record_timing(manifest, "analyzer", _started)
         self._write_artifact(manifest, "analyzer_output", analyzer_artifact)
         manifest.status = "running"
         manifest.current_stage = "analyzer"
         manifest.explanation = "Analyzer output generated."
         self._store.save_manifest(manifest)
+        self._emit(
+            "analyzer",
+            f"Analyzer done (confidence={analyzer_artifact.confidence:.2f}) in {duration}s",
+        )
         return analyzer_artifact
 
     def _run_developer_and_fixer(
@@ -286,19 +393,28 @@ class ALMASSupervisor:
         analyzer_artifact: AnalyzerOutput,
         planner_output: PlannerOutput,
     ) -> tuple[DeveloperOutput, list[FileDiffPreview], FixerOutput]:
+        self._emit("developer", "Developer writing the code changes")
+        _started = time.time()
         developer_output = self._agents.run_developer(
             analysis,
             analyzer_artifact,
             planner_output,
             run_id=manifest.run_id,
         )
+        duration = self._record_timing(manifest, "developer", _started)
         self._write_artifact(manifest, "developer_output", developer_output)
         manifest.status = "code_generated"
         manifest.current_stage = "developer"
         manifest.explanation = "Developer generated file changes."
         self._store.save_manifest(manifest)
+        self._emit(
+            "developer",
+            f"Developer done ({len(developer_output.changes)} file(s) changed) in {duration}s",
+        )
 
         diff_previews = self._build_diff_previews(manifest, developer_output)
+        self._emit("fixer", "Fixer reviewing the generated changes")
+        _started = time.time()
         fixer_output = self._agents.run_fixer(
             analyzer_artifact,
             planner_output,
@@ -307,11 +423,13 @@ class ALMASSupervisor:
             run_id=manifest.run_id,
             issue_key=analysis.issue_key,
         )
+        duration = self._record_timing(manifest, "fixer", _started)
         self._write_artifact(manifest, "fixer_output", fixer_output)
         manifest.latest_fixer_decision = fixer_output.decision
         manifest.current_stage = "fixer"
         manifest.explanation = "Fixer reviewed the generated changes."
         self._store.save_manifest(manifest)
+        self._emit("fixer", f"Fixer decision: {fixer_output.decision} (in {duration}s)")
         return developer_output, diff_previews, fixer_output
 
     def _publish_approved_run(
@@ -321,6 +439,8 @@ class ALMASSupervisor:
         developer_output: DeveloperOutput,
         diff_previews: list[FileDiffPreview],
     ) -> ALMASRunDetailRead:
+        self._emit("apply", "Committing the changes to the feature branch")
+        _started = time.time()
         apply_result = self._github_adapter.apply_changes(
             issue_key=manifest.issue_key,
             run_id=manifest.run_id,
@@ -328,19 +448,24 @@ class ALMASSupervisor:
             developer_output=developer_output,
             diff_previews=diff_previews,
         )
+        self._record_timing(manifest, "apply", _started)
         self._write_artifact(manifest, "apply_result", apply_result)
         manifest.status = "code_applied"
         manifest.current_stage = "code_applied"
         manifest.commit_sha = apply_result.commit_sha
         manifest.explanation = "Generated changes committed to the feature branch."
         self._store.save_manifest(manifest)
+        self._emit("apply", f"Committed {apply_result.commit_sha[:8]}")
 
+        self._emit("pull_request", "Opening the draft pull request")
+        _started = time.time()
         pull_request = self._github_adapter.open_draft_pr(
             issue_key=manifest.issue_key,
             run_id=manifest.run_id,
             implementation=planner_output,
             apply_result=apply_result,
         )
+        self._record_timing(manifest, "pull_request", _started)
         self._write_artifact(manifest, "github_pull_request", pull_request)
         handoff = self._github_adapter.prepare_handoff(planner_output, apply_result, pull_request)
         self._write_artifact(manifest, "github_handoff_package", handoff)
@@ -350,6 +475,10 @@ class ALMASSupervisor:
         manifest.pr_url = pull_request.html_url or pull_request.url
         manifest.explanation = "Draft pull request opened. Waiting for human approval to mark it ready for review."
         self._store.save_manifest(manifest)
+        self._emit(
+            "pull_request",
+            f"Draft PR #{pull_request.number} opened: {pull_request.html_url or pull_request.url}",
+        )
         return self._store.load_run(manifest.run_id)
 
     def _build_diff_previews(self, manifest: ALMASRunManifest, developer_output: DeveloperOutput) -> list[FileDiffPreview]:
@@ -435,6 +564,7 @@ class ALMASSupervisor:
         manifest.current_stage = stage
         manifest.explanation = explanation
         self._store.save_manifest(manifest)
+        self._emit(status, explanation)
         return self._store.load_run(manifest.run_id)
 
     def _write_artifact(self, manifest: ALMASRunManifest, artifact_name: str, payload) -> None:

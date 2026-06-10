@@ -34,17 +34,30 @@
     "pr_number": null,
     "pr_url": ""
   },
-  "sdlc-2-20260519104508-7946f707": {
-    "run_id": "sdlc-2-20260519104508-7946f707",
+  "sdlc-2-20260524163614-1b630c3b": {
+    "run_id": "sdlc-2-20260524163614-1b630c3b",
     "issue_key": "SDLC-2",
     "status": "needs_approval",
     "current_stage": "draft_pr_opened",
-    "revision_count": 1,
-    "updated_at": "2026-05-19T10:53:27.503758+00:00",
+    "revision_count": 2,
+    "updated_at": "2026-05-24T16:40:17.582982+00:00",
     "explanation": "Draft pull request opened. Waiting for human approval to mark it ready for review.",
     "branch_name": "feature/SDLC-2-customer-should-be-able-to-cancel-booking-for-refund",
-    "commit_sha": "6950bd26d1229b932c9e2f3e4d61a69f692b41af",
-    "pr_number": 1,
-    "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/1"
+    "commit_sha": "7195a2702119a142d2398879f01ffa9590921afb",
+    "pr_number": 3,
+    "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/3"
+  },
+  "sdlc-6-20260610102410-4b81f63f": {
+    "run_id": "sdlc-6-20260610102410-4b81f63f",
+    "issue_key": "SDLC-6",
+    "status": "needs_approval",
+    "current_stage": "draft_pr_opened",
+    "revision_count": 0,
+    "updated_at": "2026-06-10T10:24:54.710255+00:00",
+    "explanation": "Draft pull request opened. Waiting for human approval to mark it ready for review.",
+    "branch_name": "feature/SDLC-6-flight-search-max-price-filter-returns-the-most-expensive-flights",
+    "commit_sha": "9099fb774ceb3595b92a9540e2fbf532fc055013",
+    "pr_number": 4,
+    "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/4"
   }
 }
