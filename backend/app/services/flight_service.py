@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.flight import Flight, FlightStatus, SeatClass, SeatPreference
 from app.models.seat_inventory import SeatInventory
 
+
 class FlightService:
     def __init__(self, session: Session) -> None:
         self.session = session
@@ -46,7 +47,7 @@ class FlightService:
             end = datetime.combine(departure_date_to, time.max)
             statement = statement.where(Flight.departure_time <= end)
         if max_price is not None:
-            statement = statement.where(Flight.price >= max_price)  # Updated filter to check for prices LESS THAN OR EQUAL TO max_price
+            statement = statement.where(Flight.price <= max_price)
         if seat_class:
             statement = statement.where(Flight.seat_class == seat_class)
         if only_available:
