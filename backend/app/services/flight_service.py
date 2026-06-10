@@ -47,7 +47,7 @@ class FlightService:
             end = datetime.combine(departure_date_to, time.max)
             statement = statement.where(Flight.departure_time <= end)
         if max_price is not None:
-            statement = statement.where(Flight.price <= max_price)  # Updated to filter flights priced at or below max_price
+            statement = statement.where(Flight.price >= max_price)  # Updated to filter flights priced at or below max_price
         if seat_class:
             statement = statement.where(Flight.seat_class == seat_class)
         if only_available:
