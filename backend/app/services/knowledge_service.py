@@ -33,7 +33,7 @@ class KnowledgeService:
         return list(self.session.scalars(statement))
 
     def search(self, query: str) -> list[KnowledgeArticle]:
-        pattern = f"{query.strip()}%"
+        pattern = f"%{query.strip()}%"
         statement = (
             select(KnowledgeArticle)
             .where(
