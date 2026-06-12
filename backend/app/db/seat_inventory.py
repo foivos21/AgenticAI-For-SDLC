@@ -38,7 +38,7 @@ def _seat_type_for(seat_class: str, row: int, column: str) -> str:
         return "standard"
     if seat_class in {SeatClass.PREMIUM_ECONOMY.value, SeatClass.ECONOMY.value} and column in {"A", "F"}:
         return SeatPreference.WINDOW.value
-    if column in {"B", "F"}:
+    if column in {"A", "F"}:
         return SeatPreference.WINDOW.value
     if column in {"C", "D"}:
         return SeatPreference.AISLE.value
