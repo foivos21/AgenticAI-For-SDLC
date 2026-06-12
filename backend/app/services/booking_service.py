@@ -170,7 +170,7 @@ class BookingService:
             if passenger.seat_number:
                 inventory = self._seat_inventory_for_seat(booking.flight.id, passenger.seat_number.upper().strip())
                 if inventory is not None:
-                    inventory.is_booked = True
+                    inventory.is_booked = False
 
         booking.status = BookingStatus.CANCELLED
         booking.cancelled_at = datetime.now(UTC)
