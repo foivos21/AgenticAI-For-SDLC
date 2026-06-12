@@ -423,7 +423,7 @@ class BookingService:
                     detail=self._duplicate_booking_message(identity),
                 )
 
-            if booking.refund_status in UNRESOLVED_REFUND_STATUSES:
+            if booking.refund_status not in UNRESOLVED_REFUND_STATUSES:
                 identity = next(iter(matching_identities))
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
