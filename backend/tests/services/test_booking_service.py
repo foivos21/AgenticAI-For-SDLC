@@ -140,6 +140,16 @@ def test_create_booking_with_paid_extras_adds_to_total(db_session, booking_creat
     assert db_session.query(BookingPassenger).filter(BookingPassenger.booking_id == result.id).count() == 1
 
 
+def test_create_booking_calculates_base_total_for_single_passenger(db_session, booking_create_payload_factory):
+    service = BookingService(db_session)
+    payload = booking_create_payload_factory(extras=[])
+
+    result = service.create_booking(payload)
+
+    assert result.total_price == Decimal("250.00")
+    assert db_session.query(BookingPassenger).filter(BookingPassenger.booking_id == result.id).count() == 1
+
+
 def test_create_booking_calculates_base_total_for_multiple_passengers(db_session, booking_create_payload_factory):
     service = BookingService(db_session)
     payload = booking_create_payload_factory(
