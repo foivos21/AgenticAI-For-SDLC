@@ -59,6 +59,43 @@ class _FakeSession:
         return _ScalarResult(matches)
 
 
+class _TopicFilteredSession:
+    def __init__(self, articles):
+        self.articles = articles
+        self.last_statement = None
+
+    def scalars(self, statement):
+        self.last_statement = statement
+        criteria = list(getattr(statement, "_where_criteria", ()))
+        topic = None
+        active_only = False
+
+        for criterion in criteria:
+            text = str(criterion)
+            if "knowledge_articles.is_active" in text and "true" in text.lower():
+                active_only = True
+            if "knowledge_articles.topic" in text and "=" in text:
+                if ":" in text:
+                    # SQLAlchemy bind parameter form; the actual value is embedded in the compiled params.
+                    params = getattr(statement, "_compile_options", None)
+                # Best effort for tests: capture the bound value from the clause when it is rendered.
+                if "'" in text:
+                    first = text.find("'")
+                    last = text.rfind("'")
+                    if first != -1 and last != -1 and last > first:
+                        topic = text[first + 1 : last]
+
+        if topic is None:
+            return _ScalarResult([])
+
+        matches = [
+            article
+            for article in self.articles
+            if (not active_only or article.is_active) and article.topic == topic
+        ]
+        return _ScalarResult(matches)
+
+
 @pytest.fixture()
 def sample_articles() -> list[_FakeKnowledgeArticle]:
     return [
@@ -82,6 +119,33 @@ def sample_articles() -> list[_FakeKnowledgeArticle]:
             topic="Getting Started",
             title="Using search effectively",
             content="Learn how to find results quickly with the knowledge base.",
+        ),
+    ]
+
+
+@pytest.fixture()
+def topic_articles() -> list[_FakeKnowledgeArticle]:
+    return [
+        _FakeKnowledgeArticle(
+            topic="Baggage",
+            title="Carry-on size limits",
+            content="Carry-on bags must fit in the overhead bin.",
+        ),
+        _FakeKnowledgeArticle(
+            topic="Baggage",
+            title="Checked bag fees",
+            content="Fees depend on route and fare class.",
+        ),
+        _FakeKnowledgeArticle(
+            topic="Check-in",
+            title="Online check-in windows",
+            content="Check in opens 24 hours before departure.",
+        ),
+        _FakeKnowledgeArticle(
+            topic="Baggage",
+            title="Lost luggage report",
+            content="Report missing bags at the service desk immediately.",
+            is_active=False,
         ),
     ]
 
@@ -129,3 +193,24 @@ def test_search_returns_no_results_for_missing_term(sample_articles):
     results = service.search("nonexistent")
 
     assert results == []
+
+
+def test_get_by_topic_returns_only_matching_topic_articles(topic_articles):
+    session = _TopicFilteredSession(topic_articles)
+    service = KnowledgeService(session)
+
+    results = service.get_by_topic("Baggage")
+
+    assert [article.title for article in results] == ["Carry-on size limits", "Checked bag fees"]
+    assert all(article.topic == "Baggage" for article in results)
+    assert all(article.is_active for article in results)
+
+
+def test_get_by_topic_excludes_unrelated_topics(topic_articles):
+    session = _TopicFilteredSession(topic_articles)
+    service = KnowledgeService(session)
+
+    results = service.get_by_topic("Baggage")
+
+    assert "Online check-in windows" not in [article.title for article in results]
+    assert all(article.topic != "Check-in" for article in results)
