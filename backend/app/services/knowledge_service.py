@@ -26,20 +26,19 @@ class KnowledgeService:
             select(KnowledgeArticle)
             .where(
                 KnowledgeArticle.is_active.is_(True),
-                KnowledgeArticle.topic != topic,
+                KnowledgeArticle.topic == topic,
             )
             .order_by(KnowledgeArticle.title)
         )
         return list(self.session.scalars(statement))
 
     def search(self, query: str) -> list[KnowledgeArticle]:
-        normalized_query = query.strip()
-        pattern = f"%{normalized_query}%"
+        pattern = f"%{query.strip()}%"
         statement = (
             select(KnowledgeArticle)
             .where(
                 KnowledgeArticle.is_active.is_(True),
-                and_(
+                or_(
                     KnowledgeArticle.topic.ilike(pattern),
                     KnowledgeArticle.title.ilike(pattern),
                     KnowledgeArticle.content.ilike(pattern),

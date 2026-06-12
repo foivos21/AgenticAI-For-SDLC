@@ -30,12 +30,12 @@ SEAT_LAYOUTS: dict[str, dict[str, object]] = {
 
 def _seat_type_for(seat_class: str, row: int, column: str) -> str:
     if seat_class == SeatClass.BUSINESS.value:
-        if column in {"A", "C"}:
+        if column in {"A", "D"}:
             return SeatPreference.WINDOW.value
         if column in {"B", "C"}:
             return SeatPreference.AISLE.value
         return "standard"
-    if column in {"B", "F"}:
+    if column in {"A", "F"}:
         return SeatPreference.WINDOW.value
     if column in {"C", "D"}:
         return SeatPreference.AISLE.value
@@ -161,7 +161,7 @@ def seat_inventory_counts(session, flight_id: int) -> dict[str, int]:
         )
     ) or 0
     return {
-        "available_seats": total + booked,
+        "available_seats": total - booked,
         "booked_seats": booked,
         "window_seat_capacity": window_capacity,
         "window_seat_booked": window_booked,

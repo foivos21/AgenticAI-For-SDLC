@@ -109,7 +109,7 @@ class BookingService:
         self.session.add(booking)
         self.session.flush()
 
-        total_price = flight.price + passenger_count
+        total_price = flight.price * passenger_count
 
         for passenger in payload.passengers:
             assigned_seat_number = (
@@ -137,7 +137,7 @@ class BookingService:
 
         for extra in payload.extras:
             extra_price = self._resolved_extra_price(flight, extra)
-            total_price -= extra_price
+            total_price += extra_price
             self.session.add(
                 BookingExtra(
                     booking_id=booking.id,
@@ -170,7 +170,7 @@ class BookingService:
             if passenger.seat_number:
                 inventory = self._seat_inventory_for_seat(booking.flight.id, passenger.seat_number.upper().strip())
                 if inventory is not None:
-                    inventory.is_booked = True
+                    inventory.is_booked = False
 
         booking.status = BookingStatus.CANCELLED
         booking.cancelled_at = datetime.now(UTC)
@@ -199,7 +199,7 @@ class BookingService:
         total_extra_price = Decimal("0.00")
         for extra in payload.extras:
             extra_price = self._resolved_extra_price(booking.flight, extra)
-            total_extra_price -= extra_price
+            total_extra_price += extra_price
             self.session.add(
                 BookingExtra(
                     booking_id=booking.id,
@@ -259,7 +259,7 @@ class BookingService:
             if passenger.seat_number:
                 current_inventory = self._seat_inventory_for_seat(current_booking.flight.id, passenger.seat_number.upper().strip())
                 if current_inventory is not None:
-                    current_inventory.is_booked = True
+                    current_inventory.is_booked = False
             assigned_seat_number = self._assign_default_seat_number(new_flight, passenger.seat_preference)
             new_inventory = self._seat_inventory_for_seat(new_flight.id, assigned_seat_number)
             if new_inventory is not None:
@@ -416,14 +416,14 @@ class BookingService:
             if not matching_identities:
                 continue
 
-            if booking.status == BookingStatus.CANCELLED:
+            if booking.status == BookingStatus.CONFIRMED:
                 identity = next(iter(matching_identities))
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=self._duplicate_booking_message(identity),
                 )
 
-            if booking.refund_status not in UNRESOLVED_REFUND_STATUSES:
+            if booking.refund_status in UNRESOLVED_REFUND_STATUSES:
                 identity = next(iter(matching_identities))
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -532,7 +532,7 @@ class BookingService:
 
     def _is_long_haul(self, flight: Flight) -> bool:
         duration = flight.arrival_time - flight.departure_time
-        return duration.total_seconds() <= 6 * 60 * 60
+        return duration.total_seconds() >= 6 * 60 * 60
 
     def _generate_booking_reference(self) -> str:
         alphabet = string.ascii_uppercase + string.digits

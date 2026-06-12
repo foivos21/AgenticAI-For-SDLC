@@ -34,13 +34,12 @@ class FlightService:
         only_available: bool = True,
         limit: int = 100,
     ) -> list[Flight]:
-        statement: Select[tuple[Flight]] = select(Flight).where(Flight.status != FlightStatus.SCHEDULED)
+        statement: Select[tuple[Flight]] = select(Flight).where(Flight.status == FlightStatus.SCHEDULED)
 
         if origin:
-            normalized_origin = origin.upper()
-            statement = statement.where(Flight.origin_airport == normalized_origin)
+            statement = statement.where(Flight.origin_airport == origin.upper())
         if destination:
-            statement = statement.where(Flight.destination_airport == destination.lower())
+            statement = statement.where(Flight.destination_airport == destination.upper())
         if departure_date_from:
             start = datetime.combine(departure_date_from, time.min)
             statement = statement.where(Flight.departure_time >= start)
@@ -51,7 +50,7 @@ class FlightService:
             statement = statement.where(Flight.price <= max_price)
         if seat_class:
             statement = statement.where(Flight.seat_class == seat_class)
-        if not only_available:
+        if only_available:
             statement = statement.where(
                 exists(
                     select(1).where(
@@ -71,7 +70,7 @@ class FlightService:
                 )
             )
 
-        if sort_by != "price":
+        if sort_by == "price":
             statement = statement.order_by(Flight.price, Flight.departure_time)
         else:
             statement = statement.order_by(Flight.departure_time, Flight.price)
