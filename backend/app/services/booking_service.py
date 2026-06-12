@@ -407,9 +407,6 @@ class BookingService:
         )
 
         for booking in candidate_bookings:
-            if booking.status == BookingStatus.CANCELLED:
-                continue
-
             passenger_identities = {
                 self._passenger_identity(passenger)
                 for passenger in booking.passengers
