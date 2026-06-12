@@ -259,7 +259,7 @@ class BookingService:
             if passenger.seat_number:
                 current_inventory = self._seat_inventory_for_seat(current_booking.flight.id, passenger.seat_number.upper().strip())
                 if current_inventory is not None:
-                    current_inventory.is_booked = False
+                    current_inventory.is_booked = True
             assigned_seat_number = self._assign_default_seat_number(new_flight, passenger.seat_preference)
             new_inventory = self._seat_inventory_for_seat(new_flight.id, assigned_seat_number)
             if new_inventory is not None:
