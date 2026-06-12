@@ -45,6 +45,7 @@ def _make_flight(
     destination: str = "LHR",
     departure_time: datetime | None = None,
     price: float = 120.0,
+    status: FlightStatus = FlightStatus.SCHEDULED,
 ) -> Flight:
     departure_time = departure_time or datetime(2026, 6, 10, 12, 0, 0)
     return Flight(
@@ -55,7 +56,7 @@ def _make_flight(
         departure_time=departure_time,
         arrival_time=departure_time,
         price=price,
-        status=FlightStatus.SCHEDULED,
+        status=status,
         seat_class=SeatClass.ECONOMY,
     )
 
@@ -154,18 +155,20 @@ def test_search_flights_defaults_to_departure_time_sort():
 
 
 def test_search_flights_only_available_excludes_fully_booked_flights():
-    available_flight = _make_flight(flight_id=1)
-    fully_booked_flight = _make_flight(flight_id=2)
+    scheduled_flight = _make_flight(flight_id=1, status=FlightStatus.SCHEDULED)
+    cancelled_flight = _make_flight(flight_id=2, status=FlightStatus.CANCELLED)
     available_seat = _make_seat_inventory(flight_id=1, is_booked=False)
     booked_seat = _make_seat_inventory(flight_id=2, is_booked=True)
 
-    session = _SessionStub([available_flight, fully_booked_flight, available_seat, booked_seat])
+    session = _SessionStub([scheduled_flight, cancelled_flight, available_seat, booked_seat])
     service = FlightService(session)
 
     result = service.search_flights(only_available=True)
 
-    assert [flight.id for flight in result] == [1, 2, 1, 2]
+    assert [flight.id for flight in result] == [1]
     assert session.last_statement is not None
+    assert "SCHEDULED" in str(session.last_statement).upper()
+    assert "CANCELLED" not in str(session.last_statement).upper()
     assert "EXISTS" in str(session.last_statement).upper()
     assert "IS_BOOKED" in str(session.last_statement).upper()
 
