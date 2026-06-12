@@ -15,7 +15,7 @@ from app.models.booking_extra import BookingExtra, ExtraType
 from app.models.booking_passenger import BookingPassenger
 from app.models.flight import Flight, FlightStatus, SeatPreference
 from app.models.seat_inventory import SeatInventory
-from app.db.seat_inventory import refresh_flight_seat_state, seat_inventory_counts
+from app.db.seat_inventory import refresh_flight_seat_state, release_booking_seats, seat_inventory_counts
 from app.schemas.booking import (
     BookingAddExtrasRequest,
     BookingCancelRequest,
@@ -231,6 +231,9 @@ class BookingService:
         self._ensure_flight_bookable(new_flight, passenger_count)
         self._ensure_preferences_available(new_flight, current_booking.passengers)
 
+        release_booking_seats(self.session, current_booking)
+        refresh_flight_seat_state(self.session, current_booking.flight)
+
         current_booking.status = BookingStatus.RESCHEDULED
         self._add_event(
             current_booking.id,
@@ -256,10 +259,6 @@ class BookingService:
         new_total = new_flight.price * passenger_count
 
         for passenger in current_booking.passengers:
-            if passenger.seat_number:
-                current_inventory = self._seat_inventory_for_seat(current_booking.flight.id, passenger.seat_number.upper().strip())
-                if current_inventory is not None:
-                    current_inventory.is_booked = True
             assigned_seat_number = self._assign_default_seat_number(new_flight, passenger.seat_preference)
             new_inventory = self._seat_inventory_for_seat(new_flight.id, assigned_seat_number)
             if new_inventory is not None:
@@ -292,7 +291,6 @@ class BookingService:
             )
 
         new_booking.total_price = new_total.quantize(Decimal("0.01"))
-        refresh_flight_seat_state(self.session, current_booking.flight)
         refresh_flight_seat_state(self.session, new_flight)
         self._add_event(
             new_booking.id,
