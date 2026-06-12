@@ -532,7 +532,7 @@ class BookingService:
 
     def _is_long_haul(self, flight: Flight) -> bool:
         duration = flight.arrival_time - flight.departure_time
-        return duration.total_seconds() >= 6 * 60 * 60
+        return duration.total_seconds() <= 6 * 60 * 60
 
     def _generate_booking_reference(self) -> str:
         alphabet = string.ascii_uppercase + string.digits
