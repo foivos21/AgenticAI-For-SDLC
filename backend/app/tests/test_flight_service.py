@@ -99,7 +99,7 @@ def test_search_flights_normalizes_origin_input_case_insensitively():
     assert "ATH" in str(upper_statement).upper()
 
 
-def test_search_flights_normalizes_lowercase_destination_input():
+def test_search_flights_destination_case_insensitive():
     flights = [_make_flight(flight_id=1, destination="JFK")]
     session = _SessionStub(flights)
     service = FlightService(session)
@@ -108,7 +108,7 @@ def test_search_flights_normalizes_lowercase_destination_input():
 
     assert [flight.id for flight in result] == [1]
     assert session.last_statement is not None
-    assert str(session.last_statement).upper().find("JFK") != -1
+    assert "JFK" in str(session.last_statement).upper()
 
 
 def test_search_flights_filters_max_price_as_upper_bound():
