@@ -31,7 +31,7 @@ SEAT_LAYOUTS: dict[str, dict[str, object]] = {
 
 def _seat_type_for(seat_class: str, row: int, column: str) -> str:
     if seat_class == SeatClass.BUSINESS.value:
-        if column in {"A", "D"}:
+        if column in {"A", "C"}:
             return SeatPreference.WINDOW.value
         if column in {"B", "C"}:
             return SeatPreference.AISLE.value
