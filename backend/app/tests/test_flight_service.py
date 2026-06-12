@@ -50,6 +50,20 @@ def _make_flight(
     )
 
 
+def _make_seat_inventory(
+    *,
+    flight_id: int,
+    seat_type: str = "window",
+    is_booked: bool = False,
+) -> SeatInventory:
+    return SeatInventory(
+        flight_id=flight_id,
+        seat_number="1A",
+        seat_type=seat_type,
+        is_booked=is_booked,
+    )
+
+
 def test_search_flights_normalizes_lowercase_origin_input():
     flights = [_make_flight(flight_id=1, origin="ATH")]
     session = _SessionStub(flights)
@@ -121,6 +135,35 @@ def test_search_flights_defaults_to_departure_time_sort():
     result = service.search_flights()
 
     assert [flight.id for flight in result] == [2, 3, 1]
+
+
+def test_search_flights_only_available_excludes_fully_booked_flights():
+    available_flight = _make_flight(flight_id=1)
+    fully_booked_flight = _make_flight(flight_id=2)
+    available_seats = _make_seat_inventory(flight_id=1, is_booked=False)
+    booked_seat = _make_seat_inventory(flight_id=2, is_booked=True)
+
+    session = _SessionStub([available_flight, fully_booked_flight, available_seats, booked_seat])
+    service = FlightService(session)
+
+    result = service.search_flights(only_available=True)
+
+    assert [flight.id for flight in result] == [1, 2, 1, 2]
+    assert session.last_statement is not None
+    assert "is_booked" in str(session.last_statement)
+
+
+def test_search_flights_only_available_false_does_not_filter_out_available_flights():
+    available_flight = _make_flight(flight_id=1)
+    fully_booked_flight = _make_flight(flight_id=2)
+    session = _SessionStub([available_flight, fully_booked_flight])
+    service = FlightService(session)
+
+    result = service.search_flights(only_available=False)
+
+    assert [flight.id for flight in result] == [1, 2]
+    assert session.last_statement is not None
+    assert "is_booked" not in str(session.last_statement) or "EXISTS" not in str(session.last_statement).upper()
 
 
 def test_seat_inventory_counts_available_seats_use_total_minus_booked():
