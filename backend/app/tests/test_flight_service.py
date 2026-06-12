@@ -28,6 +28,16 @@ class _SessionStub:
         return None
 
 
+class _RecordingFlightService(FlightService):
+    def __init__(self, session):
+        super().__init__(session)
+        self.last_origin = None
+
+    def search_flights(self, *args, **kwargs):
+        self.last_origin = kwargs.get("origin")
+        return super().search_flights(*args, **kwargs)
+
+
 def _make_flight(
     *,
     flight_id: int,
@@ -64,37 +74,29 @@ def _make_seat_inventory(
     )
 
 
-def test_search_flights_normalizes_lowercase_origin_input():
+def test_search_flights_normalizes_origin_input_case_insensitively():
     flights = [_make_flight(flight_id=1, origin="ATH")]
     session = _SessionStub(flights)
     service = FlightService(session)
 
-    service.search_flights(origin="ath")
+    lower_result = service.search_flights(origin="ath")
+    lower_statement = session.last_statement
 
-    assert session.last_statement is not None
-    assert str(session.last_statement).upper().find("ATH") != -1
+    mixed_result = service.search_flights(origin="AtH")
+    mixed_statement = session.last_statement
 
+    upper_result = service.search_flights(origin="ATH")
+    upper_statement = session.last_statement
 
-def test_search_flights_normalizes_mixed_case_origin_input():
-    flights = [_make_flight(flight_id=1, origin="ATH")]
-    session = _SessionStub(flights)
-    service = FlightService(session)
-
-    service.search_flights(origin="AtH")
-
-    assert session.last_statement is not None
-    assert str(session.last_statement).upper().find("ATH") != -1
-
-
-def test_search_flights_preserves_uppercase_origin_input():
-    flights = [_make_flight(flight_id=1, origin="ATH")]
-    session = _SessionStub(flights)
-    service = FlightService(session)
-
-    service.search_flights(origin="ATH")
-
-    assert session.last_statement is not None
-    assert str(session.last_statement).upper().find("ATH") != -1
+    assert [flight.id for flight in lower_result] == [1]
+    assert [flight.id for flight in mixed_result] == [1]
+    assert [flight.id for flight in upper_result] == [1]
+    assert lower_statement is not None
+    assert mixed_statement is not None
+    assert upper_statement is not None
+    assert str(lower_statement).upper().find("ATH") != -1
+    assert str(mixed_statement).upper().find("ATH") != -1
+    assert str(upper_statement).upper().find("ATH") != -1
 
 
 def test_search_flights_normalizes_lowercase_destination_input():
