@@ -263,6 +263,87 @@ def test_add_extras_rejects_cancelled_booking(db_session, booking_factory):
         service.add_extras(booking.booking_reference, payload)
 
 
+def test_cancelled_booking_with_pending_refund_blocks_rebooking_same_flight(db_session, bookable_flight_with_seats):
+    service = BookingService(db_session)
+    original_booking = Booking(
+        booking_reference="TMPENDING1",
+        flight_id=bookable_flight_with_seats.id,
+        contact_name="Test User",
+        contact_email="test@example.com",
+        contact_phone=None,
+        total_price=Decimal("250.00"),
+        status=BookingStatus.CANCELLED,
+        refund_status=RefundStatus.PENDING,
+        cancelled_at=datetime.now(UTC),
+        cancellation_reason="Customer requested cancellation",
+    )
+    db_session.add(original_booking)
+    db_session.flush()
+    db_session.add(
+        BookingPassenger(
+            booking_id=original_booking.id,
+            first_name="Jane",
+            last_name="Doe",
+            date_of_birth=datetime(1990, 1, 1).date(),
+            passenger_type="adult",
+            seat_number="1A",
+        )
+    )
+    db_session.flush()
+
+    payload = DummyBookingCreate(
+        flight_id=bookable_flight_with_seats.id,
+        passengers=[DummyBookingPassenger(first_name="Jane", last_name="Doe", date_of_birth=datetime(1990, 1, 1).date())],
+        extras=[],
+    )
+
+    with pytest.raises(Exception) as exc_info:
+        service.create_booking(payload)
+
+    assert getattr(exc_info.value, "status_code", None) == 409
+    assert "unresolved refund" in str(getattr(exc_info.value, "detail", "")).lower()
+
+
+def test_resolved_refund_allows_rebooking_same_flight(db_session, bookable_flight_with_seats):
+    service = BookingService(db_session)
+    original_booking = Booking(
+        booking_reference="TMRESOLVED1",
+        flight_id=bookable_flight_with_seats.id,
+        contact_name="Test User",
+        contact_email="test@example.com",
+        contact_phone=None,
+        total_price=Decimal("250.00"),
+        status=BookingStatus.CANCELLED,
+        refund_status=RefundStatus.NOT_REQUESTED,
+        cancelled_at=datetime.now(UTC),
+        cancellation_reason="Customer requested cancellation",
+    )
+    db_session.add(original_booking)
+    db_session.flush()
+    db_session.add(
+        BookingPassenger(
+            booking_id=original_booking.id,
+            first_name="Jane",
+            last_name="Doe",
+            date_of_birth=datetime(1990, 1, 1).date(),
+            passenger_type="adult",
+            seat_number="1A",
+        )
+    )
+    db_session.flush()
+
+    payload = DummyBookingCreate(
+        flight_id=bookable_flight_with_seats.id,
+        passengers=[DummyBookingPassenger(first_name="Jane", last_name="Doe", date_of_birth=datetime(1990, 1, 1).date(), seat_number="1C")],
+        extras=[],
+    )
+
+    result = service.create_booking(payload)
+
+    assert result.status == BookingStatus.CONFIRMED
+    assert result.flight_id == bookable_flight_with_seats.id
+
+
 def test_cancel_booking_releases_all_seats_and_restores_flight_availability(db_session, bookable_flight_with_seats):
     passenger_one = BookingPassenger(
         booking_id=1,
