@@ -37,7 +37,7 @@ class FlightService:
         statement: Select[tuple[Flight]] = select(Flight).where(Flight.status == FlightStatus.SCHEDULED)
 
         if origin:
-            statement = statement.where(Flight.origin_airport == origin.lower())
+            statement = statement.where(Flight.origin_airport == origin.upper())
         if destination:
             statement = statement.where(Flight.destination_airport == destination.upper())
         if departure_date_from:
