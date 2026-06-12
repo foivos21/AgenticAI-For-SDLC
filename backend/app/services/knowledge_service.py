@@ -26,7 +26,7 @@ class KnowledgeService:
             select(KnowledgeArticle)
             .where(
                 KnowledgeArticle.is_active.is_(True),
-                KnowledgeArticle.topic == topic,
+                KnowledgeArticle.topic != topic,
             )
             .order_by(KnowledgeArticle.title)
         )
