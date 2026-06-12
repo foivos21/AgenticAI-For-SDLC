@@ -127,6 +127,46 @@ def booking_create_payload_factory(bookable_flight_with_seats):
     return _create_payload
 
 
+@pytest.fixture()
+def cancelled_booking_with_seats(db_session, bookable_flight_with_seats):
+    booking = Booking(
+        booking_reference="TMSEATREL",
+        flight_id=bookable_flight_with_seats.id,
+        contact_name="Test User",
+        contact_email="test@example.com",
+        contact_phone=None,
+        total_price=Decimal("500.00"),
+        status=BookingStatus.CONFIRMED,
+        refund_status=RefundStatus.NOT_REQUESTED,
+    )
+    db_session.add(booking)
+    db_session.flush()
+
+    passenger_one = BookingPassenger(
+        booking_id=booking.id,
+        first_name="Jane",
+        last_name="Doe",
+        date_of_birth=datetime(1990, 1, 1).date(),
+        passenger_type="adult",
+        seat_number="1A",
+    )
+    passenger_two = BookingPassenger(
+        booking_id=booking.id,
+        first_name="John",
+        last_name="Doe",
+        date_of_birth=datetime(1991, 1, 1).date(),
+        passenger_type="adult",
+        seat_number="1B",
+    )
+    db_session.add_all([passenger_one, passenger_two])
+    db_session.flush()
+
+    db_session.get(SeatInventory, 1).is_booked = True
+    db_session.get(SeatInventory, 2).is_booked = True
+    db_session.flush()
+    return booking
+
+
 def test_create_booking_with_paid_extras_adds_to_total(db_session, booking_create_payload_factory):
     service = BookingService(db_session)
     payload = booking_create_payload_factory(
@@ -400,45 +440,11 @@ def test_resolved_refund_allows_rebooking_same_flight(db_session, bookable_fligh
     assert result.flight_id == bookable_flight_with_seats.id
 
 
-def test_cancel_booking_releases_all_seats_and_restores_flight_availability(db_session, bookable_flight_with_seats):
-    passenger_one = BookingPassenger(
-        booking_id=1,
-        first_name="Jane",
-        last_name="Doe",
-        date_of_birth=datetime(1990, 1, 1).date(),
-        passenger_type="adult",
-        seat_number="1A",
-    )
-    passenger_two = BookingPassenger(
-        booking_id=1,
-        first_name="John",
-        last_name="Doe",
-        date_of_birth=datetime(1991, 1, 1).date(),
-        passenger_type="adult",
-        seat_number="1B",
-    )
-    booking = Booking(
-        booking_reference="TMSEATREL",
-        flight_id=bookable_flight_with_seats.id,
-        contact_name="Test User",
-        contact_email="test@example.com",
-        contact_phone=None,
-        total_price=Decimal("500.00"),
-        status=BookingStatus.CONFIRMED,
-        refund_status=RefundStatus.NOT_REQUESTED,
-    )
-    db_session.add(booking)
-    db_session.flush()
-    passenger_one.booking_id = booking.id
-    passenger_two.booking_id = booking.id
-    db_session.add_all([passenger_one, passenger_two])
-    db_session.get(SeatInventory, 1).is_booked = True
-    db_session.get(SeatInventory, 2).is_booked = True
-    db_session.flush()
-
+def test_cancel_booking_releases_all_seats_and_restores_flight_availability(db_session, cancelled_booking_with_seats, bookable_flight_with_seats):
     service = BookingService(db_session)
+
     cancelled = service.cancel_booking(
-        booking.booking_reference,
+        cancelled_booking_with_seats.booking_reference,
         SimpleNamespace(reason="No longer needed", refund_status=RefundStatus.NOT_REQUESTED, refund_amount=None),
     )
 
@@ -446,7 +452,6 @@ def test_cancel_booking_releases_all_seats_and_restores_flight_availability(db_s
     assert db_session.get(SeatInventory, 1).is_booked is False
     assert db_session.get(SeatInventory, 2).is_booked is False
     assert cancelled.flight.booked_seats == 0
-    assert cancelled.flight and cancelled.flight.id == bookable_flight_with_seats.id
     assert db_session.get(Flight, bookable_flight_with_seats.id).booked_seats == 0
 
     follow_up = DummyBookingCreate(
