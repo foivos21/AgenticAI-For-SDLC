@@ -1,0 +1,43 @@
+{
+  "solution_summary": "Fix the booking creation pricing path so paid extras are added to the booking total instead of subtracted. The change should be localized to the booking service\u2019s create_booking flow, with tests added/updated to cover bookings with paid extras and ensure bookings without extras remain unchanged.",
+  "implementation_steps": [
+    "Inspect backend/app/services/booking_service.py:create_booking to locate where extras are accumulated into the booking total.",
+    "Correct the arithmetic/sign handling so each paid extra contributes a positive amount to the total (base fare + sum of extra prices).",
+    "Confirm any helper used by create_booking applies the same positive accumulation semantics and does not invert the sign elsewhere.",
+    "Update or add service tests in backend/tests/services/test_booking_service.py to cover: booking with one paid extra, booking with multiple paid extras, and booking without extras as a regression check.",
+    "Run targeted test coverage for booking service behavior and verify no unrelated booking persistence or update paths are modified."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Adjust create_booking pricing logic so paid extras are added to the total rather than subtracted.",
+      "rationale": "The issue is explicitly localized here; the total calculation likely uses the wrong sign when applying extras during booking creation."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add/modify tests validating booking totals with paid extras during creation and preserving behavior when no extras are provided.",
+      "rationale": "Regression coverage should prove the fix and protect the creation flow from reintroducing the sign error."
+    }
+  ],
+  "patch_strategy": "Make the smallest possible service-layer change in create_booking: preserve existing base fare computation and persistence flow, but correct the extras accumulation to use positive addition for paid extras. Avoid schema/model changes unless the code review reveals the total is derived from a stored field with inverted semantics. Pair the code change with focused tests in the booking service test suite that assert exact totals before and after extras are applied. Keep the scope limited to booking creation so update flows and unrelated model logic remain unaffected.",
+  "validation_steps": [
+    "Run backend/tests/services/test_booking_service.py focused on create_booking scenarios.",
+    "Add a test case for a booking with one paid extra and assert the total equals base fare plus extra price.",
+    "Add a test case for multiple paid extras and assert totals sum correctly.",
+    "Add a regression test for booking creation without extras to confirm the original behavior is unchanged.",
+    "If available, run the full booking service test subset to ensure no side effects on adjacent booking service methods."
+  ],
+  "branch_name": "feature/SDLC-71-paid-extras-lower-the-total-when-included-while-creating-a-booking",
+  "pr_title": "SDLC-71: Fix paid extras being subtracted from booking total on creation",
+  "pr_body": "## Summary\nFix the booking creation pricing logic so paid extras increase the total instead of reducing it.\n\n## What changed\n- Corrected the booking creation total calculation in `booking_service.py`\n- Added/updated service tests to verify paid extras are added to the booking total\n- Preserved existing behavior for bookings created without extras\n\n## Validation\n- Covered booking creation with one and multiple paid extras\n- Covered booking creation without extras as a regression check\n- Scoped the fix to booking creation pricing only\n\n## Notes\n- No schema or persistence changes are expected for this fix unless a deeper dependency is discovered during implementation.",
+  "risks": [
+    "The total calculation may be delegated to a helper, so the fix could require a slightly wider service-layer adjustment than create_booking alone.",
+    "Existing tests may rely on the buggy behavior and need expectation updates if they assert the incorrect total.",
+    "If paid extras are represented through a shared pricing helper, changing it may unintentionally affect other booking flows."
+  ],
+  "assumptions": [
+    "create_booking currently applies extras during total calculation and is the source of the sign error.",
+    "Paid extras are stored with positive prices and should contribute positively to the booking total.",
+    "Targeted service tests exist or can be added without requiring schema or database migrations."
+  ]
+}

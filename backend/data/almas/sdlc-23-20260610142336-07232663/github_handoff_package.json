@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-23-adding-extras-to-a-booking-lowers-the-total-price-instead-of-raising-it",
+  "base_branch": "main",
+  "pr_title": "SDLC-23: Fix booking total increase when adding paid extras",
+  "pr_body": "## Summary\nFix the booking extras flow so adding paid extras to an existing booking increases the booking total instead of decreasing it.\n\n## What changes\n- Correct the price delta applied in `booking_service.py:add_extras`\n- Keep the fix localized to the booking extras total-calculation path\n- Add regression coverage for single and multiple paid extras\n\n## Validation\n- Add-extras service tests for one extra and multiple extras\n- Booking pricing regression checks to ensure unrelated behavior is unchanged\n\n## Notes\nThis change is scoped to the booking extras service path and avoids altering unrelated booking pricing logic.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/booking_service.py: committed in 36ff84f4d91f30a2fe756b39241cf003f66ec5e1",
+    "backend/tests/services/test_booking_service.py: committed in 36ff84f4d91f30a2fe756b39241cf003f66ec5e1"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/20",
+  "commit_sha": "36ff84f4d91f30a2fe756b39241cf003f66ec5e1"
+}

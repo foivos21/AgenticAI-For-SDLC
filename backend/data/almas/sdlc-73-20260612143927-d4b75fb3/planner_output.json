@@ -1,0 +1,43 @@
+{
+  "solution_summary": "Plan to fix booking baggage pricing by correcting the long-haul classification helper and preserving explicit-price precedence. The change is localized to the booking service and validated with targeted booking-service tests covering both sides of the 6-hour threshold and explicit override behavior.",
+  "implementation_steps": [
+    "Update the baggage pricing decision path in `backend/app/services/booking_service.py` so the default checked-bag fee uses the correct haul classification: `< 6 hours` -> short-haul fee, `>= 6 hours` -> long-haul fee.",
+    "Inspect `_is_long_haul` and ensure it returns `True` only when duration is at least 6 hours, without introducing a second inversion in the caller.",
+    "Keep the explicit checked-bag price path ahead of any default haul-based fee selection so user-provided prices still win.",
+    "Add or adjust service-level tests in `backend/tests/services/test_booking_service.py` for: a 3-hour flight with no explicit price, a 6-hour flight with no explicit price, and a checked bag with an explicit price on either haul type.",
+    "Run the targeted booking-service test subset first, then broader backend tests if needed to confirm no collateral impact."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the checked-bag default pricing branch and verify `_is_long_haul` threshold logic uses `duration >= 6 hours` as long-haul.",
+      "rationale": "This is the root cause named in the issue; fixing it here ensures pricing aligns with the intended short/long-haul boundary."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add or update tests for short-haul default pricing, long-haul default pricing, and explicit-price override behavior.",
+      "rationale": "Regression coverage is needed to lock in the corrected threshold logic and ensure explicit prices still bypass default pricing."
+    }
+  ],
+  "patch_strategy": "Make a minimal, localized logic correction in the booking service rather than broad pricing refactors. First, confirm whether `_is_long_haul` or its caller is inverted, then change only one side so the helper/caller contract remains consistent. Preserve the explicit-price branch as the first decision point. Add focused tests that exercise the 6-hour boundary and explicit override precedence, using existing booking-service test patterns to minimize churn. Keep the patch limited to the selected files unless test failures reveal a hidden dependency.",
+  "validation_steps": [
+    "Run targeted tests for booking pricing logic: `backend/tests/services/test_booking_service.py` or the narrowest test selection available.",
+    "Verify a 3-hour flight with no explicit checked-bag price resolves to 35.00.",
+    "Verify a 6-hour flight with no explicit checked-bag price resolves to 70.00.",
+    "Verify an explicitly provided checked-bag price is used regardless of flight duration.",
+    "If any helper-level tests exist for haul classification, run them as well to confirm the boundary behavior remains consistent."
+  ],
+  "branch_name": "feature/SDLC-73-short-haul-flights-charge-long-haul-baggage-fees-and-vice-versa",
+  "pr_title": "SDLC-73: Fix inverted checked-baggage haul pricing",
+  "pr_body": "## Summary\nFix the checked-baggage pricing logic in `booking_service` so short-haul flights (< 6 hours) use the short-haul default fee (\u20ac35) and long-haul flights (>= 6 hours) use the long-haul default fee (\u20ac70).\n\n## Planned changes\n- Correct the haul classification / default fee selection in `backend/app/services/booking_service.py`\n- Add regression coverage in `backend/tests/services/test_booking_service.py`\n- Preserve explicit checked-bag prices as the highest-priority override\n\n## Validation\n- Targeted booking-service tests for 3-hour and 6-hour boundary cases\n- Explicit-price override test\n\n## Notes\nThis is a localized backend pricing fix with no expected frontend impact.",
+  "risks": [
+    "If `_is_long_haul` is used in other pricing paths, changing the helper could affect unrelated fee logic.",
+    "Boundary assumptions around exactly 6 hours must match existing datetime/duration semantics used by the service.",
+    "Existing tests may encode the inverted behavior and will need to be updated carefully rather than duplicated."
+  ],
+  "assumptions": [
+    "The booking service is the only place where checked-baggage default haul-based pricing is decided.",
+    "Explicit checked-bag price handling already exists and should remain unchanged except for test coverage.",
+    "The repo\u2019s current test suite includes or can easily accommodate service-level tests for booking pricing."
+  ]
+}

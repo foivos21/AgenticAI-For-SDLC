@@ -179,6 +179,8 @@ class ALMASRunManifest(BaseModel):
     pr_number: int | None = None
     pr_url: str = ""
     timing_history: list[AgentTimingInfo] = Field(default_factory=list)
+    total_prompt_tokens: int = 0
+    total_completion_tokens: int = 0
 
 
 class ALMASRunSummaryRead(BaseModel):

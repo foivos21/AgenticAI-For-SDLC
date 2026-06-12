@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-56-rescheduling-a-booking-keeps-the-original-seat-occupied-on-the-old-flight",
+  "base_branch": "main",
+  "base_sha": "fbd00465b789d5144a2f29a64aaf03d0b4fecf34",
+  "ref": "refs/heads/feature/SDLC-56-rescheduling-a-booking-keeps-the-original-seat-occupied-on-the-old-flight",
+  "created": true
+}

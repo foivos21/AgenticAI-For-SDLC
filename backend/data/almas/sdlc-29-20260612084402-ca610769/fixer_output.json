@@ -1,0 +1,12 @@
+{
+  "decision": "approved",
+  "fix_summary": "Implemented the booking cancellation fix by releasing all seats tied to a booking before marking it cancelled, and added regression coverage asserting the seats become available again and can be rebooked. Changes preserve existing cancellation flow while ensuring seat state is consistent with booking state.",
+  "approval_reasons": [
+    "Automated tests passed successfully, confirming the implementation resolves the specified issue."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

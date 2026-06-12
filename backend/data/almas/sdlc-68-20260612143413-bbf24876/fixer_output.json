@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "The patch correctly fixes the inverted topic predicate in KnowledgeService.get_by_topic by switching from inequality to equality on KnowledgeArticle.topic, and the focused service tests pass.",
+  "approval_reasons": [
+    "The implementation is localized to the service layer as requested and does not alter unrelated route/model behavior.",
+    "The bug is directly corrected in get_by_topic by using KnowledgeArticle.topic == topic, which matches the stated acceptance criteria.",
+    "Regression coverage was added for same-topic inclusion and unrelated-topic exclusion.",
+    "Automated tests passed (3 passed), which the instructions treat as source of truth that the change resolves the issue."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

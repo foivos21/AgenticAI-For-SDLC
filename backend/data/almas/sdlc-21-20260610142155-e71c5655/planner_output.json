@@ -1,0 +1,37 @@
+{
+  "solution_summary": "Update the knowledge base search implementation so article matching uses contains/substring semantics instead of prefix-only checks. The change should remain localized to backend/app/services/knowledge_service.py, preserving existing search behavior for prefix matches while also returning articles when the query appears anywhere in topic, title, or content.",
+  "implementation_steps": [
+    "Review the current search logic in backend/app/services/knowledge_service.py to identify any startswith/leading-anchored LIKE behavior or equivalent prefix-only checks.",
+    "Refactor the matching condition to use substring/contains matching across topic, title, and content fields, applying the same normalization path already used by search if present.",
+    "Preserve existing query normalization behavior unless it is directly responsible for prefix-only matching; avoid broad changes to routes, models, or schemas.",
+    "If the search is database-backed, adjust the query predicate from prefix matching to contains matching; if it is in-memory, replace startswith with an equivalent contains check.",
+    "Verify that the search still returns prefix matches and now also returns matches appearing mid-field in any of the three knowledge article fields."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "change_summary": "Change search filtering logic from prefix-only matching to substring/contains matching for topic, title, and content.",
+      "rationale": "The issue is localized to the search method in this service, and updating this single file should satisfy the acceptance criteria with minimal blast radius."
+    }
+  ],
+  "patch_strategy": "Make a narrow, behavior-focused change in the service layer only. First, identify the exact predicate used for search matching in the search method. Then replace any prefix-anchored comparison with a contains comparison while keeping the existing field list and normalization pipeline intact. If the implementation uses SQL or ORM filtering, translate the predicate to a wildcard-both-sides/contains equivalent; if it uses Python string checks, swap startswith for in. Avoid touching API contracts or data models unless tests reveal an unexpected dependency. Keep the change small enough to be reviewed as a single-file fix.",
+  "validation_steps": [
+    "Add or update unit tests for the knowledge service search method to cover mid-string matches in content, title, and topic.",
+    "Add regression coverage proving prefix matches still work after the change.",
+    "Run the backend test suite focused on knowledge service/search tests, then run the full backend test subset if available.",
+    "Manually verify a sample query that appears only in the middle of an article returns that article, and that unrelated articles remain excluded."
+  ],
+  "branch_name": "feature/SDLC-21-knowledge-base-search-misses-articles-that-match-in-the-middle-of-the-text",
+  "pr_title": "SDLC-21: Fix knowledge base search to match substrings in articles",
+  "pr_body": "## Summary\nFix knowledge base search so it returns articles when the query appears anywhere in the topic, title, or content, not just at the start of those fields.\n\n## What changes\n- Update search matching logic in `backend/app/services/knowledge_service.py`\n- Preserve existing prefix match behavior\n- Add coverage for mid-string matches\n\n## Validation\n- Unit tests for substring and prefix search behavior\n- Manual verification of search results for mid-sentence matches\n\n## Scope\n- Localized backend service change only",
+  "risks": [
+    "If the search implementation also performs relevance ranking, changing the predicate may slightly alter ordering for some queries.",
+    "If normalization is inconsistent across fields, substring matching could surface unexpected casing or punctuation edge cases.",
+    "If the query is translated to database LIKE/ILIKE, special characters may need escaping to avoid false positives."
+  ],
+  "assumptions": [
+    "The search logic is indeed implemented in backend/app/services/knowledge_service.py as indicated by the Jira context.",
+    "Existing normalization behavior should be preserved unless it directly prevents substring matching.",
+    "No API response schema changes are required for this fix."
+  ]
+}

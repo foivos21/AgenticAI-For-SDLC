@@ -1,0 +1,106 @@
+{
+  "run_id": "sdlc-76-20260612144609-95aaa0a0",
+  "issue_key": "SDLC-76",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 1,
+  "created_at": "2026-06-12T14:46:09.763122+00:00",
+  "updated_at": "2026-06-12T14:48:27.042247+00:00",
+  "explanation": "Pull request #54 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-76-rescheduling-a-booking-keeps-the-original-seat-occupied-on-the-old-flight",
+  "commit_sha": "088e7fa838983cb5278bedff31258d0da1f74010",
+  "pr_number": 54,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/54",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781275569.766073,
+      "end_time": 1781275570.8012118,
+      "duration_seconds": 1.035,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781275570.808418,
+      "end_time": 1781275578.291945,
+      "duration_seconds": 7.484,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781275578.293941,
+      "end_time": 1781275587.243695,
+      "duration_seconds": 8.95,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781275587.2490392,
+      "end_time": 1781275627.413464,
+      "duration_seconds": 40.164,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781275628.838061,
+      "end_time": 1781275631.5378299,
+      "duration_seconds": 2.7,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781275631.546535,
+      "end_time": 1781275641.723148,
+      "duration_seconds": 10.177,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781275641.7282162,
+      "end_time": 1781275680.718383,
+      "duration_seconds": 38.99,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781275682.105675,
+      "end_time": 1781275697.998442,
+      "duration_seconds": 15.893,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781275698.0049741,
+      "end_time": 1781275702.0401092,
+      "duration_seconds": 4.035,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781275702.046051,
+      "end_time": 1781275703.3501692,
+      "duration_seconds": 1.304,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 84941,
+  "total_completion_tokens": 20335
+}

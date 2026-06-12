@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-46-adding-extras-to-a-booking-lowers-the-total-price-instead-of-raising-it",
+  "base_branch": "main",
+  "base_sha": "3359f6ec049962b63119d01219122d15fc776ff0",
+  "ref": "refs/heads/feature/SDLC-46-adding-extras-to-a-booking-lowers-the-total-price-instead-of-raising-it",
+  "created": true
+}

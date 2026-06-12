@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-27-flight-search-by-destination-airport-returns-no-results",
+  "base_branch": "main",
+  "pr_title": "SDLC-27: Fix case-insensitive flight search by destination airport",
+  "pr_body": "## Summary\nFix `/flights/search` so destination airport filtering matches case-insensitively when airport codes are stored in uppercase.\n\n## What changes\n- Normalize the destination search input in `backend/app/services/flight_service.py`\n- Add a regression test in `backend/app/tests/test_flight_service.py`\n\n## Why\nA request like `GET /flights/search?destination=jfk` currently returns no flights even when matching flights exist with destination `JFK`.\n\n## Validation\n- Added/updated test coverage for lowercase destination input\n- Confirmed existing search behavior remains unchanged\n\n## Notes\nThis is a localized fix in the flight search service layer; no data migration is required.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/flight_service.py: committed in 26f211c3cdceb68ce662c019f92c63861f5d69c8",
+    "backend/app/tests/test_flight_service.py: committed in 26f211c3cdceb68ce662c019f92c63861f5d69c8"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/24",
+  "commit_sha": "26f211c3cdceb68ce662c019f92c63861f5d69c8"
+}

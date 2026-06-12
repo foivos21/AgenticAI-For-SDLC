@@ -1,0 +1,41 @@
+{
+  "solution_summary": "Fix the booking extras pricing path so adding paid extras increases the booking total by the extra price, and add regression coverage for the add_extras flow in the booking service tests.",
+  "implementation_steps": [
+    "Inspect BookingService.add_extras to confirm where the booking total is adjusted when extras are appended.",
+    "Correct the sign of the price update so the total is incremented by each paid extra\u2019s price rather than decremented.",
+    "Preserve persistence behavior for booking-extra relations and any surrounding transaction/save logic.",
+    "Add or update service tests to assert that adding a paid extra raises the total by the extra amount and does not reduce it.",
+    "Add a regression test for existing booking update flow to ensure extras are still persisted and the final total remains consistent after the fix."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Update BookingService.add_extras to add paid extra prices to the booking total instead of subtracting them; keep existing persistence and relationship handling unchanged.",
+      "rationale": "The issue is localized to the extra-addition pricing logic in the booking service, so the fix should be minimal and confined to the method named in the ticket."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add/adjust tests for add_extras to verify totals increase when paid extras are added and that booking extras continue to persist correctly.",
+      "rationale": "Regression coverage is needed to lock in the corrected sign behavior and ensure existing update flows are not broken by the change."
+    }
+  ],
+  "patch_strategy": "Apply a narrow, service-layer-only patch. First, verify the current add_extras implementation and identify the exact arithmetic used for total recalculation or incremental adjustment. Then change only the arithmetic/sign in BookingService.add_extras so paid extras contribute positively to the booking total. Avoid touching models, schemas, or routes unless the test findings reveal a shared helper that also contains the buggy subtraction logic. Finally, extend the service test suite with focused assertions for one and multiple paid extras, confirming both the total delta and persistence behavior.",
+  "validation_steps": [
+    "Run the targeted service test module: backend/tests/services/test_booking_service.py.",
+    "Add a regression assertion that the booking total increases by the exact sum of paid extras.",
+    "Verify no test expects the old subtraction behavior.",
+    "Run the broader booking-related test subset if available to ensure no side effects in other booking update paths.",
+    "Sanity-check that booking-extra records are still created/associated as before and that persistence commits succeed."
+  ],
+  "branch_name": "feature/SDLC-66-adding-extras-to-a-booking-lowers-the-total-price-instead-of-raising-it",
+  "pr_title": "SDLC-66: Fix booking total when adding paid extras",
+  "pr_body": "## Summary\nFix the booking extras flow so adding paid extras increases the booking total instead of decreasing it.\n\n## What changes\n- Correct the pricing sign in `BookingService.add_extras`\n- Add regression coverage for booking total updates when paid extras are added\n- Preserve existing booking-extra persistence behavior\n\n## Validation\n- Targeted service tests for booking extras total calculation\n- Regression coverage for existing update flows involving extras\n\n## Issue\nSDLC-66",
+  "risks": [
+    "The total may be calculated in more than one place; if so, the buggy subtraction could exist in a shared helper rather than only in add_extras.",
+    "Tests may reveal edge cases for mixed free and paid extras or repeated additions that require preserving current business rules."
+  ],
+  "assumptions": [
+    "The bug is confined to backend/app/services/booking_service.py::BookingService.add_extras as indicated by the issue context.",
+    "The booking total should be updated incrementally by the price of each paid extra, not recomputed from unrelated fields."
+  ]
+}

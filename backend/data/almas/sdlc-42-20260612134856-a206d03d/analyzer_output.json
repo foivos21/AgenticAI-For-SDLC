@@ -1,0 +1,80 @@
+{
+  "issue_key": "SDLC-42",
+  "problem_statement": "The flight search API is applying the max_price filter with inverted logic: requests like GET /flights/search?max_price=200 return flights priced above 200 instead of flights priced at or below 200.",
+  "goal": "Correct the flight search filtering so max_price acts as an upper bound and only returns flights with price <= max_price.",
+  "acceptance_criteria": [
+    "GET /flights/search?max_price=200 returns only flights with price less than or equal to 200.",
+    "Flights priced above the requested max_price are excluded from results.",
+    "Existing search behavior for other filters remains unchanged."
+  ],
+  "constraints": [
+    "Smallest likely fix is in backend/app/services/flight_service.py, specifically search_flights.",
+    "Validate whether any route/service tests cover the max_price filter and update/add a regression test if needed."
+  ],
+  "unknowns": [
+    "Whether the inverted comparison is implemented directly in search_flights or delegated to a helper/query builder.",
+    "Whether any downstream schema or route layer transforms the filter value before it reaches the service."
+  ],
+  "repo_summary": "Backend-focused repository with flight search API, service layer, schema/model, and tests. Relevant files likely center on backend/app/services/flight_service.py with surrounding route and test coverage in backend/app/api/routes/flights.py and backend/app/tests/test_flight_service.py.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py",
+    "backend/app/api/routes/flights.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "This is the affected function named in the issue; the inverted max_price comparison is most likely implemented here.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "FlightService",
+        "search/filter query logic"
+      ]
+    },
+    {
+      "file_path": "backend/app/api/routes/flights.py",
+      "symbol_name": "search flights route handler",
+      "symbol_type": "route handler",
+      "reason": "Confirms the request parameter mapping for max_price into the service call and rules out route-layer inversion.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "search_flights"
+      ]
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "symbol_name": "flight search tests",
+      "symbol_type": "test module",
+      "reason": "Best place to add/confirm a regression test for max_price upper-bound behavior.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "search_flights"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description explicitly names backend/app/services/flight_service.py (search_flights) as the affected file.",
+    "The bug is a classic inverted comparison on a numeric upper-bound filter, which is most likely localized to search query construction inside the service layer.",
+    "The route file is secondary but relevant only to verify parameter passing; the service and its tests are the smallest implementation surface."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

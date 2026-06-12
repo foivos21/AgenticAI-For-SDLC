@@ -1,0 +1,14 @@
+{
+  "decision": "approved",
+  "fix_summary": "`search_flights` now filters to `FlightStatus.SCHEDULED` at query construction time, and the regression test was tightened to verify only scheduled flights are returned. Automated tests passed.",
+  "approval_reasons": [
+    "Automated test results passed: 6 tests succeeded.",
+    "The change is localized to the flight search service path as requested.",
+    "The regression test now asserts the scheduled-only behavior against mixed-status fixtures."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

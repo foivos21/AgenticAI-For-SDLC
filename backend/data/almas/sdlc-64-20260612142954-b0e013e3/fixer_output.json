@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "Knowledge base search now uses contains-style ILIKE matching across topic, title, and content, preserving the existing API and result shape. The service tests cover mid-field matches and confirm prefix matches still succeed. Automated tests passed.",
+  "approval_reasons": [
+    "The implementation directly addresses the reported prefix-only bug by changing the search pattern from `query%` to `%query%`.",
+    "Search applies consistently to all three knowledge article fields used by the endpoint: topic, title, and content.",
+    "The updated tests validate mid-string matching in multiple fields and preserve prefix-match behavior.",
+    "Automated test results passed, indicating the change is behaving correctly in the covered scope."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

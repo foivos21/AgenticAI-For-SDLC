@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-34-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "base_branch": "main",
+  "base_sha": "45632c8642d1c6befed08c47c74a53a9dc03eaed",
+  "ref": "refs/heads/feature/SDLC-34-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "created": true
+}

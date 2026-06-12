@@ -1,0 +1,41 @@
+{
+  "issue_key": "SDLC-9",
+  "problem_statement": "The 'max price' filter in the flight search functionality incorrectly returns flights that exceed the specified maximum price instead of those that are at or below it.",
+  "goal": "Modify the search_flights function so that it correctly filters and returns flights that are priced less than or equal to the given max_price.",
+  "acceptance_criteria": [
+    "After applying the max_price filter, the returned flights' prices should not exceed the specified max_price.",
+    "Unit tests should be updated or created to verify that the filter behaves as expected."
+  ],
+  "constraints": [],
+  "unknowns": [],
+  "repo_summary": "README.md(1), backend(141), docker-compose.yml(1), frontend(8), run_backend.sh(1), run_frontend.sh(1), run_local.sh(1), scripts(7)",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_symbols": [],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "This function is responsible for executing the flight search query, including applying the max_price filter.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": []
+    }
+  ],
+  "localization_rationale": [
+    "The search_flights function is specifically mentioned as affecting the filtering of flights based on price, making it the primary area to investigate and correct the filtering logic."
+  ],
+  "confidence": 0.9,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

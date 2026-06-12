@@ -1,0 +1,51 @@
+{
+  "solution_summary": "Plan a minimal backend-only fix in `backend/app/db/seat_inventory.py` by correcting `_seat_type_for` so business-class seat columns map to the proper seat types: A/D => `window`, B/C => `aisle`. Add or update focused tests to verify business-class classification and window-preference assignment behavior, while leaving other cabin mappings unchanged.",
+  "implementation_steps": [
+    "Inspect `_seat_type_for` and identify the branch that handles business cabin seat columns.",
+    "Update the business-class column-to-seat-type mapping so columns A and D return `window`, and columns B and C return `aisle`.",
+    "Confirm that economy/premium or any shared helper paths are not unintentionally altered; preserve existing behavior outside business cabin unless the same helper is intentionally shared.",
+    "Add or update tests covering business-class seat-type mapping for all four columns (A, B, C, D).",
+    "Add an integration-style or preference-assignment test that requests a window seat in business class and verifies the assigned seat is a true window seat, not a center/aisle-adjacent seat.",
+    "Run the relevant backend test subset and any lint/static checks used by the repository for seat inventory logic.",
+    "Review for regressions in any downstream seat selection or reconciliation logic that consumes `_seat_type_for`.",
+    "Prepare a small, targeted PR describing the business-class seat classification correction and test coverage."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "change_summary": "Fix the business-cabin seat-type mapping in `_seat_type_for` so columns A/D are classified as `window` and B/C as `aisle`.",
+      "rationale": "This is the explicit source of the bug and the smallest safe fix location."
+    },
+    {
+      "file_path": "backend/app/db/seat_inventory.py (tests or adjacent test module, if present)",
+      "change_summary": "Add/adjust unit tests for `_seat_type_for` covering business-cabin columns A through D and asserting unchanged behavior for other cabins if applicable.",
+      "rationale": "Prevents the mapping regression from reappearing and validates the exact column semantics required by acceptance criteria."
+    },
+    {
+      "file_path": "backend/app/db/seat_inventory.py (integration or booking preference test, if present)",
+      "change_summary": "Add/adjust a seat-preference test that requests a business-class window seat and verifies assignment to a window column.",
+      "rationale": "Confirms the user-visible symptom is fixed, not just the classification helper."
+    }
+  ],
+  "patch_strategy": "Apply a surgical, localized change to the seat classification helper rather than touching booking logic or schema. First, inspect the existing branch structure in `_seat_type_for` to determine whether the business cabin uses its own mapping or shares logic with other cabins. Then adjust only the business-cabin mapping constants/conditions so A and D resolve to `window` and B and C to `aisle`. Keep non-business behavior intact by preserving existing branches for other cabin types. In parallel, add tests that directly assert the corrected business-class column mapping and a preference-level test that demonstrates a window request now selects a true window seat. Limit the scope to the identified file and nearby tests to avoid unintended side effects.",
+  "validation_steps": [
+    "Run unit tests targeting seat inventory classification logic.",
+    "Run any tests covering seat assignment by preference in business class.",
+    "If available, run the full backend test module that exercises `_seat_type_for` and related seat inventory behavior.",
+    "Verify that test cases for other cabin types still pass, confirming no collateral mapping changes.",
+    "Manually review the updated branch logic for business cabin columns A/B/C/D against the acceptance criteria."
+  ],
+  "branch_name": "feature/SDLC-33-business-class-window-seat-preference-assigns-middle-seats-instead-of-window-seats",
+  "pr_title": "SDLC-33: Fix business-class seat-type mapping for window preferences",
+  "pr_body": "## Summary\nFix business-class seat-type classification so window preferences are assigned to true window seats.\n\n## What changed\n- Corrected `_seat_type_for` business-cabin mapping in `backend/app/db/seat_inventory.py`\n- Ensured columns A and D are treated as `window`\n- Ensured columns B and C are treated as `aisle`\n- Added/updated tests to cover business-class seat mapping and preference assignment\n\n## Why\nPassengers requesting a window seat in business class were being assigned a center/incorrect seat due to reversed seat-type labels.\n\n## Validation\n- Targeted seat inventory tests\n- Business-class window preference assignment tests\n\n## Risk\nLow: localized fix to seat classification logic only.",
+  "risks": [
+    "If `_seat_type_for` is shared by multiple cabin types, an overly broad change could affect other cabin mappings.",
+    "Existing tests may not cover all cabin/column combinations, so a regression check is important.",
+    "Downstream seat-selection logic may assume the previous incorrect labels in edge cases, though the issue indicates the current behavior is undesired."
+  ],
+  "assumptions": [
+    "`backend/app/db/seat_inventory.py` contains the authoritative seat-type logic for business cabins.",
+    "A focused test suite exists or can be added near the seat inventory or booking preference code.",
+    "No schema or data migration is needed because this is a runtime classification bug."
+  ]
+}

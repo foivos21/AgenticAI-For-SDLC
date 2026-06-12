@@ -1,0 +1,14 @@
+{
+  "decision": "approved",
+  "fix_summary": "The booking extras pricing bug is fixed in the service-layer add_extras path by changing the total adjustment from subtraction to addition, and focused regression tests confirm totals increase correctly for single and multiple paid extras while preserving persistence behavior.",
+  "approval_reasons": [
+    "Automated tests passed: 8 passed.",
+    "The code change is narrowly localized to BookingService.add_extras, matching the issue scope and constraint.",
+    "The updated tests directly cover the regression: paid extras increase the booking total and BookingExtra records are still persisted."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

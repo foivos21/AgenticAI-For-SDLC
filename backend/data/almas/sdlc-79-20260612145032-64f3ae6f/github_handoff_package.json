@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-79-flight-search-returns-cancelled-flights-instead-of-scheduled-ones",
+  "base_branch": "main",
+  "pr_title": "SDLC-79: Restrict flight search to scheduled flights",
+  "pr_body": "## Summary\nFix flight search so `/flights/search` returns only flights with `SCHEDULED` status.\n\n## What changes\n- Correct the status filtering in `backend/app/services/flight_service.py` (`search_flights`)\n- Tighten the regression test in `backend/app/tests/test_flight_service.py` to assert only scheduled flights are returned\n\n## Validation\n- Focused service test pass for mixed-status search results\n- Regression test confirms cancelled/delayed flights are excluded\n\n## Notes\nThis is intended as a minimal, localized fix with no API contract changes.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/flight_service.py: committed in e61788cca8b0d3301a550c3ce08c995f485ae36e",
+    "backend/app/tests/test_flight_service.py: committed in e61788cca8b0d3301a550c3ce08c995f485ae36e"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/57",
+  "commit_sha": "e61788cca8b0d3301a550c3ce08c995f485ae36e"
+}

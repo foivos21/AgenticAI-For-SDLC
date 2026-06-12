@@ -1,0 +1,6 @@
+trial,slug,issue_key,status,revision_count,files_touched,first_attempt_passed,failure_mode,prompt_tokens,completion_tokens,pipeline_seconds,total_seconds,fixed
+1,booking-cancel-seat-release-inverted,SDLC-29,needs_approval,0,2,True,none,46271,10719,70.965,84.228,True
+2,booking-long-haul-threshold-inverted,SDLC-30,needs_approval,1,2,False,none,85507,21492,209.271,221.828,True
+3,flight-available-filter-negated,SDLC-31,needs_approval,0,2,True,none,15745,4145,39.193,49.634,True
+4,booking-refund-skip-wrong-status,SDLC-32,needs_approval,0,2,True,none,45288,11628,69.391,80.089,True
+5,seat-type-business-window-column,SDLC-33,needs_approval,0,1,True,none,15649,4171,36.783,46.714,True

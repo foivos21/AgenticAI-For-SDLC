@@ -1,0 +1,52 @@
+{
+  "solution_summary": "Plan a localized fix in the booking cancellation flow so cancelling a booking also releases all seats reserved by that booking, restoring flight availability immediately while preserving existing cancellation semantics.",
+  "implementation_steps": [
+    "Inspect `booking_service.cancel_booking` to confirm the current cancellation sequence, booking status transitions, and whether seat release is already partially handled elsewhere.",
+    "Identify the seat-inventory persistence helper(s) used for reserving or releasing seats, then reuse the existing release path rather than introducing new inventory semantics if possible.",
+    "Update cancellation logic to run seat release for every seat associated with the booking before or atomically with marking the booking cancelled, depending on existing transaction patterns.",
+    "Add or adjust idempotency handling so a second cancellation on an already-cancelled booking does not double-release seats or corrupt counts.",
+    "Extend service tests to cover: cancellation restores available seats, cancelled seats can be booked again by a different passenger, and repeated cancellation remains safe if supported.",
+    "Run targeted test selection for booking service and any seat-inventory unit tests that exercise reservation/release behavior.",
+    "If test failures reveal that booking state and inventory updates are not currently atomic, add the smallest supporting transaction boundary in the service layer.",
+    "Review any related model/helper code only if needed to ensure the seat-release operation uses the same source of truth as booking creation/reservation."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Update `cancel_booking` to release all seats tied to the booking as part of cancellation, then persist the booking cancellation state.",
+      "rationale": "This is the issue\u2019s named affected file and the most likely place where booking status changes without inventory restoration."
+    },
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "change_summary": "Reuse or adjust the existing seat release helper so cancellation can return reserved seats to available inventory consistently.",
+      "rationale": "Seat availability is likely managed here; centralizing the release logic avoids duplicating inventory rules in the service layer."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add regression tests verifying seat count restoration after cancellation, successful rebooking of freed seats, and safe repeated cancellation behavior if applicable.",
+      "rationale": "The bug is behavioral and needs service-level regression coverage to prevent recurrence."
+    }
+  ],
+  "patch_strategy": "Keep the fix narrowly scoped to the cancellation flow. First, determine the current seat inventory abstraction and the exact booking-seat relationship. Then modify `cancel_booking` to invoke the existing seat-release path for all seats on the booking within the same transactional unit as the status update, or as close to atomic as the codebase supports. Avoid changing API contracts, schemas, or unrelated models unless the inventory helper requires a small adjustment to expose a release operation. Finish by adding focused tests that prove seat availability increases after cancellation and that a freed seat can be booked again.",
+  "validation_steps": [
+    "Run the booking service test suite, especially cancellation-related tests.",
+    "Add a new regression test that creates a booking, cancels it, and asserts the flight/seat availability increases.",
+    "Add a follow-up test that books a seat after cancellation to confirm the seat is reusable.",
+    "If idempotency is supported, verify cancelling an already-cancelled booking does not change seat counts again.",
+    "Run any seat-inventory tests that cover reserve/release invariants if they exist.",
+    "Perform a quick code review for transactional consistency between booking status updates and inventory updates."
+  ],
+  "branch_name": "feature/SDLC-72-cancelling-a-booking-does-not-free-up-the-seat-for-other-passengers",
+  "pr_title": "SDLC-72: Release seats when cancelling a booking",
+  "pr_body": "## Summary\nFix booking cancellation so seats reserved by the cancelled booking are returned to available inventory immediately.\n\n## What changes\n- Update `booking_service.cancel_booking` to release all seats held by the booking\n- Reuse or adjust seat inventory helpers if needed to keep inventory state consistent\n- Add regression tests for seat restoration and rebooking after cancellation\n\n## Validation\n- Booking service cancellation tests\n- Seat availability restoration test\n- Rebooking-after-cancellation test\n- Idempotency/safe repeat-cancel test if supported\n\n## Notes\nThis is a localized backend fix focused on the cancellation path and seat inventory consistency.",
+  "risks": [
+    "Cancellation may currently rely on implicit status checks; adding seat release could expose hidden assumptions about already-cancelled bookings.",
+    "If booking cancellation and inventory updates are not already transactional, partial failure could temporarily desynchronize booking status and seat counts.",
+    "Seat release logic may be shared with other flows; changing it without verifying reservation semantics could affect booking creation or modification paths."
+  ],
+  "assumptions": [
+    "Seat availability is tracked in a dedicated inventory layer or helper and can be decremented/incremented safely through existing service methods.",
+    "`cancel_booking` is the correct primary place to restore seat inventory and no separate API route or background job is required.",
+    "The codebase already has or can support a safe idempotent cancellation path without altering public interfaces."
+  ]
+}

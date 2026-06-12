@@ -1,0 +1,68 @@
+{
+  "issue_key": "SDLC-62",
+  "problem_statement": "The flight search service is applying the max_price filter in the wrong direction: requests like GET /flights/search?max_price=200 return flights priced above 200 instead of flights priced at or below 200.",
+  "goal": "Fix flight search so that max_price acts as an upper bound and only returns flights with price <= max_price.",
+  "acceptance_criteria": [
+    "GET /flights/search?max_price=200 returns only flights whose price is 200 or less.",
+    "Flights priced above the provided max_price are excluded.",
+    "Existing search behavior for other filters remains unchanged."
+  ],
+  "constraints": [
+    "Affected area indicated by the issue is backend/app/services/flight_service.py, specifically search_flights.",
+    "Keep the change as small as possible and avoid altering unrelated search logic."
+  ],
+  "unknowns": [
+    "Whether the inversion is in a direct comparison, query builder operator, or post-filtering step inside search_flights.",
+    "Whether tests already cover max_price filtering and need correction or extension."
+  ],
+  "repo_summary": "Backend service for flight search likely routes through backend/app/api/routes/flights.py into backend/app/services/flight_service.py, with flight models/schemas/tests nearby. The issue points directly to search_flights in the service layer.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "Issue explicitly names this function as the affected implementation area and the bug is an inverted max_price comparison in flight search.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "Flight",
+        "flight query/filter logic"
+      ]
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "symbol_name": "test_max_price_filter",
+      "symbol_type": "test",
+      "reason": "Likely location to verify the intended max_price behavior or add a regression test for the inverted comparison.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "search_flights"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug is clearly described as an inverted max_price filter rather than a routing or schema issue.",
+    "The issue metadata explicitly names backend/app/services/flight_service.py (search_flights) as the affected file, making the service-layer search logic the smallest likely fix.",
+    "A regression test in backend/app/tests/test_flight_service.py is the most relevant companion area for validating the fix."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

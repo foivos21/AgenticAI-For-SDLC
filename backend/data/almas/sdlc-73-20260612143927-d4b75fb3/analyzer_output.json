@@ -1,0 +1,52 @@
+{
+  "issue_key": "SDLC-73",
+  "problem_statement": "Checked-baggage pricing uses the wrong haul classification: flights under 6 hours are being treated as long-haul and charged \u20ac70, while flights 6 hours or longer are being treated as short-haul and charged \u20ac35.",
+  "goal": "Fix the baggage fee classification so that short-haul flights (< 6 hours) receive the short-haul checked-baggage rate (\u20ac35) and long-haul flights (>= 6 hours) receive the long-haul rate (\u20ac70).",
+  "acceptance_criteria": [
+    "A checked bag added to a flight shorter than 6 hours is priced at 35.00 when no explicit price is provided.",
+    "A checked bag added to a flight of 6 hours or longer is priced at 70.00 when no explicit price is provided.",
+    "Existing explicit baggage prices, if provided, continue to override the default haul-based rate logic."
+  ],
+  "constraints": [
+    "Likely limited to backend pricing logic in booking service; no frontend changes expected.",
+    "The fix should preserve the existing haul-threshold behavior at 6 hours, only correcting the inversion."
+  ],
+  "unknowns": [
+    "Whether the haul helper is used anywhere else beyond checked-baggage pricing.",
+    "Whether tests already exist for haul classification and need only inversion updates or additional coverage."
+  ],
+  "repo_summary": "Backend service-driven application; booking and flight logic live under backend/app/services, with tests under backend/tests and backend/app/tests. The issue explicitly points to backend/app/services/booking_service.py and the helper _is_long_haul.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "backend/app/services/booking_service.py::_is_long_haul"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "_is_long_haul",
+      "symbol_type": "method/helper",
+      "reason": "Explicitly identified in the issue as the affected logic; likely contains the inverted 6-hour threshold used to choose baggage pricing.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking_service checked-baggage pricing path"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description directly names the affected file and helper: backend/app/services/booking_service.py (_is_long_haul).",
+    "The symptom is a pure classification inversion at the 6-hour boundary, which suggests a small helper or conditional rather than a broad pricing subsystem change.",
+    "Booking tests are the most likely place to validate the corrected behavior and prevent regression."
+  ],
+  "confidence": 0.95,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

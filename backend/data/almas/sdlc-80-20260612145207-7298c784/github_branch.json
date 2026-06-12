@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-80-business-class-window-seat-preference-assigns-middle-seats-instead-of-window-seats",
+  "base_branch": "main",
+  "base_sha": "4acb57d3b1da0db3a113b00cd767704afa078f7f",
+  "ref": "refs/heads/feature/SDLC-80-business-class-window-seat-preference-assigns-middle-seats-instead-of-window-seats",
+  "created": true
+}

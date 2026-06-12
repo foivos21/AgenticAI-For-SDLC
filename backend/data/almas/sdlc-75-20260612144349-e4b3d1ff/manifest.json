@@ -1,0 +1,106 @@
+{
+  "run_id": "sdlc-75-20260612144349-e4b3d1ff",
+  "issue_key": "SDLC-75",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 1,
+  "created_at": "2026-06-12T14:43:49.605395+00:00",
+  "updated_at": "2026-06-12T14:46:03.400734+00:00",
+  "explanation": "Pull request #53 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-75-passengers-with-a-pending-refund-can-re-book-the-same-flight",
+  "commit_sha": "47c098c44502bcca5915910e604df25a68354419",
+  "pr_number": 53,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/53",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781275429.609062,
+      "end_time": 1781275430.6888058,
+      "duration_seconds": 1.08,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781275430.69268,
+      "end_time": 1781275436.1165361,
+      "duration_seconds": 5.424,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781275436.1224709,
+      "end_time": 1781275443.2711098,
+      "duration_seconds": 7.149,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781275443.277217,
+      "end_time": 1781275480.844745,
+      "duration_seconds": 37.568,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781275482.217837,
+      "end_time": 1781275488.32305,
+      "duration_seconds": 6.105,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781275488.328626,
+      "end_time": 1781275496.9030678,
+      "duration_seconds": 8.574,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781275496.908254,
+      "end_time": 1781275549.371721,
+      "duration_seconds": 52.463,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781275550.7543979,
+      "end_time": 1781275554.8144069,
+      "duration_seconds": 4.06,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781275554.8196092,
+      "end_time": 1781275558.658272,
+      "duration_seconds": 3.839,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781275558.664395,
+      "end_time": 1781275559.985249,
+      "duration_seconds": 1.321,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 99098,
+  "total_completion_tokens": 22494
+}

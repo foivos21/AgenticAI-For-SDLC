@@ -1,0 +1,32 @@
+{
+  "solution_summary": "The implementation plan outlines modifications to the 'search_flights' function in the 'flight_service.py' file, ensuring it accurately filters flights based on the given maximum price criteria.",
+  "implementation_steps": [
+    "Identify the 'search_flights' function within 'backend/app/services/flight_service.py'.",
+    "Review the logic currently used to apply the max_price filter within this function.",
+    "Modify the filter logic to ensure that it returns flights priced less than or equal to the specified max_price.",
+    "Add or update unit tests that specifically check for the correct filtering behavior when the max_price parameter is applied."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Update the filtering logic in search_flights function to correctly limit the returned flights based on max_price criteria.",
+      "rationale": "To ensure the search results respect the maximum price limit set by the user."
+    }
+  ],
+  "patch_strategy": "Create a new branch 'feature/SDLC-9-flight-search-max-price-filter-returns-the-most-expensive-flights', apply the changes to 'flight_service.py', and run all existing and new unit tests to ensure correctness.",
+  "validation_steps": [
+    "Run all existing unit tests to verify that previous functionality is intact.",
+    "Run new unit tests created for max_price filtering to ensure they pass and validate the filtering logic.",
+    "Manually test the API endpoint with various max_price values to verify the correct flights are returned."
+  ],
+  "branch_name": "feature/SDLC-9-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix max price filter logic in flight search",
+  "pr_body": "This PR addresses issue SDLC-9 by correcting the filtering logic in the search_flights function so that it returns flights priced at or below the specified maximum price. All related unit tests have been updated or created as necessary to ensure the new filtering behavior is validated.",
+  "risks": [
+    "Potential for introducing bugs if existing logic is not thoroughly tested after modification.",
+    "New tests may not cover all corner cases of flight pricing."
+  ],
+  "assumptions": [
+    "The existing unit tests sufficiently cover other parts of the code that might be affected by this change."
+  ]
+}

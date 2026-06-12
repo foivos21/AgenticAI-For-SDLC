@@ -1,0 +1,56 @@
+{
+  "issue_key": "SDLC-25",
+  "problem_statement": "The knowledge topic listing endpoint is returning the inverse filter: when a topic is requested, it returns articles that do not belong to that topic instead of articles that match it.",
+  "goal": "Fix get_by_topic in backend/app/services/knowledge_service.py so it returns only knowledge articles whose topic matches the requested topic.",
+  "acceptance_criteria": [
+    "Requesting articles for a given topic returns only articles with that same topic.",
+    "Articles from other topics are excluded from the response.",
+    "Behavior is correct for the example topic 'baggage' and other topics."
+  ],
+  "constraints": [
+    "Likely a small server-side query/filter bug in the knowledge service.",
+    "Use the existing topic field/model/schema conventions already present in the backend."
+  ],
+  "unknowns": [
+    "Whether the topic comparison is exact-match, case-insensitive, or normalized elsewhere in the stack.",
+    "Whether the inverted behavior comes from a negated query clause (e.g. != / not in / exclude) or from route parameter handling."
+  ],
+  "repo_summary": "Backend service for knowledge articles appears to expose topic-based retrieval through api routes, service layer, models, and schemas. The reported bug is specifically localized to the knowledge service method get_by_topic.",
+  "candidate_files": [
+    "backend/app/api/routes/knowledge.py",
+    "backend/app/models/knowledge_article.py",
+    "backend/app/schemas/knowledge.py",
+    "backend/app/scripts/seed_knowledge.py",
+    "backend/app/services/knowledge_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/knowledge_service.py",
+    "backend/app/api/routes/knowledge.py",
+    "backend/app/models/knowledge_article.py"
+  ],
+  "selected_symbols": [
+    "get_by_topic"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "symbol_name": "get_by_topic",
+      "symbol_type": "function",
+      "reason": "Explicitly named by the issue as the affected implementation area; likely contains the inverted topic filter causing unrelated articles to be returned.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "knowledge_article model/topic field",
+        "route handler that passes the topic parameter"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description explicitly names backend/app/services/knowledge_service.py (get_by_topic) as the affected file.",
+    "The symptom is a classic filter inversion, so the smallest likely fix is in the service-layer query logic rather than the API route or schema.",
+    "Related model and route files are included only to confirm the topic field/parameter flow if needed."
+  ],
+  "confidence": 0.97,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

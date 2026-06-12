@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-29-cancelling-a-booking-does-not-free-up-the-seat-for-other-passengers",
+  "base_branch": "main",
+  "pr_title": "SDLC-29: Release seats when cancelling a booking",
+  "pr_body": "## Summary\nFix booking cancellation so all seats reserved by the booking are released back to flight inventory immediately.\n\n## What changes\n- Update booking cancellation flow to release associated seats\n- Keep booking status and seat inventory in sync\n- Add regression coverage for seat availability restoration after cancellation\n\n## Why\nCancelling a booking currently leaves seats marked occupied, preventing future passengers from booking available capacity.\n\n## Validation\n- Service tests for cancellation updated/added\n- Regression scenario confirms seats become available again after cancellation\n- Idempotent/safe cancellation behavior verified if supported by the service\n\n## Notes\nThis change is intended to be localized to the booking service and seat-inventory release path, with minimal model impact.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/booking_service.py: committed in a4daf1e22186a8801040cad23017025a6cdaca51",
+    "backend/tests/services/test_booking_service.py: committed in a4daf1e22186a8801040cad23017025a6cdaca51"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/26",
+  "commit_sha": "a4daf1e22186a8801040cad23017025a6cdaca51"
+}

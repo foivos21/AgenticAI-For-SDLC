@@ -1,0 +1,13 @@
+{
+  "decision": "approved",
+  "fix_summary": "Normalized the origin filter in `search_flights` to uppercase before comparing against stored airport codes and added regression tests for different input cases.",
+  "approval_reasons": [
+    "Automated tests passed, confirming that the implementation resolves the issue effectively.",
+    "The changes ensure that origin search is now case-insensitive while preserving other functionalities as required."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

@@ -1,0 +1,40 @@
+{
+  "solution_summary": "Fix the flight search service so max_price is treated as an upper bound (price <= max_price) instead of the current inverted comparison, and add/adjust a regression test to lock in the correct behavior without changing other search filters.",
+  "implementation_steps": [
+    "Inspect backend/app/services/flight_service.py search_flights to locate the max_price branch and confirm whether the inversion occurs in in-memory filtering or query construction.",
+    "Update only the max_price comparison so flights priced above the requested maximum are excluded and flights at or below the limit remain included.",
+    "Review backend/app/tests/test_flight_service.py for an existing max_price test; correct it if it currently expects the inverted behavior, or add a focused regression test if coverage is missing.",
+    "Keep all other filter paths unchanged to preserve existing search behavior for non-price criteria.",
+    "Run targeted test coverage for flight search/service behavior to verify the fix and ensure no regressions."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Correct the max_price filter logic inside search_flights so it applies an upper-bound comparison (<=) rather than selecting flights above the threshold.",
+      "rationale": "The issue explicitly identifies this function as the defective implementation point, and a minimal one-line logic correction should resolve the bug without affecting unrelated search behavior."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add or update a regression test covering max_price so searches return only flights priced at or below the given limit and exclude more expensive flights.",
+      "rationale": "A focused test prevents reintroducing the inverted comparison and documents the intended contract for max_price filtering."
+    }
+  ],
+  "patch_strategy": "Make the smallest possible service-layer fix in search_flights by flipping the max_price comparison to the intended direction, then align tests to the corrected contract. Prefer an isolated change around the existing max_price branch rather than refactoring the broader search pipeline. If the current implementation uses query-builder operators or post-filtering, modify only that operator/condition and preserve the rest of the predicate assembly unchanged.",
+  "validation_steps": [
+    "Run the targeted flight service tests, especially the max_price regression case in backend/app/tests/test_flight_service.py.",
+    "Verify a search like GET /flights/search?max_price=200 returns only flights with price <= 200 and excludes higher-priced flights.",
+    "Confirm other search filters still behave as before by running the existing flight search/service test suite.",
+    "If available, run a broader backend unit test pass focused on flight service and related search endpoints."
+  ],
+  "branch_name": "feature/SDLC-62-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix inverted max_price filtering in flight search",
+  "pr_body": "## Summary\nFix the flight search `max_price` filter so it behaves as an upper bound and returns only flights priced at or below the requested limit.\n\n## Changes\n- Correct the `max_price` comparison in `backend/app/services/flight_service.py`\n- Add/update a regression test in `backend/app/tests/test_flight_service.py`\n\n## Validation\n- Targeted flight service tests for `max_price`\n- Confirm searches exclude flights priced above the specified maximum\n- Verify other search filters remain unchanged\n\n## Notes\nThis is a minimal, localized fix focused on the service-layer search logic.",
+  "risks": [
+    "If max_price is applied in multiple layers, changing only search_flights could leave a duplicate inverted condition elsewhere, though the issue context strongly points to a single service-layer bug.",
+    "An existing test may already encode the wrong behavior; updating it incorrectly could mask the issue if it is not rewritten to assert the correct upper-bound semantics."
+  ],
+  "assumptions": [
+    "search_flights is the only place where max_price is inverted, as indicated by the issue and analyzer output.",
+    "There is existing test scaffolding in backend/app/tests/test_flight_service.py that can be extended with minimal changes."
+  ]
+}

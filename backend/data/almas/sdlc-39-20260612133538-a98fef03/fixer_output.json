@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "The implementation correctly normalizes the incoming origin airport code to uppercase in search_flights, which makes origin filtering case-insensitive while leaving other search filters unchanged. The added regression test passed and covers lowercase, mixed-case, and uppercase origin inputs.",
+  "approval_reasons": [
+    "Automated tests passed: 6/6.",
+    "The code change is minimal and localized to the origin comparison in backend/app/services/flight_service.py.",
+    "Behavior for destination and other filters remains unchanged in the diff.",
+    "The regression test validates the case-insensitive origin behavior against uppercase-stored airport codes."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

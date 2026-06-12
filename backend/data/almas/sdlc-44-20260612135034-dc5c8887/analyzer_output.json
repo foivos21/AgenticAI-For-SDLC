@@ -1,0 +1,53 @@
+{
+  "issue_key": "SDLC-44",
+  "problem_statement": "Knowledge base search is using prefix-only matching, so articles are only returned when the query appears at the start of the topic/title/content fields. Queries that match mid-field text are incorrectly excluded.",
+  "goal": "Update knowledge base search so it performs contains/substring matching across article topic, title, and content, returning any article where the query appears anywhere in those fields.",
+  "acceptance_criteria": [
+    "Searching for a term that appears in the middle of an article's topic, title, or content returns that article.",
+    "Existing prefix matches continue to work.",
+    "Search behavior is consistent across all indexed/searchable knowledge article fields."
+  ],
+  "constraints": [
+    "Change should be localized to the backend knowledge search implementation.",
+    "Preserve existing API contract unless a broader change is required."
+  ],
+  "unknowns": [
+    "Exact search backend implementation details in knowledge_service.py are not provided here.",
+    "Need to confirm whether search is implemented in Python filtering or in a database query."
+  ],
+  "repo_summary": "Backend contains the main application code; likely knowledge article search is implemented in backend/app/services/knowledge_service.py with routes and models nearby.",
+  "candidate_files": [
+    "backend/app/services/knowledge_service.py",
+    "backend/app/api/routes/knowledge.py",
+    "backend/app/models/knowledge_article.py",
+    "backend/app/schemas/knowledge.py"
+  ],
+  "selected_files": [
+    "backend/app/services/knowledge_service.py"
+  ],
+  "selected_symbols": [
+    "search"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "symbol_name": "search",
+      "symbol_type": "function/method",
+      "reason": "Issue explicitly points to this file and the search behavior is described as prefix-only matching; the fix likely lives in the search method or its query construction.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "knowledge article retrieval/filtering helpers",
+        "any query builder or repository methods used by search"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue explicitly names backend/app/services/knowledge_service.py (search) as the affected file.",
+    "The behavior described is a classic string matching bug in the search method: startswith/prefix logic needs to become substring/contains logic.",
+    "Other files (routes, models, schemas) are less likely to contain the matching logic itself; they may only pass parameters or shape responses."
+  ],
+  "confidence": 0.95,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

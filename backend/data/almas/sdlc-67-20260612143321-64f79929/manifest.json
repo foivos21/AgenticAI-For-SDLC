@@ -1,0 +1,85 @@
+{
+  "run_id": "sdlc-67-20260612143321-64f79929",
+  "issue_key": "SDLC-67",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-12T14:33:21.968692+00:00",
+  "updated_at": "2026-06-12T14:34:08.130432+00:00",
+  "explanation": "Pull request #45 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-67-available-seat-count-is-inflated-on-flight-details",
+  "commit_sha": "212fbdca9ba97b84ffcd0209c838eda95a0f8821",
+  "pr_number": 45,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/45",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781274801.972974,
+      "end_time": 1781274803.194597,
+      "duration_seconds": 1.222,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781274803.198406,
+      "end_time": 1781274808.010946,
+      "duration_seconds": 4.813,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781274808.016192,
+      "end_time": 1781274814.896456,
+      "duration_seconds": 6.88,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781274814.9030552,
+      "end_time": 1781274835.32285,
+      "duration_seconds": 20.42,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781274836.573021,
+      "end_time": 1781274838.8556,
+      "duration_seconds": 2.283,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781274838.861525,
+      "end_time": 1781274843.050584,
+      "duration_seconds": 4.189,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781274843.0566988,
+      "end_time": 1781274844.592937,
+      "duration_seconds": 1.536,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 22385,
+  "total_completion_tokens": 5694
+}

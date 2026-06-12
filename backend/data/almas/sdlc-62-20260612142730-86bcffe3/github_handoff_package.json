@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-62-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "base_branch": "main",
+  "pr_title": "Fix inverted max_price filtering in flight search",
+  "pr_body": "## Summary\nFix the flight search `max_price` filter so it behaves as an upper bound and returns only flights priced at or below the requested limit.\n\n## Changes\n- Correct the `max_price` comparison in `backend/app/services/flight_service.py`\n- Add/update a regression test in `backend/app/tests/test_flight_service.py`\n\n## Validation\n- Targeted flight service tests for `max_price`\n- Confirm searches exclude flights priced above the specified maximum\n- Verify other search filters remain unchanged\n\n## Notes\nThis is a minimal, localized fix focused on the service-layer search logic.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/flight_service.py: committed in c7f3dda9311b0c19d73fda9012265e0c54851761",
+    "backend/app/tests/test_flight_service.py: committed in c7f3dda9311b0c19d73fda9012265e0c54851761"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/40",
+  "commit_sha": "c7f3dda9311b0c19d73fda9012265e0c54851761"
+}

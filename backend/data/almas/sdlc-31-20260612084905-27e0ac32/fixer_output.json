@@ -1,0 +1,13 @@
+{
+  "decision": "approved",
+  "fix_summary": "Fixed the inverted availability filter in the flight search functionality to ensure it behaves as expected based on the `only_available` flag.",
+  "approval_reasons": [
+    "Automated tests passed successfully, confirming that the change resolves the issue.",
+    "The implementation changes were localized to the required area of the code without affecting other functionality."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

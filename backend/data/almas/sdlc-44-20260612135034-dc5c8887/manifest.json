@@ -1,0 +1,85 @@
+{
+  "run_id": "sdlc-44-20260612135034-dc5c8887",
+  "issue_key": "SDLC-44",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-12T13:50:34.779685+00:00",
+  "updated_at": "2026-06-12T13:51:13.046640+00:00",
+  "explanation": "Pull request #39 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-44-knowledge-base-search-misses-articles-that-match-in-the-middle-of-the-text",
+  "commit_sha": "9a4bd688aa02643946504d6f4fcb1760de7ac1a0",
+  "pr_number": 39,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/39",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781272234.782269,
+      "end_time": 1781272235.764693,
+      "duration_seconds": 0.982,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781272235.7680378,
+      "end_time": 1781272239.855244,
+      "duration_seconds": 4.087,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781272239.860297,
+      "end_time": 1781272248.5442328,
+      "duration_seconds": 8.684,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781272248.548428,
+      "end_time": 1781272256.963809,
+      "duration_seconds": 8.415,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781272258.361307,
+      "end_time": 1781272264.54117,
+      "duration_seconds": 6.18,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781272264.5469482,
+      "end_time": 1781272267.984111,
+      "duration_seconds": 3.437,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781272267.986078,
+      "end_time": 1781272269.4025369,
+      "duration_seconds": 1.416,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 10544,
+  "total_completion_tokens": 3065
+}

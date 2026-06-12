@@ -1,0 +1,65 @@
+{
+  "issue_key": "SDLC-64",
+  "problem_statement": "Knowledge base search is using prefix-style matching, so articles are only returned when the query appears at the start of topic/title/content. Queries that match text in the middle of a field are not found.",
+  "goal": "Update knowledge base search so it performs a contains/substring match across topic, title, and content, returning articles whenever the query appears anywhere in those fields.",
+  "acceptance_criteria": [
+    "Searching for a term that appears mid-sentence in an article's topic/title/content returns that article.",
+    "Existing prefix matches continue to work as part of the broader contains match.",
+    "Search behavior is consistent across all knowledge article fields used by the search endpoint."
+  ],
+  "constraints": [
+    "Smallest likely change is in backend/app/services/knowledge_service.py, specifically the search implementation.",
+    "Prefer preserving current API contract and result shape unless the search logic requires otherwise."
+  ],
+  "unknowns": [
+    "Whether search is implemented with SQL LIKE/ILIKE, Python string matching, or ORM filters in knowledge_service.py.",
+    "Whether any related tests already cover search semantics and need adjustment."
+  ],
+  "repo_summary": "Repository contains backend app with knowledge service, API routes, models, schemas, and tests. The issue points directly to the knowledge service search implementation.",
+  "candidate_files": [
+    "backend/app/api/routes/knowledge.py",
+    "backend/app/models/knowledge_article.py",
+    "backend/app/schemas/knowledge.py",
+    "backend/app/services/knowledge_service.py",
+    "backend/app/services/test_knowledge_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/knowledge_service.py",
+    "backend/app/services/test_knowledge_service.py"
+  ],
+  "selected_symbols": [
+    "search"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "symbol_name": "search",
+      "symbol_type": "function/method",
+      "reason": "This is the affected implementation area named in the issue; likely contains the prefix-only filtering logic that must be changed to substring/contains matching.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "knowledge article query/filter construction"
+      ]
+    },
+    {
+      "file_path": "backend/app/services/test_knowledge_service.py",
+      "symbol_name": "search",
+      "symbol_type": "test",
+      "reason": "Search semantics should be validated here; existing tests likely need updates or a new contains-match test to prevent regressions.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "knowledge search behavior"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue explicitly names backend/app/services/knowledge_service.py (search) as the affected file.",
+    "The symptom is purely search semantics, so the smallest relevant implementation area is the service method that constructs article filters, not routes, schemas, or models.",
+    "A corresponding service test file is present and is the most likely place to confirm or adapt the expected matching behavior."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

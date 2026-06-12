@@ -1,0 +1,41 @@
+{
+  "solution_summary": "Update knowledge base search semantics in backend/app/services/knowledge_service.py so matching is performed as a contains/substring check across topic, title, and content instead of prefix-only matching. Preserve the current API/result shape and keep behavior consistent for existing prefix matches while allowing mid-field matches to return articles.",
+  "implementation_steps": [
+    "Inspect the current search implementation in knowledge_service.py to confirm where startswith/prefix logic is applied and whether normalization (case folding/trim) is already present.",
+    "Replace the field matching predicate with substring/contains logic for topic, title, and content, ensuring all three fields use the same comparison semantics.",
+    "Preserve any existing deduplication, sorting, pagination, or ranking behavior so the response shape and ordering remain unchanged unless the current code depends on the old prefix predicate.",
+    "If search is performed through a database query helper, update the query expression there; if it is in-memory filtering, update the Python predicate accordingly.",
+    "Add or update tests covering: a match at the beginning of a field, a match in the middle of a field, and a non-match case to verify no regressions."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "change_summary": "Change the search predicate from prefix-only matching to substring/contains matching for topic/title/content fields.",
+      "rationale": "This is the issue\u2019s explicitly identified affected file and should contain the logic responsible for false negatives on mid-field matches."
+    },
+    {
+      "file_path": "backend/app/services/knowledge_service.py (tests, if colocated or referenced in repository conventions)",
+      "change_summary": "Add/adjust search tests to assert mid-field matches are returned and existing prefix behavior still passes.",
+      "rationale": "Validates the fix and guards against regressions in search semantics."
+    }
+  ],
+  "patch_strategy": "Make the smallest possible change in the search path: identify the current startswith/prefix predicate in knowledge_service.search, convert it to a case-consistent substring check across topic/title/content, and leave surrounding query orchestration intact. Prefer reusing existing normalization utilities if present rather than introducing new ones. If the search is delegated to the database, update the query expression to a contains operator; if it is implemented in Python, switch to 'in' checks on normalized strings. Avoid schema/API changes.",
+  "validation_steps": [
+    "Run the knowledge search unit/integration tests focused on article lookup.",
+    "Add test coverage for a query that appears mid-sentence in content and verify the article is returned.",
+    "Verify a query matching the start of a field still returns the same results as before.",
+    "Manually smoke-test a few representative queries through the knowledge base search endpoint or service layer to confirm consistent behavior across topic, title, and content."
+  ],
+  "branch_name": "feature/SDLC-40-knowledge-base-search-misses-articles-that-match-in-the-middle-of-the-text",
+  "pr_title": "SDLC-40: Fix knowledge base search to match substrings",
+  "pr_body": "## Summary\nAdjust knowledge base search so it returns articles when the query appears anywhere in topic, title, or content, not just at the start of a field.\n\n## What changed\n- Updated the search predicate in `backend/app/services/knowledge_service.py`\n- Preserved existing response shape and surrounding search behavior\n- Added/updated tests for prefix and substring matches\n\n## Validation\n- Search terms appearing mid-field now return the matching article\n- Existing prefix matches continue to work\n- Non-matching queries still return no results\n\n## Notes\n- Minimal backend-only change; no schema or API contract changes expected",
+  "risks": [
+    "If search results previously relied on prefix semantics for ranking or performance, substring matching may broaden result sets and affect ordering or query cost.",
+    "Normalization differences (case sensitivity, whitespace trimming, accents) may cause inconsistent behavior if the current code path does not already normalize all fields uniformly."
+  ],
+  "assumptions": [
+    "knowledge_service.search is the single source of truth for article matching semantics.",
+    "No API contract or schema changes are required to satisfy the issue.",
+    "Existing search behavior already handles topic, title, and content in a single path or closely related paths."
+  ]
+}

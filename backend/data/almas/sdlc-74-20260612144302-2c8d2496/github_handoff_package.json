@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-74-flight-search-with-only-available-returns-fully-booked-flights-instead",
+  "base_branch": "main",
+  "pr_title": "SDLC-74: Fix inverted flight availability filter in search",
+  "pr_body": "## Summary\nFix the inverted availability filter in flight search so `only_available=true` excludes fully booked flights and available flights remain visible.\n\n## Planned changes\n- Correct the `search_flights` availability predicate in `backend/app/services/flight_service.py`\n- Add regression coverage in `backend/app/tests/test_flight_service.py`\n- Verify `/flights/search` passes `only_available` through unchanged\n\n## Validation\n- Focused tests for fully booked and partially available flights\n- Endpoint checks for default and `only_available=false` behavior\n\n## Notes\nThis is intended as a minimal backend-only fix with test coverage to prevent recurrence.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/flight_service.py: committed in 866144ab42af4ab9820a33f867fa8362435c82d1",
+    "backend/app/tests/test_flight_service.py: committed in 866144ab42af4ab9820a33f867fa8362435c82d1"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/52",
+  "commit_sha": "866144ab42af4ab9820a33f867fa8362435c82d1"
+}

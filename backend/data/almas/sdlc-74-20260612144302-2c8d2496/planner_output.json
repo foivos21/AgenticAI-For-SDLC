@@ -1,0 +1,49 @@
+{
+  "solution_summary": "Plan to correct the inverted `only_available` filtering in backend flight search so default searches exclude fully booked flights and partially available flights remain visible. The implementation should be localized to `search_flights` in the flight service, with regression tests added for fully booked and partially booked scenarios and a quick verification that the API route forwards the query parameter unchanged.",
+  "implementation_steps": [
+    "Inspect `backend/app/services/flight_service.py::search_flights` to find the current `only_available` predicate and confirm whether the filter is inverted at the service layer.",
+    "Adjust the availability condition so `only_available=true` keeps flights with at least one unbooked seat and excludes flights where every seat is booked.",
+    "Verify `only_available=false` either bypasses the availability filter entirely or preserves the intended non-filtered behavior, without excluding flights that still have seats available.",
+    "Review `backend/app/api/routes/flights.py` to ensure the `only_available` query parameter is passed through to `search_flights` unchanged and no route-level inversion exists.",
+    "Add or update regression tests in `backend/app/tests/test_flight_service.py` covering: a fully booked flight, a flight with one or more free seats, default search behavior, and `only_available=false` behavior.",
+    "Run focused test execution for flight service and route-level search coverage to confirm the bug is fixed and the change does not affect unrelated search behavior."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Correct the `only_available` filtering logic inside `search_flights` so it excludes fully booked flights when the flag is true.",
+      "rationale": "The issue explicitly identifies this file and function as the likely source of the inverted predicate, making it the smallest and most targeted fix."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add regression tests that assert fully booked flights are excluded by default while partially available flights remain in results, and that `only_available=false` does not invert the behavior.",
+      "rationale": "Tests are needed to lock in the intended semantics and prevent a recurrence of the filter inversion."
+    },
+    {
+      "file_path": "backend/app/api/routes/flights.py",
+      "change_summary": "Verify parameter plumbing for `/flights/search` and update only if the route is transforming or negating `only_available` before calling the service.",
+      "rationale": "The route is a secondary candidate for the bug; checking it ensures the service receives the intended query flag unchanged."
+    }
+  ],
+  "patch_strategy": "Use a minimal, service-first patch: first confirm where the availability predicate is evaluated, then invert only the incorrect branch in `search_flights` without altering unrelated search filters or response shaping. Keep API route changes to verification only unless parameter forwarding is proven faulty. Add regression tests that build two representative flights (fully booked and partially available), exercise the default `only_available=true` path, and assert `only_available=false` does not suppress available flights. Prefer narrowly scoped test fixtures and direct service assertions to minimize maintenance overhead and make the failure mode explicit.",
+  "validation_steps": [
+    "Run the flight service test module, especially new regression cases for fully booked versus partially available flights.",
+    "Exercise the `/flights/search` endpoint with default parameters and with `only_available=false` to confirm the API matches the service semantics.",
+    "Validate that search results still include flights with at least one free seat and exclude flights with no free seats when `only_available=true`.",
+    "Check adjacent search filters, if any, to ensure the fix does not unintentionally alter sorting, date filtering, or other criteria.",
+    "If available, run a targeted static or unit test suite for route/service integration around flights search."
+  ],
+  "branch_name": "feature/SDLC-74-flight-search-with-only-available-returns-fully-booked-flights-instead",
+  "pr_title": "SDLC-74: Fix inverted flight availability filter in search",
+  "pr_body": "## Summary\nFix the inverted availability filter in flight search so `only_available=true` excludes fully booked flights and available flights remain visible.\n\n## Planned changes\n- Correct the `search_flights` availability predicate in `backend/app/services/flight_service.py`\n- Add regression coverage in `backend/app/tests/test_flight_service.py`\n- Verify `/flights/search` passes `only_available` through unchanged\n\n## Validation\n- Focused tests for fully booked and partially available flights\n- Endpoint checks for default and `only_available=false` behavior\n\n## Notes\nThis is intended as a minimal backend-only fix with test coverage to prevent recurrence.",
+  "risks": [
+    "Availability logic may be duplicated in both the service and route layer, requiring a small follow-up adjustment if parameter plumbing is not clean.",
+    "If the project defines availability via a derived seat-count helper, changing the predicate may need to account for edge cases such as null seat collections or stale booking state.",
+    "Regression tests may need fixture updates if flight/seat factories currently do not support easy creation of fully booked and partially available flights."
+  ],
+  "assumptions": [
+    "`search_flights` is the primary location of the bug and can be corrected without schema changes.",
+    "The API route forwards `only_available` as a boolean query parameter and does not intentionally invert it.",
+    "The repository already has test factories or helpers for constructing flights and bookings, or can support them with minimal fixture additions."
+  ]
+}

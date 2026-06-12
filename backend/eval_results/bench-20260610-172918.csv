@@ -1,0 +1,11 @@
+trial,slug,issue_key,status,pipeline_seconds,total_seconds,fixed
+1,flight-price-filter-inverted,SDLC-19,needs_approval,30.421,40.989,True
+2,flight-origin-case,SDLC-20,needs_approval,31.763,42.606,True
+3,knowledge-search-prefix-only,SDLC-21,needs_approval,27.523,37.635,True
+4,booking-total-wrong-operator,SDLC-22,needs_approval,53.236,63.119,True
+5,booking-extras-subtract,SDLC-23,needs_approval,69.155,79.567,True
+6,seat-available-count-inflated,SDLC-24,needs_approval,47.253,57.352,True
+7,knowledge-get-by-topic-inverted,SDLC-25,needs_approval,29.494,39.489,True
+8,flight-sort-by-price-inverted,SDLC-26,needs_approval,43.758,53.728,True
+9,flight-destination-case,SDLC-27,needs_approval,33.407,43.599,True
+10,booking-create-extras-subtract,SDLC-28,needs_approval,60.656,71.071,True

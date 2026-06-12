@@ -1,0 +1,11 @@
+trial,slug,issue_key,status,pipeline_seconds,total_seconds,fixed,model,difficulty
+1,flight-price-filter-inverted,SDLC-9,needs_approval,68.251,80.431,True,gpt-4o-mini,easy
+2,flight-price-filter-inverted,SDLC-10,needs_approval,50.521,70.045,True,gpt-4o-mini,easy
+3,flight-price-filter-inverted,SDLC-11,needs_approval,64.049,83.33,True,gpt-4o-mini,easy
+4,flight-price-filter-inverted,SDLC-12,needs_approval,81.385,92.766,True,gpt-4o-mini,easy
+5,flight-price-filter-inverted,SDLC-13,needs_approval,50.919,61.777,True,gpt-4o-mini,easy
+6,flight-price-filter-inverted,SDLC-14,needs_approval,44.949,55.676,True,gpt-4o-mini,easy
+7,flight-price-filter-inverted,SDLC-15,needs_approval,59.794,70.802,True,gpt-4o-mini,easy
+8,flight-price-filter-inverted,SDLC-16,needs_approval,108.84,121.266,True,gpt-4o-mini,easy
+9,flight-price-filter-inverted,SDLC-17,needs_approval,52.107,64.186,True,gpt-4o-mini,easy
+10,flight-price-filter-inverted,SDLC-18,needs_approval,77.37,90.304,True,gpt-4o-mini,easy

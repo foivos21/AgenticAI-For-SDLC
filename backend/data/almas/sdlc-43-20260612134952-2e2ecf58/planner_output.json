@@ -1,0 +1,40 @@
+{
+  "solution_summary": "Implement a localized fix in the flight search service so origin filtering is case-insensitive, then add service-level test coverage for lower-case origin queries while preserving existing search behavior for uppercase inputs and other filters.",
+  "implementation_steps": [
+    "Normalize the incoming origin query parameter inside `search_flights` before comparing it to stored airport codes.",
+    "Keep the comparison logic scoped to origin filtering so destination and any other search filters remain unchanged unless they already share the same normalization path.",
+    "Add or update unit tests in `backend/app/tests/test_flight_service.py` to cover `origin=ath` returning flights whose origin code is `ATH`.",
+    "Add a regression test asserting uppercase origin input still works and that unrelated filters continue to behave as before."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Adjust `search_flights` origin matching to use case-insensitive comparison or normalize the origin input to uppercase before filtering.",
+      "rationale": "This is the issue\u2019s identified source of the bug and the smallest safe fix path. It ensures queries like `origin=ath` match stored uppercase airport codes such as `ATH`."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add regression tests for lower-case origin search and verify uppercase origin search remains correct.",
+      "rationale": "Tests will confirm the fix and prevent regressions in the search behavior."
+    }
+  ],
+  "patch_strategy": "Use a minimal, service-local patch. First inspect `search_flights` to confirm how origin filtering is implemented. If it performs a direct equality check against airport codes, normalize the incoming `origin` parameter once at the start of the filter path (preferred) or compare both sides in a case-insensitive manner. Avoid broad refactors or changes to route/schema/model layers unless required by the existing implementation. Then add focused service tests that exercise the search function with mixed-case origin input and validate that only origin matching changes, leaving other filters untouched.",
+  "validation_steps": [
+    "Run the flight service test module, especially any tests covering `search_flights`.",
+    "Add a regression test for `origin=ath` returning flights with origin airport code `ATH`.",
+    "Run existing tests for flight search to ensure uppercase origin queries still pass.",
+    "Manually verify the endpoint behavior with a request like `GET /flights/search?origin=ath` and confirm flights are returned.",
+    "Confirm other search criteria still behave as before if combined with origin filtering."
+  ],
+  "branch_name": "feature/SDLC-43-flight-search-by-origin-airport-returns-no-results",
+  "pr_title": "SDLC-43: Fix case-insensitive origin flight search",
+  "pr_body": "## Summary\nFix flight search so origin airport filtering is case-insensitive. Queries like `origin=ath` will now match flights stored with uppercase airport codes such as `ATH`.\n\n## Changes\n- Normalize origin filtering in `backend/app/services/flight_service.py`\n- Add regression coverage in `backend/app/tests/test_flight_service.py`\n\n## Validation\n- Added/updated tests for lower-case and uppercase origin search\n- Confirmed other search behavior remains unchanged\n\n## Jira\nSDLC-43",
+  "risks": [
+    "If `search_flights` shares filtering helpers with destination or other criteria, an overly broad normalization change could alter behavior beyond origin matching.",
+    "Tests may need fixture adjustments if they currently assume case-sensitive comparison semantics elsewhere in flight search."
+  ],
+  "assumptions": [
+    "`search_flights` is the only affected implementation point, as indicated by the issue context.",
+    "Airport codes are stored in uppercase and the intended fix is to normalize incoming origin query values rather than changing persisted data."
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "solution_summary": "Fix the flight seat availability arithmetic in the backend seat inventory counter so available seats are computed as total_seats - booked_seats instead of total_seats + booked_seats. Keep the change localized to the seat inventory DB helper unless validation shows a shared downstream helper also hardcodes the same formula.",
+  "implementation_steps": [
+    "Inspect backend/app/db/seat_inventory.py, especially seat_inventory_counts, to confirm where available seat counts are calculated and whether the logic is a direct arithmetic expression or part of an aggregate query/alias.",
+    "Update the availability computation to subtract booked seats from total seats, preserving existing returned fields and query shape.",
+    "Check for any shared helper or duplicated computation used by flight details; if the same formula exists elsewhere in the seat inventory path, align it to the corrected arithmetic while avoiding unrelated refactors.",
+    "Review any tests or fixtures that assert available seat counts and adjust expectations to match the corrected calculation.",
+    "Add or update a focused regression test that verifies available seats never exceed total aircraft capacity for a representative flight scenario."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "change_summary": "Correct the available-seat calculation in seat_inventory_counts from total + booked to total - booked.",
+      "rationale": "This is the issue-identified source of the bug and should be the primary, minimal fix to align flight details with expected seat availability."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add or update a regression test covering flight details seat availability to assert available seats equal total minus booked.",
+      "rationale": "A targeted test will prevent reintroduction of the arithmetic bug and validate the backend path used by flight details."
+    }
+  ],
+  "patch_strategy": "Use a minimal, localized patch. First, adjust the arithmetic in seat_inventory_counts so the computed available seats represent remaining capacity. Keep the existing API/data contract unchanged. Then validate whether flight details consume this value directly; if so, ensure no further transformation re-inflates the count. Add a regression test at the service level or nearest existing test layer that exercises a flight with booked seats and asserts available_seats == total_seats - booked_seats, including a check that the result never exceeds aircraft capacity. Avoid broader schema/model changes unless the test run reveals a duplicated formula in another shared helper.",
+  "validation_steps": [
+    "Run the targeted test suite covering flight details and seat inventory counts.",
+    "Add a regression case with known total and booked seat counts, verifying available seats are computed by subtraction.",
+    "Verify the returned API payload shape is unchanged and only the numeric value differs.",
+    "Confirm no flight detail response reports available seats greater than total aircraft capacity in the tested scenario.",
+    "If available, run a broader backend test pass around seat inventory and flight service paths to ensure no shared helper still applies the incorrect formula."
+  ],
+  "branch_name": "feature/SDLC-67-available-seat-count-is-inflated-on-flight-details",
+  "pr_title": "SDLC-67: Fix inflated available seat count on flight details",
+  "pr_body": "## Summary\nFix the backend seat availability calculation so flight details report available seats as `total_seats - booked_seats` instead of the inflated `total_seats + booked_seats` result.\n\n## Changes\n- Correct the availability arithmetic in `backend/app/db/seat_inventory.py` (`seat_inventory_counts`)\n- Add/adjust regression coverage for flight details seat availability\n\n## Validation\n- Targeted tests for seat inventory and flight details\n- Regression assertion that available seats never exceed aircraft capacity\n\n## Notes\n- Change is intentionally localized and preserves the existing API/data model shape.",
+  "risks": [
+    "There may be a duplicated availability formula in a downstream service/helper if flight details apply additional transformation.",
+    "Existing tests or seed data may implicitly assert the incorrect inflated value and need updates.",
+    "If booked seats can exceed total seats due to data inconsistencies, subtraction may surface negative availability and may require clamping or data cleanup policy review."
+  ],
+  "assumptions": [
+    "seat_inventory_counts is the authoritative backend source for flight details available-seat reporting.",
+    "No API contract change is needed; only the computed value should change.",
+    "The incorrect formula is localized and not intentionally used elsewhere for a different metric."
+  ]
+}

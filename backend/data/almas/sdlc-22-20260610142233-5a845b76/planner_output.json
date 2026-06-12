@@ -1,0 +1,36 @@
+{
+  "solution_summary": "Fix the booking creation price calculation so the base total uses multiplication instead of addition when multiple passengers are included. The change is localized to booking_service.py create_booking and should preserve single-passenger behavior while correcting multi-passenger totals.",
+  "implementation_steps": [
+    "Inspect create_booking in backend/app/services/booking_service.py to locate the current base total arithmetic.",
+    "Replace the incorrect fare + passenger_count style calculation with fare * passenger_count.",
+    "Confirm the operand types remain compatible with the existing money/decimal handling used in the service.",
+    "Review any nearby assignments or downstream fields that consume the computed base total to ensure no secondary recalculation reintroduces the bug.",
+    "Add or update focused tests for one-passenger and multi-passenger booking creation scenarios if test coverage exists in the repository."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the base total calculation inside create_booking so it multiplies flight price by passenger count.",
+      "rationale": "This is the issue\u2019s identified source of the defect and the minimal scope needed to satisfy the acceptance criteria."
+    }
+  ],
+  "patch_strategy": "Make a narrowly scoped arithmetic fix in create_booking only. Preserve the surrounding booking flow, inputs, and outputs. Verify that the calculated base total uses flight_price * passenger_count and that existing single-passenger logic remains unchanged. If the code uses Decimal or currency-safe types, keep the same type path and avoid introducing float conversion. Prefer a one-line logic correction with no model, schema, or route changes unless validation reveals the value is recalculated elsewhere.",
+  "validation_steps": [
+    "Manually reason through the example: 200.00 flight price \u00d7 3 passengers should produce 600.00.",
+    "Run the relevant booking service tests, or add a focused unit test covering multiple passengers if none exists.",
+    "Verify a single-passenger booking still returns the original flight price as the base total.",
+    "Check that no other booking totals or summary fields are affected by the change.",
+    "If available, run the backend test suite subset covering booking creation."
+  ],
+  "branch_name": "feature/SDLC-22-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "pr_title": "SDLC-22: Fix booking base total calculation for multiple passengers",
+  "pr_body": "## Summary\nCorrect the booking base total calculation in `backend/app/services/booking_service.py` so it multiplies flight price by passenger count instead of adding them.\n\n## Change\n- Fix `create_booking` arithmetic for booking base total\n- Preserve existing single-passenger behavior\n\n## Validation\n- 200.00 flight with 3 passengers now calculates to 600.00\n- Single-passenger booking remains unchanged\n\n## Scope\n- Limited to booking creation price calculation logic",
+  "risks": [
+    "If the service uses a non-obvious money type, an arithmetic fix could require ensuring the result remains in the expected decimal/currency format.",
+    "There may be hidden downstream assumptions that currently rely on the incorrect total, though the issue context suggests the bug is localized."
+  ],
+  "assumptions": [
+    "The base total is computed directly in create_booking as described in the issue.",
+    "No schema, route, or model changes are required to resolve this defect."
+  ]
+}

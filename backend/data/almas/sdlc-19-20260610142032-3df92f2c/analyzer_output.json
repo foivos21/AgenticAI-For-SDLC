@@ -1,0 +1,66 @@
+{
+  "issue_key": "SDLC-19",
+  "problem_statement": "The flight search endpoint applies the max_price filter incorrectly: instead of returning flights priced at or below the requested maximum, it returns flights priced above the limit, indicating an inverted comparison in the search logic.",
+  "goal": "Fix GET /flights/search so that max_price filters results to flights with price <= the provided value.",
+  "acceptance_criteria": [
+    "GET /flights/search?max_price=200 returns only flights with price less than or equal to 200.",
+    "Flights priced above max_price are excluded from the results.",
+    "Existing search behavior for other filters remains unchanged."
+  ],
+  "constraints": [
+    "Limit changes to the backend flight search implementation unless a shared schema/API contract issue is discovered.",
+    "Keep the fix as small and localized as possible."
+  ],
+  "unknowns": [
+    "Whether the filter is implemented directly in the service layer or delegated through repository/query construction.",
+    "Whether any tests currently cover max_price behavior or need to be added alongside the fix."
+  ],
+  "repo_summary": "Backend-focused repository with a flight search API. Relevant candidate area is backend/app/services/flight_service.py, with nearby route/schema/model files for the flights domain.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py",
+    "backend/app/api/routes/flights.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "This is the affected implementation area explicitly called out in the issue; the max_price comparison is likely inverted here.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "backend/app/api/routes/flights.py"
+      ]
+    },
+    {
+      "file_path": "backend/app/api/routes/flights.py",
+      "symbol_name": "(GET) /flights/search route handler",
+      "symbol_type": "route handler",
+      "reason": "Useful to confirm request parameter names and how max_price is passed into the service, though the bug likely lives in the service layer.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "backend/app/services/flight_service.py"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description precisely identifies the affected behavior: max_price returns flights above the limit, which strongly suggests a reversed comparison operator.",
+    "The issue explicitly names backend/app/services/flight_service.py (search_flights) as the affected file, making this the smallest likely implementation area.",
+    "The route file is included only as a secondary check for parameter wiring; it is less likely to contain the bug than the service search logic."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

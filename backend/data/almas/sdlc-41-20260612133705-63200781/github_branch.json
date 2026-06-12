@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-41-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "base_branch": "main",
+  "base_sha": "5e36c1d0deed02b099d944464d138b1b616c36ab",
+  "ref": "refs/heads/feature/SDLC-41-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "created": true
+}

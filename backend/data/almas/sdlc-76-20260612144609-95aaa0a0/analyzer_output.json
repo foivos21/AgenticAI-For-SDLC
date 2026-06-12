@@ -1,0 +1,112 @@
+{
+  "issue_key": "SDLC-76",
+  "problem_statement": "Rescheduling a booking moves it to a new flight but does not release the seat(s) held by that booking on the original flight, leaving the old flight's inventory incorrectly blocked.",
+  "goal": "Ensure rescheduling a booking frees all seat inventory entries associated with the booking on the source flight before or during the move to the new flight.",
+  "acceptance_criteria": [
+    "After rescheduling from flight A to flight B, every seat previously assigned to the booking on flight A is marked available again.",
+    "Flight A's available capacity returns to the correct value after the reschedule.",
+    "The booking remains correctly assigned to flight B with its new seat assignment.",
+    "No stale seat_inventory records remain reserved on the original flight for the rescheduled booking."
+  ],
+  "constraints": [
+    "Fix should be localized to booking rescheduling flow unless adjacent seat-inventory cleanup is required.",
+    "Behavior must preserve existing booking/seat assignment logic for non-reschedule operations."
+  ],
+  "unknowns": [
+    "Whether the booking can hold multiple seats/passengers and therefore requires releasing multiple seat inventory records.",
+    "Whether seat release is done via SeatInventory model/service helpers or directly in booking_service.py."
+  ],
+  "repo_summary": "Repository contains backend booking/flight models, seat inventory tables, and booking/flight services. The issue specifically points to backend/app/services/booking_service.py reschedule_booking, suggesting the bug is in the rescheduling transaction/seat transfer logic.",
+  "candidate_files": [
+    "backend/alembic/versions/20260403_0002_seat_inventory.py",
+    "backend/alembic/versions/20260403_0003_booking_duplicate_guardrails.py",
+    "backend/app/api/routes/bookings.py",
+    "backend/app/api/routes/flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/db/seat_inventory.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/booking_event.py",
+    "backend/app/models/booking_extra.py",
+    "backend/app/models/booking_passenger.py",
+    "backend/app/models/flight.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/schemas/seat_inventory.py",
+    "backend/app/scripts/reconcile_seat_state.py",
+    "backend/app/scripts/seed_bookings.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/services/booking_service.py",
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/db/seat_inventory.py",
+    "backend/app/models/booking.py"
+  ],
+  "selected_symbols": [
+    "reschedule_booking"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "reschedule_booking",
+      "symbol_type": "function",
+      "reason": "Primary rescheduling flow likely updates booking flight assignment but misses releasing seat inventory on the source flight.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "reassign booking flight/seat logic",
+        "seat release helper",
+        "seat inventory update/rollback logic"
+      ]
+    },
+    {
+      "file_path": "backend/app/models/seat_inventory.py",
+      "symbol_name": "SeatInventory",
+      "symbol_type": "model",
+      "reason": "Represents the occupied/free seat state that must be cleared for the old flight when rescheduling.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "availability state fields",
+        "booking/flight foreign keys"
+      ]
+    },
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "symbol_name": "seat_inventory persistence helpers",
+      "symbol_type": "module",
+      "reason": "May contain the CRUD/update functions used by reschedule_booking to mark seats free or occupied.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "release seat",
+        "reserve seat",
+        "query by booking/flight"
+      ]
+    },
+    {
+      "file_path": "backend/app/models/booking.py",
+      "symbol_name": "Booking",
+      "symbol_type": "model",
+      "reason": "Booking likely stores the flight association and drives which seat inventory rows should be released.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking flight reference",
+        "passenger/seat associations"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue explicitly names backend/app/services/booking_service.py (reschedule_booking) as the affected file, so the smallest likely fix is inside that function.",
+    "The observed bug is state leakage across flights: rescheduling updates the booking target flight but fails to clear the old flight's seat inventory records.",
+    "Seat inventory model/persistence code is the adjacent area most likely involved if reschedule_booking delegates seat state changes to helpers.",
+    "Because the symptom is stale occupancy after a move, the implementation likely needs to release all seat rows tied to the booking before creating new reservations on the destination flight."
+  ],
+  "confidence": 0.92,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

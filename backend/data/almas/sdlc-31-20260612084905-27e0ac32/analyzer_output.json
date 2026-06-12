@@ -1,0 +1,68 @@
+{
+  "issue_key": "SDLC-31",
+  "problem_statement": "Flight search availability filtering is inverted: GET /flights/search with only_available=true returns fully booked flights, and only_available=false hides flights that still have seats available.",
+  "goal": "Fix search_flights so the only_available flag excludes flights with no remaining seats when true, and includes all flights when false (or otherwise applies the intended availability filter correctly).",
+  "acceptance_criteria": [
+    "With only_available=true, search results exclude any flight where all seats are already booked.",
+    "With only_available=false, flights with remaining seats are not incorrectly hidden.",
+    "Behavior is consistent with the default request path for GET /flights/search."
+  ],
+  "constraints": [
+    "Keep changes localized to the flight search availability filter logic if possible.",
+    "Preserve existing search behavior unrelated to availability filtering."
+  ],
+  "unknowns": [
+    "Exact implementation of seat availability calculation in search_flights.",
+    "Whether tests already exist for the availability filter behavior and need updating."
+  ],
+  "repo_summary": "Repository includes backend API, service, model, schema, and tests for flight search; the reported issue points directly to backend/app/services/flight_service.py search_flights.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "Reported affected file and method; likely contains the inverted only_available filter logic.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "Flight",
+        "seat availability computation",
+        "query filter application"
+      ]
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "symbol_name": "test_search_flights_only_available_filter",
+      "symbol_type": "test",
+      "reason": "Likely place to validate the corrected availability behavior and prevent regression.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "search_flights"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description explicitly names backend/app/services/flight_service.py::search_flights as the affected file.",
+    "The bug is about a boolean filter being inverted, which is most likely implemented in the service-layer query construction rather than in the route or schema.",
+    "Tests for service behavior are the smallest complementary area for verifying the fix."
+  ],
+  "confidence": 0.95,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

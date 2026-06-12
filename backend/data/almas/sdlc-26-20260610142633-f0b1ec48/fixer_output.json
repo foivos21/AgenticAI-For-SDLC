@@ -1,0 +1,12 @@
+{
+  "decision": "approved",
+  "fix_summary": "Fixed the inverted flight search sorting to ensure `sort_by=price` orders flights by price in ascending order and the default order is by departure time.",
+  "approval_reasons": [
+    "Automated tests passed successfully, confirming the sorting behavior works as intended with the updates."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

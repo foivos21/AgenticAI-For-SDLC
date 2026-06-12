@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "Localized knowledge search change in `backend/app/services/knowledge_service.py` switches from prefix-only to substring/contains matching across topic, title, and content. Added focused regression coverage for mid-field, prefix, and no-match behavior. Automated tests passed.",
+  "approval_reasons": [
+    "Automated test results passed (3/3).",
+    "The code change is narrowly scoped to the backend knowledge search service and preserves the existing API contract.",
+    "The new query uses `ilike('%query%')`, which satisfies substring matching while still allowing prefix matches as a subset.",
+    "Regression tests cover the target behavior and confirm no-match handling."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

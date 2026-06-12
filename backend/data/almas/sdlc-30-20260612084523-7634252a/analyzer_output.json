@@ -1,0 +1,66 @@
+{
+  "issue_key": "SDLC-30",
+  "problem_statement": "Checked-baggage pricing uses the wrong haul classification: flights under 6 hours are being treated as long-haul and charged \u20ac70, while flights 6 hours or longer are being treated as short-haul and charged \u20ac35.",
+  "goal": "Fix the haul classification logic so that checked-baggage pricing applies \u20ac35 for flights shorter than 6 hours and \u20ac70 for flights of 6 hours or longer.",
+  "acceptance_criteria": [
+    "A checked bag on a flight shorter than 6 hours is priced at 35.00 when no explicit price is provided.",
+    "A checked bag on a flight of 6 hours or longer is priced at 70.00 when no explicit price is provided.",
+    "The haul classification helper returns the expected boolean for the 6-hour threshold."
+  ],
+  "constraints": [
+    "Keep the change localized to the booking service logic unless tests reveal a second dependent location.",
+    "Preserve existing explicit baggage pricing behavior, only affecting the default price path driven by haul classification."
+  ],
+  "unknowns": [
+    "Whether any tests currently encode the inverted threshold and need updating.",
+    "Whether the haul classification helper is used anywhere else for pricing or only for baggage fees."
+  ],
+  "repo_summary": "Backend-focused Python service with booking, flight, and testing services; issue points directly to backend/app/services/booking_service.py and helper _is_long_haul.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/services/__init__.py",
+    "backend/app/services/almas/__init__.py",
+    "backend/app/services/almas/github_adapter.py",
+    "backend/app/services/almas/logging.py",
+    "backend/app/services/almas/repository.py",
+    "backend/app/services/almas/store.py",
+    "backend/app/services/almas/supervisor.py",
+    "backend/app/services/booking_service.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/services/jira_service.py",
+    "backend/app/services/knowledge_service.py",
+    "backend/app/services/testing_service.py",
+    "backend/app/tests/test_flight_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/tests/test_supervisor_and_testing_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "backend/app/services/booking_service.py:_is_long_haul"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "_is_long_haul",
+      "symbol_type": "method",
+      "reason": "Directly named in the issue as the likely source of the inverted 6-hour threshold used to determine baggage fee defaults.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking/baggage pricing logic"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue explicitly identifies backend/app/services/booking_service.py and the helper _is_long_haul as the affected area.",
+    "The symptom is a reversed threshold at 6 hours, which strongly suggests a single boolean helper or conditional in booking service rather than a broader pricing system defect.",
+    "The most likely companion test area is backend/tests/services/test_booking_service.py, where the default baggage pricing behavior should be asserted or corrected."
+  ],
+  "confidence": 0.98,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

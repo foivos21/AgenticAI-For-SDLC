@@ -1,0 +1,66 @@
+{
+  "issue_key": "SDLC-78",
+  "problem_statement": "Knowledge base search is too restrictive: it appears to require a query match in topic, title, and content at the same time, so articles matching only one field are filtered out.",
+  "goal": "Change knowledge base search so a query matches if it appears in any one of topic, title, or content, and return those articles as search results.",
+  "acceptance_criteria": [
+    "Searching by a term present only in the title returns the article.",
+    "Searching by a term present only in the topic returns the article.",
+    "Searching by a term present only in the content returns the article.",
+    "Existing behavior still returns matching articles when multiple fields contain the term."
+  ],
+  "constraints": [
+    "Scope should be limited to the knowledge search implementation in backend/app/services/knowledge_service.py unless supporting query-building code is required.",
+    "Behavior change should preserve current search semantics aside from switching AND-style filtering to OR-style filtering."
+  ],
+  "unknowns": [
+    "Whether the search is implemented as ORM filters, raw SQL, or a helper method inside knowledge_service.py.",
+    "Whether any tests already cover search behavior and need updating."
+  ],
+  "repo_summary": "Backend service-oriented repository; knowledge search logic is likely in backend/app/services/knowledge_service.py, with route/schema/model support around backend/app/api/routes/knowledge.py and backend/app/models/knowledge_article.py.",
+  "candidate_files": [
+    "backend/app/services/knowledge_service.py",
+    "backend/app/api/routes/knowledge.py",
+    "backend/app/models/knowledge_article.py",
+    "backend/app/schemas/knowledge.py",
+    "backend/app/services/test_knowledge_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/knowledge_service.py",
+    "backend/app/services/test_knowledge_service.py"
+  ],
+  "selected_symbols": [
+    "knowledge_service search method"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "symbol_name": "search",
+      "symbol_type": "method",
+      "reason": "Issue description explicitly identifies the search condition bug and the affected file points here; this is the smallest likely implementation area.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "knowledge article query/filter construction"
+      ]
+    },
+    {
+      "file_path": "backend/app/services/test_knowledge_service.py",
+      "symbol_name": "search-related tests",
+      "symbol_type": "test",
+      "reason": "Likely location to add or adjust coverage for OR-vs-AND search behavior.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "knowledge_service search method"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug report directly names backend/app/services/knowledge_service.py and specifically the search behavior.",
+    "The symptom is a boolean logic error in query composition (AND instead of OR) rather than a model or route issue.",
+    "Only a small service-level change is likely needed, with tests in the corresponding service test file to prevent regression."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

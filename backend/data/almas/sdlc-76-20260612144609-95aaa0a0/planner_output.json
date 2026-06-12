@@ -1,0 +1,58 @@
+{
+  "solution_summary": "Plan a localized fix in the booking rescheduling flow so that moving a booking to a new flight also releases every seat inventory record held on the original flight. The implementation should primarily update `reschedule_booking` and, if needed, the seat inventory helper layer to correctly resolve and free seats associated with the booking (including passenger-linked seats), without changing non-reschedule booking behavior.",
+  "implementation_steps": [
+    "Inspect `backend/app/services/booking_service.py::reschedule_booking` to map the exact reschedule sequence: current booking lookup, old flight reference, seat reservation release, new flight assignment, and any transaction boundaries.",
+    "Update the rescheduling flow to release all occupied seat inventory rows tied to the booking on the source flight before finalizing the move to the destination flight.",
+    "If `reschedule_booking` currently relies on seat inventory helper functions, verify they accept booking context and can enumerate all seats associated with a booking; otherwise, extend the helper layer in `backend/app/db/seat_inventory.py` to resolve seats via booking passenger associations.",
+    "Import `BookingPassenger` into `backend/app/db/seat_inventory.py` as requested so seat-release logic can resolve seat numbers from booking passengers when needed.",
+    "Ensure the seat release operation is scoped to the original flight so it cannot accidentally free seats on the target flight or unrelated bookings.",
+    "Preserve the existing destination-flight seat allocation logic, only adding the source-flight cleanup step and keeping the overall booking state transition intact.",
+    "Add or update tests covering reschedule behavior: old flight seat(s) become available, capacity is restored, booking is reassigned to the new flight, and no stale seat inventory records remain reserved on flight A.",
+    "If multiple seat holders are possible, verify the release logic iterates all seats/passenger records attached to the booking, not just the first one."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Adjust `reschedule_booking` to release all source-flight seats held by the booking before completing the reschedule to the new flight.",
+      "rationale": "This is the issue\u2019s primary location and the most likely source of the stale seat occupancy bug."
+    },
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "change_summary": "Ensure seat-release helpers can resolve booking-held seats, including passenger-linked seat numbers, and import `BookingPassenger` alongside booking model imports.",
+      "rationale": "The revision request explicitly calls out this import and indicates the helper layer must be able to resolve seats for release without errors."
+    },
+    {
+      "file_path": "backend/app/models/seat_inventory.py",
+      "change_summary": "Review model fields/relationships used to identify occupied seats by booking and flight, and adjust only if helper logic needs a clearer way to query release targets.",
+      "rationale": "Model inspection may be needed to confirm the release query targets the correct rows; changes here should be minimal or unnecessary if existing fields suffice."
+    },
+    {
+      "file_path": "backend/app/models/booking.py",
+      "change_summary": "Verify booking-to-flight and booking-to-seat associations used by the reschedule logic; modify only if the current model lacks the association needed to select seats for release.",
+      "rationale": "The booking model defines the source context for which seat inventory rows must be freed."
+    }
+  ],
+  "patch_strategy": "Implement the fix in the smallest safe scope: first make seat-release resolution robust in the seat inventory helper layer, then call that release step from `reschedule_booking` before the booking is reassigned to the new flight. Keep the change transactional if the service already uses a transaction so that either both the release and reassignment happen together or neither does. Prefer existing helper methods if present; otherwise, add a narrowly scoped helper to enumerate all booking-held seats on the original flight and mark them available. Avoid altering standard booking creation/cancellation paths. Focus on correctness for multi-seat bookings/passenger-linked seats, since the issue and revision request imply more than one seat may need freeing.",
+  "validation_steps": [
+    "Run the booking reschedule test referenced by the revision request and confirm `release_booking_seats()` resolves passenger seat numbers successfully.",
+    "Add/adjust a regression test that books a seat on flight A, reschedules to flight B, and asserts flight A\u2019s original seat is available afterward.",
+    "Verify the booking remains associated with flight B and that the assigned seat on flight B is reserved as expected.",
+    "Check flight A capacity/availability counters or inventory queries to confirm they return to the pre-booking state.",
+    "Confirm no stale seat inventory records exist for the booking on the original flight after rescheduling.",
+    "Run the relevant backend test subset for booking/seat inventory services to ensure no regressions in non-reschedule flows."
+  ],
+  "branch_name": "feature/SDLC-76-rescheduling-a-booking-keeps-the-original-seat-occupied-on-the-old-flight",
+  "pr_title": "SDLC-76: Release original flight seats when rescheduling a booking",
+  "pr_body": "## Summary\nFix booking rescheduling so that moving a booking to a new flight also releases every seat inventory record held on the original flight.\n\n## What changes\n- Update booking reschedule flow to free source-flight seats before/while moving the booking\n- Ensure seat inventory helper logic can resolve booking/passenger seat associations\n- Add regression coverage for old-flight seat release and capacity restoration\n\n## Validation\n- Reschedule a booking from flight A to flight B\n- Confirm flight A seat inventory returns to available\n- Confirm booking remains assigned to flight B\n- Confirm no stale reserved seat records remain on flight A\n\n## Notes\nThis change is intentionally localized to the booking rescheduling path and should not affect normal booking creation/cancellation behavior.",
+  "risks": [
+    "If seat release logic only handles single-seat bookings today, multi-passenger bookings could still leave stale inventory unless the helper enumerates all related passenger rows.",
+    "If the reschedule flow is not fully transactional, a failure between releasing old seats and reserving new ones could temporarily leave the booking in an inconsistent state.",
+    "If seat inventory rows are shared or denormalized in an unexpected way, filtering by booking and source flight must be precise to avoid releasing unrelated seats."
+  ],
+  "assumptions": [
+    "`reschedule_booking` is the correct single entry point for the bug and already owns both old-flight cleanup and new-flight assignment.",
+    "Seat inventory records are traceable from the booking through passenger associations or an equivalent relationship.",
+    "The requested `BookingPassenger` import is required because release logic resolves seat numbers through passenger records.",
+    "No schema migration is required; this appears to be application logic only."
+  ]
+}

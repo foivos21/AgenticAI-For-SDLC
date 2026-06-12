@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-77-a-passenger-can-book-the-same-flight-twice-at-the-same-time",
+  "base_branch": "main",
+  "pr_title": "SDLC-77: Fix confirmed duplicate booking conflict guard",
+  "pr_body": "## Summary\nFix the booking duplicate/conflict guard so a passenger cannot create a second booking on the same flight while a confirmed booking already exists.\n\n## What changed\n- Corrected the status check in the booking service duplicate guard\n- Added/updated service tests for the confirmed-booking conflict path\n- Preserved existing 409 Conflict behavior for duplicate booking attempts\n\n## Validation\n- Targeted booking service tests\n- Regression coverage for confirmed duplicate booking rejection\n- Happy-path booking creation remains unchanged\n\n## Notes\nThis is a localized backend service fix in `backend/app/services/booking_service.py` with regression coverage in `backend/tests/services/test_booking_service.py`.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/booking_service.py: committed in 01d8c41b2536aea80b3b158fa91e39b058bb71e7",
+    "backend/tests/services/test_booking_service.py: committed in 01d8c41b2536aea80b3b158fa91e39b058bb71e7"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/55",
+  "commit_sha": "01d8c41b2536aea80b3b158fa91e39b058bb71e7"
+}

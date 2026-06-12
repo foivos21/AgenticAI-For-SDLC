@@ -1,0 +1,43 @@
+{
+  "solution_summary": "Fix the booking creation pricing logic so the base total is computed as flight fare multiplied by passenger count, not fare plus passenger count. Keep the change localized to BookingService.create_booking and add/adjust service-level tests to cover multi-passenger and single-passenger totals.",
+  "implementation_steps": [
+    "Inspect BookingService.create_booking to locate the base total calculation path for booking creation.",
+    "Replace the incorrect arithmetic operator in the base-total calculation so it multiplies fare by passenger count.",
+    "Verify any helper method or shared pricing utility used by create_booking; if the bug originates there, update only that shared calculation and keep the surface area minimal.",
+    "Add or update tests in backend/tests/services/test_booking_service.py to assert a 200.00 fare with 3 passengers yields 600.00.",
+    "Add a regression test for a single-passenger booking to ensure existing behavior remains correct.",
+    "Confirm rounding/currency handling matches existing booking total conventions."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the base total arithmetic in BookingService.create_booking from additive logic to multiplicative logic using passenger count.",
+      "rationale": "This is the source of the reported defect and should be fixed at the service layer where booking totals are assembled."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add or update tests for multi-passenger booking totals and a single-passenger regression case.",
+      "rationale": "These tests will lock in the expected pricing behavior and prevent the operator bug from reappearing."
+    }
+  ],
+  "patch_strategy": "Make a narrowly scoped service-layer fix in create_booking, preserving all other pricing semantics such as extras, fees, and rounding. First identify the exact total calculation path in booking_service.py; if a helper is used, patch the helper rather than duplicating logic. Then extend service tests to cover the explicit reproduction case (200.00 fare, 3 passengers => 600.00) and a single-passenger case. Avoid changing schemas, routes, or models unless test discovery shows the calculation is shared elsewhere.",
+  "validation_steps": [
+    "Run the booking service test module: backend/tests/services/test_booking_service.py.",
+    "Execute the full backend test suite if practical to catch any downstream assumptions.",
+    "Manually verify the reproduced scenario: fare 200.00, passengers 3, expected base total 600.00.",
+    "Check that single-passenger totals still match prior behavior and that any rounding stays consistent."
+  ],
+  "branch_name": "feature/SDLC-45-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "pr_title": "SDLC-45: Fix booking base total calculation for multi-passenger bookings",
+  "pr_body": "## Summary\nFix the booking creation pricing bug where base total was being calculated with the wrong operator for multi-passenger bookings.\n\n## What changes\n- Correct base total calculation in `BookingService.create_booking`\n- Add regression coverage for multi-passenger and single-passenger booking totals\n\n## Why\nA 200.00 fare with 3 passengers was incorrectly producing 203.00 instead of 600.00 because passenger count was being added rather than multiplied.\n\n## Validation\n- Updated service tests to cover the reported scenario\n- Confirmed single-passenger behavior remains unchanged\n\n## Scope\nLocalized to booking creation logic and booking service tests; no API/schema/model changes expected.",
+  "risks": [
+    "The total may be computed in a shared helper rather than directly in create_booking; changing only one path could leave another incorrect path untouched.",
+    "Tests may reveal implicit rounding or currency formatting assumptions that need to be preserved.",
+    "If passenger count can be zero or null, the new calculation may expose existing validation gaps."
+  ],
+  "assumptions": [
+    "The bug is isolated to booking creation and not pricing of unrelated extras/fees.",
+    "Existing booking totals use the same rounding/currency handling throughout the service.",
+    "The provided required branch name must be used exactly as given."
+  ]
+}

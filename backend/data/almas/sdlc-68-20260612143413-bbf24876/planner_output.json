@@ -1,0 +1,52 @@
+{
+  "solution_summary": "Fix the inverted topic filter in `backend/app/services/knowledge_service.py:get_by_topic` so it returns only articles whose topic matches the requested topic, and add focused regression coverage in the service tests.",
+  "implementation_steps": [
+    "Inspect `get_by_topic` to confirm whether the current predicate is inverted (`!=`, `not in`, negated relationship filter, or incorrect exclude query).",
+    "Update the service-layer query so it positively matches the requested topic value/identifier only, without changing other knowledge retrieval paths.",
+    "Add or adjust service tests to cover: matching-topic results are returned, unrelated-topic results are excluded, and the inverted-bug case would fail before the fix.",
+    "Run the targeted knowledge service test module and any related API tests that exercise the topic endpoint.",
+    "Review the route wiring only to confirm the endpoint still passes the requested topic through unchanged."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "change_summary": "Correct the `get_by_topic` filter logic so it selects articles with the requested topic instead of excluding them.",
+      "rationale": "This is the defect location named in the issue and the most localized fix for the inverted result set."
+    },
+    {
+      "file_path": "backend/app/services/test_knowledge_service.py",
+      "change_summary": "Add regression tests for `get_by_topic` asserting only same-topic articles are returned and unrelated topics are omitted.",
+      "rationale": "Prevents recurrence of the inverted predicate and documents the intended behavior at the service layer."
+    },
+    {
+      "file_path": "backend/app/api/routes/knowledge.py",
+      "change_summary": "Verify route-to-service parameter flow for the topic endpoint; update only if a mismatch is discovered.",
+      "rationale": "The issue appears service-side, but route validation helps ensure the endpoint still invokes the corrected service method correctly."
+    },
+    {
+      "file_path": "backend/app/models/knowledge_article.py",
+      "change_summary": "Reference the topic field/relationship definition if needed during implementation; no code change unless the model reveals a mismatch.",
+      "rationale": "Understanding the topic representation is necessary to apply the correct comparison in the service query."
+    }
+  ],
+  "patch_strategy": "Apply a minimal, service-local patch: inspect the existing `get_by_topic` query, replace any inverted or negated topic condition with an equality-based filter on the canonical topic field, and leave unrelated knowledge retrieval behavior unchanged. Then add a regression test that seeds two or more topics and verifies the query returns only the requested topic\u2019s articles, including a negative assertion that cross-topic articles are absent. Keep route and model changes out of scope unless the inspection reveals the service is using the wrong topic identifier or field name.",
+  "validation_steps": [
+    "Run the targeted unit tests for `backend/app/services/test_knowledge_service.py`.",
+    "If available, run any API-level tests covering the knowledge topic endpoint.",
+    "Manually verify one representative case: request a topic such as `baggage` and confirm all returned articles share that same topic.",
+    "Check for regressions by ensuring other knowledge endpoints/tests remain green."
+  ],
+  "branch_name": "feature/SDLC-68-browsing-a-knowledge-topic-returns-articles-from-every-other-topic",
+  "pr_title": "SDLC-68: Fix inverted topic filtering in knowledge articles",
+  "pr_body": "## Summary\nFix the knowledge service `get_by_topic` logic so topic requests return only matching articles instead of articles from other topics.\n\n## Planned changes\n- Correct the topic filter in `backend/app/services/knowledge_service.py`\n- Add regression coverage in `backend/app/services/test_knowledge_service.py`\n- Verify endpoint wiring remains unchanged unless a mismatch is found\n\n## Validation\n- Run targeted knowledge service tests\n- Confirm the topic endpoint returns only articles from the requested topic\n\n## Notes\nThis is intended to be a minimal, localized backend fix that does not alter unrelated knowledge retrieval behavior.",
+  "risks": [
+    "The service may filter by a topic id, slug, or relationship field rather than a plain topic string; using the wrong canonical field could produce an incomplete fix.",
+    "Existing tests may rely on the buggy inverted behavior and need updates.",
+    "If the endpoint normalizes topic names differently than the service expects, the fix may require a small adjustment in request normalization rather than the predicate itself."
+  ],
+  "assumptions": [
+    "`get_by_topic` is the single source of truth for the knowledge topic endpoint.",
+    "The issue is caused by an inverted predicate or negated filter in the service layer, as indicated by the bug report.",
+    "A focused regression test can be added without broader schema or API contract changes."
+  ]
+}

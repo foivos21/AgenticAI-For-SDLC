@@ -1,0 +1,83 @@
+{
+  "run_id": "sdlc-22-20260610142233-5a845b76",
+  "issue_key": "SDLC-22",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-10T14:22:33.637676+00:00",
+  "updated_at": "2026-06-10T14:23:31.348421+00:00",
+  "explanation": "Pull request #19 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-4o-mini"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-22-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "commit_sha": "ca0e0de16f151410897c0a30a3f296133110978d",
+  "pr_number": 19,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/19",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781101353.639748,
+      "end_time": 1781101354.794605,
+      "duration_seconds": 1.155,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781101354.7989912,
+      "end_time": 1781101359.4994931,
+      "duration_seconds": 4.701,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781101359.504975,
+      "end_time": 1781101364.614311,
+      "duration_seconds": 5.109,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781101364.616919,
+      "end_time": 1781101393.8039098,
+      "duration_seconds": 29.187,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781101394.860103,
+      "end_time": 1781101403.014414,
+      "duration_seconds": 8.154,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781101403.017961,
+      "end_time": 1781101406.488182,
+      "duration_seconds": 3.47,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781101406.489687,
+      "end_time": 1781101407.950013,
+      "duration_seconds": 1.46,
+      "status": "success"
+    }
+  ]
+}

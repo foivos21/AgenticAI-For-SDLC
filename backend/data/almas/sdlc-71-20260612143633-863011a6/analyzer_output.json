@@ -1,0 +1,63 @@
+{
+  "issue_key": "SDLC-71",
+  "problem_statement": "When creating a booking that includes paid extras, the booking total is being reduced instead of increased. The pricing logic in booking creation appears to apply extra charges with the wrong sign or subtraction behavior.",
+  "goal": "Ensure each paid extra selected during booking creation is added to the booking total so the final price reflects base fare plus extra charges.",
+  "acceptance_criteria": [
+    "Creating a booking with one or more paid extras increases the booking total by the sum of the extras' prices.",
+    "Bookings created without extras retain existing total calculation behavior.",
+    "The fix should only affect booking creation pricing logic and not unrelated booking update or persistence flows."
+  ],
+  "constraints": [
+    "Likely localized to backend/app/services/booking_service.py, specifically create_booking.",
+    "Avoid changing model persistence unless the pricing bug is actually caused by stored fields or schema logic.",
+    "Keep behavior compatible with existing booking and extra models/schemas."
+  ],
+  "unknowns": [
+    "Whether the total is computed directly in create_booking or delegated to a helper method.",
+    "Whether paid extras are represented as positive line items but applied with subtraction in a total accumulator.",
+    "Whether tests already cover booking creation with extras and need adjustment or addition."
+  ],
+  "repo_summary": "Backend-focused repository with booking domain models, schemas, API routes, and service-layer logic. The issue is explicitly reported in backend/app/services/booking_service.py (create_booking).",
+  "candidate_files": [
+    "backend/app/models/booking_extra.py",
+    "backend/app/api/routes/bookings.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/booking_event.py",
+    "backend/app/models/booking_passenger.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/scripts/seed_bookings.py",
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/models/booking_extra.py",
+    "backend/app/models/booking.py"
+  ],
+  "selected_symbols": [
+    ":create_booking"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "create_booking",
+      "symbol_type": "function",
+      "reason": "Explicitly identified by the issue as the affected implementation area; likely where booking total is initialized and extras are applied.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking total calculation",
+        "extra pricing accumulation"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description directly names booking creation as the failing path and the affected file as booking_service.py:create_booking.",
+    "The symptom is a pricing sign error on paid extras, which is usually localized to the service-layer total calculation rather than API routing or model definitions.",
+    "Tests in backend/tests/services/test_booking_service.py are likely the best place to validate the fix or reveal the current incorrect arithmetic."
+  ],
+  "confidence": 0.93,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

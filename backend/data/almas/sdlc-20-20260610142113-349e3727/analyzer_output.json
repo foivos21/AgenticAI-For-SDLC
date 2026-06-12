@@ -1,0 +1,56 @@
+{
+  "issue_key": "SDLC-20",
+  "problem_statement": "Flight search by origin airport is case-sensitive, so requests like origin=ath do not match stored airport codes such as ATH and return no results.",
+  "goal": "Make the origin filter in flight search match airport codes regardless of input casing, while preserving existing search behavior for other filters.",
+  "acceptance_criteria": [
+    "GET /flights/search?origin=ath returns flights whose origin airport code is stored as ATH",
+    "Origin matching works for lowercase, uppercase, and mixed-case input",
+    "No regression in other flight search filters or result ordering"
+  ],
+  "constraints": [
+    "Airport codes are stored in uppercase",
+    "Fix should be localized to the flight search implementation",
+    "Affected area is backend/app/services/flight_service.py in search_flights"
+  ],
+  "unknowns": [
+    "Whether search_flights normalizes only origin or other airport-code filters as well",
+    "Whether matching is done in Python after fetching data or in the database query"
+  ],
+  "repo_summary": "Backend service for flights is the likely source of the bug; API route exists in backend/app/api/routes/flights.py, but the issue description explicitly points to backend/app/services/flight_service.py search_flights. Related models/schemas/schema files may define flight fields and query shape.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/booking_event.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "The issue explicitly names this function and the symptom is a case-sensitive origin filter. This is the smallest likely implementation area for normalizing the origin input or comparison.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "flight"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug is directly tied to the origin search parameter, not flight creation or seeding.",
+    "The issue description explicitly identifies backend/app/services/flight_service.py (search_flights) as the affected file.",
+    "A minimal fix should normalize the origin input or comparison within search_flights rather than changing broader API or model layers."
+  ],
+  "confidence": 0.94,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

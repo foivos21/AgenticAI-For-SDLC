@@ -1,0 +1,36 @@
+{
+  "run_id": "sdlc-37-20260612133354-d99cada9",
+  "issue_key": "SDLC-37",
+  "status": "branch_created",
+  "current_stage": "branch_created",
+  "revision_count": 0,
+  "created_at": "2026-06-12T13:33:54.943765+00:00",
+  "updated_at": "2026-06-12T13:33:56.078805+00:00",
+  "explanation": "Created branch feature/SDLC-37-flight-search-max-price-filter-returns-the-most-expensive-flights.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json"
+  },
+  "latest_fixer_decision": "",
+  "branch_name": "feature/SDLC-37-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "commit_sha": "",
+  "pr_number": null,
+  "pr_url": "",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781271234.945774,
+      "end_time": 1781271236.07628,
+      "duration_seconds": 1.131,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 0,
+  "total_completion_tokens": 0
+}

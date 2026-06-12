@@ -161,6 +161,8 @@ class ALMASSupervisor:
     ) -> ALMASRunDetailRead:
         self._progress = progress
         self._test_runner = test_runner
+        if hasattr(self._agents, "reset_token_usage"):
+            self._agents.reset_token_usage()
         try:
             analysis = self._jira_service.analyze_issue(issue_payload)
             run_id = self._new_run_id(analysis.issue_key)
@@ -541,6 +543,7 @@ class ALMASSupervisor:
         manifest.pr_number = pull_request.number
         manifest.pr_url = pull_request.html_url or pull_request.url
         manifest.explanation = "Draft pull request opened. Waiting for human approval to mark it ready for review."
+        self._flush_token_usage(manifest)
         self._store.save_manifest(manifest)
         self._emit(
             "pull_request",
@@ -620,6 +623,13 @@ class ALMASSupervisor:
         seen_developer_signatures.add(developer_signature)
         return None
 
+    def _flush_token_usage(self, manifest: ALMASRunManifest) -> None:
+        """Write accumulated token totals from the agent suite into the manifest."""
+        if hasattr(self._agents, "token_usage"):
+            usage = self._agents.token_usage
+            manifest.total_prompt_tokens = usage.get("request_tokens", 0)
+            manifest.total_completion_tokens = usage.get("response_tokens", 0)
+
     def _finish(
         self,
         manifest: ALMASRunManifest,
@@ -630,6 +640,7 @@ class ALMASSupervisor:
         manifest.status = status
         manifest.current_stage = stage
         manifest.explanation = explanation
+        self._flush_token_usage(manifest)
         self._store.save_manifest(manifest)
         self._emit(status, explanation)
         return self._store.load_run(manifest.run_id)

@@ -1,0 +1,41 @@
+{
+  "solution_summary": "Fix the flight search service so `max_price` behaves as an upper bound (`price <= max_price`) instead of the current inverted comparison, and add/adjust service tests to lock in the correct filtering behavior.",
+  "implementation_steps": [
+    "Update `backend/app/services/flight_service.py` in `search_flights` to apply `max_price` as an inclusive upper bound when filtering flight records.",
+    "Audit the surrounding price-filter logic in `search_flights` to ensure no other condition (e.g., parsing/coercion) is reversing the comparison or reusing the wrong operator.",
+    "Add or update test coverage in `backend/app/tests/test_flight_service.py` for: flights below the limit, exactly at the limit, and above the limit.",
+    "Keep the fix localized to the service layer unless the test setup reveals a shared helper or fixture that must be adjusted for accurate price comparisons."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Correct the `max_price` filtering condition inside `search_flights` so results are constrained to flights priced at or below the provided limit.",
+      "rationale": "The issue report identifies this file and function as the affected implementation point, and the bug is specifically an inverted bound comparison."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add or revise service-level tests for `search_flights` to verify that `max_price` excludes flights above the limit and includes flights equal to or below it.",
+      "rationale": "Regression coverage is needed to ensure the upper-bound behavior remains correct and to prevent the inverted comparison from returning."
+    }
+  ],
+  "patch_strategy": "Make a minimal, localized service-layer fix in `search_flights` by replacing the inverted max-price predicate with the correct inclusive upper-bound check. Preserve existing query behavior for other filters and search criteria. Then strengthen test coverage at the service level using representative prices around the boundary (below, equal, above). If the implementation performs type coercion on price values, confirm the comparison is happening on comparable numeric values before finalizing the fix.",
+  "validation_steps": [
+    "Run the flight service test module, especially the search/filter cases in `backend/app/tests/test_flight_service.py`.",
+    "Add/verify a targeted test for `GET /flights/search?max_price=200`-equivalent service input that returns only flights priced `<= 200`.",
+    "Confirm a flight priced exactly at the threshold is included and one priced just above is excluded.",
+    "Optionally run the full backend test suite if the repository\u2019s test runtime is reasonable, to ensure no shared filtering helpers were impacted."
+  ],
+  "branch_name": "feature/SDLC-34-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "SDLC-34: Fix max_price filter in flight search",
+  "pr_body": "## Summary\nFix the flight search `max_price` filter so it acts as an inclusive upper bound and returns flights priced at or below the requested limit.\n\n## Changes\n- Correct the filtering logic in `backend/app/services/flight_service.py::search_flights`\n- Add/adjust service tests in `backend/app/tests/test_flight_service.py`\n\n## Validation\n- Verify flights above `max_price` are excluded\n- Verify flights at or below `max_price` are included\n- Run the relevant backend service tests\n\n## Context\nThis addresses SDLC-34, where `GET /flights/search?max_price=200` was returning flights above the limit instead of flights at or under it.",
+  "risks": [
+    "If flight prices are stored or compared as strings, a simple operator correction may still yield incorrect ordering unless numeric coercion is already in place.",
+    "Search filtering might be shared with another helper or repository method; if so, the bug could require a slightly broader fix than the reported service method alone.",
+    "Existing tests may encode the incorrect behavior and need updating to avoid false failures."
+  ],
+  "assumptions": [
+    "`search_flights` is the primary place where `max_price` is applied and no route-level transformation is reversing the filter.",
+    "The repository already has service-level tests that can be extended without major fixture restructuring.",
+    "The expected behavior is inclusive: `price <= max_price`."
+  ]
+}

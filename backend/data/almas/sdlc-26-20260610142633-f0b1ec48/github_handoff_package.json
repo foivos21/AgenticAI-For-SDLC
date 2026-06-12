@@ -1,0 +1,15 @@
+{
+  "branch_name": "feature/SDLC-26-sorting-flight-search-by-price-does-not-order-by-price",
+  "base_branch": "main",
+  "pr_title": "SDLC-26: Fix flight search sorting by price/default ordering",
+  "pr_body": "## Summary\nFix inverted sorting behavior in flight search so `sort_by=price` orders results by price ascending and the default ordering returns flights by departure time.\n\n## Plan\n- Correct the sort mapping in `backend/app/services/flight_service.py` (`search_flights`)\n- Verify route parameter handling in `backend/app/api/routes/flights.py` if needed\n- Add regression tests in `backend/app/tests/test_flight_service.py`\n\n## Validation\n- [ ] `GET /flights/search?sort_by=price` sorts by ascending price\n- [ ] `GET /flights/search` sorts by departure time by default\n- [ ] Existing flight search behavior remains unchanged",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/flight_service.py: committed in 90af99079f2e85e395c348316cc28ffcbac772e1",
+    "backend/app/api/routes/flights.py: committed in 90af99079f2e85e395c348316cc28ffcbac772e1",
+    "backend/app/tests/test_flight_service.py: committed in 90af99079f2e85e395c348316cc28ffcbac772e1"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/23",
+  "commit_sha": "90af99079f2e85e395c348316cc28ffcbac772e1"
+}

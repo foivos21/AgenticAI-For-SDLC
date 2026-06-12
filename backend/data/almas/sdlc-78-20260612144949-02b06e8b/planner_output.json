@@ -1,0 +1,40 @@
+{
+  "solution_summary": "Update knowledge base search so the query matches articles when it appears in any one of topic, title, or content instead of requiring all three fields. Keep the change scoped to the knowledge service search logic and add/adjust service tests to verify OR-based matching and preserve existing multi-field matches.",
+  "implementation_steps": [
+    "Inspect backend/app/services/knowledge_service.py to locate the current search predicate/composition and identify the smallest change point.",
+    "Replace the current AND-style filtering with OR-style filtering across topic, title, and content while preserving any existing case-insensitive/partial-match semantics and other search constraints (pagination, ordering, active/public filters, etc.).",
+    "Review whether the search logic is embedded in a helper or query builder inside the same service and update that helper if needed rather than expanding scope to routes or models.",
+    "Add or update tests in backend/app/services/test_knowledge_service.py to cover: title-only match, topic-only match, content-only match, and multi-field match behavior.",
+    "Run the targeted service test suite and any relevant lint/type checks to ensure the query change does not regress unrelated knowledge service behavior."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "change_summary": "Change search predicate from conjunctive matching across topic/title/content to disjunctive matching across those fields.",
+      "rationale": "This is the direct fix for the bug and matches the acceptance criteria that any one field should be sufficient for a result."
+    },
+    {
+      "file_path": "backend/app/services/test_knowledge_service.py",
+      "change_summary": "Add regression coverage for OR-based search behavior, including field-specific matches and combined matches.",
+      "rationale": "Prevents the AND-vs-OR bug from reappearing and validates the intended search semantics."
+    }
+  ],
+  "patch_strategy": "Make a narrow service-level patch in the search method: keep the surrounding query flow intact, but refactor the boolean condition so the query token is matched with OR semantics across topic, title, and content. Preserve any existing filters unrelated to field matching. Then add targeted tests that seed articles with the keyword isolated to each field plus one article containing the keyword in multiple fields, asserting each is returned appropriately. Avoid changes to routes, schemas, or models unless the service implementation requires a shared helper adjustment inside the same file.",
+  "validation_steps": [
+    "Run backend/app/services/test_knowledge_service.py (or the equivalent targeted pytest selection) to verify the new search behavior.",
+    "If available, run the full knowledge service test module to ensure no existing assertions depend on the previous AND behavior.",
+    "Perform a quick static check or lint pass on backend/app/services/knowledge_service.py to confirm the query builder remains syntactically and semantically valid.",
+    "Manually review the expected results for title-only, topic-only, and content-only fixtures to confirm the search now returns matches in any single field."
+  ],
+  "branch_name": "feature/SDLC-78-knowledge-base-search-returns-no-results-for-most-queries",
+  "pr_title": "SDLC-78: Fix knowledge base search to match any field",
+  "pr_body": "## Summary\nFix knowledge base search so results are returned when the query matches any one of topic, title, or content instead of requiring all three.\n\n## Changes\n- Update knowledge_service search logic to use OR-style matching across topic/title/content\n- Add regression tests for title-only, topic-only, content-only, and multi-field matches\n\n## Validation\n- Targeted service tests for knowledge search behavior\n- Verify existing multi-field matches still return results\n\n## Notes\n- Scope intentionally limited to the knowledge service and its tests",
+  "risks": [
+    "Search results may broaden compared with the previous behavior, which could affect any consumers implicitly relying on the overly restrictive AND logic.",
+    "If the current implementation has additional filters or helper abstractions, a small query-builder refactor may be needed to avoid duplicating OR conditions incorrectly."
+  ],
+  "assumptions": [
+    "The current bug is implemented as a boolean query composition issue in backend/app/services/knowledge_service.py search logic.",
+    "Existing tests in backend/app/services/test_knowledge_service.py can be extended without needing route or schema changes."
+  ]
+}

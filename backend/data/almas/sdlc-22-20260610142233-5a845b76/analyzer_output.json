@@ -1,0 +1,54 @@
+{
+  "issue_key": "SDLC-22",
+  "problem_statement": "Booking base total is computed with the wrong operator when multiple passengers are included: the fare is being added to the passenger count instead of being multiplied by it.",
+  "goal": "Fix booking creation so the base total equals flight price \u00d7 number of passengers, e.g. 200.00 \u00d7 3 = 600.00.",
+  "acceptance_criteria": [
+    "Creating a booking with N passengers sets base total to flight_price multiplied by N.",
+    "A 200.00 flight with 3 passengers results in a base total of 600.00, not 203.00.",
+    "Single-passenger bookings continue to calculate correctly."
+  ],
+  "constraints": [
+    "Scope should be limited to booking creation price calculation logic.",
+    "Affected file indicated by issue is backend/app/services/booking_service.py, likely create_booking()."
+  ],
+  "unknowns": [
+    "Exact line where the total is computed inside create_booking().",
+    "Whether any downstream model/scheme recalculations depend on the current incorrect value."
+  ],
+  "repo_summary": "Backend service-oriented booking flow with models, schemas, routes, and migrations. The issue is localized to booking creation logic in the backend service layer.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/api/routes/bookings.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py"
+  ],
+  "selected_symbols": [
+    "create_booking"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "create_booking",
+      "symbol_type": "function",
+      "reason": "Issue explicitly points to this method as the site where the base total is calculated incorrectly; likely contains the fare/passenger count arithmetic to fix.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking total calculation",
+        "passenger count handling",
+        "fare pricing logic"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug description precisely identifies the symptom (wrong base total for multiple passengers) and the expected arithmetic.",
+    "The issue explicitly names backend/app/services/booking_service.py and create_booking as the affected implementation area.",
+    "No evidence suggests a schema, route, or model-layer defect; this is most likely a one-line logic fix in the service method."
+  ],
+  "confidence": 0.97,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

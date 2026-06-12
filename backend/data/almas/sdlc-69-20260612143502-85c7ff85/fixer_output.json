@@ -1,0 +1,14 @@
+{
+  "decision": "approved",
+  "fix_summary": "The proposed change correctly inverts the flight search sort selection so `sort_by=price` orders by ascending price and the default path orders by departure time. The automated tests passed, and the change remains localized to the service-layer ordering logic with focused regression tests.",
+  "approval_reasons": [
+    "Automated tests passed: 6 passed.",
+    "The diff directly fixes the named bug in `backend/app/services/flight_service.py` by swapping the sort dispatch condition.",
+    "The added tests verify both requested behaviors: explicit price sorting and default departure-time sorting."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

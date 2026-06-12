@@ -1,0 +1,15 @@
+{
+  "branch_name": "feature/SDLC-24-available-seat-count-is-inflated-on-flight-details",
+  "base_branch": "main",
+  "pr_title": "SDLC-24: Fix inflated available seat count in flight details",
+  "pr_body": "## Summary\nCorrect the available seat calculation used by flight details so it reports total seats minus booked seats instead of total plus booked seats.\n\n## Planned changes\n- Fix seat_inventory_counts in backend/app/db/seat_inventory.py\n- Verify downstream flight detail assembly uses the corrected value\n- Add regression coverage in backend/app/tests/test_flight_service.py\n\n## Validation\n- Targeted backend tests for seat inventory and flight service\n- Verify flight detail output no longer exceeds aircraft capacity\n\n## Notes\nThis is a localized backend fix with no expected frontend changes.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/db/seat_inventory.py: committed in 180d0948111fd940f961f62cbefcae7c295e68dc",
+    "backend/app/services/flight_service.py: committed in 180d0948111fd940f961f62cbefcae7c295e68dc",
+    "backend/app/tests/test_flight_service.py: committed in 180d0948111fd940f961f62cbefcae7c295e68dc"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/21",
+  "commit_sha": "180d0948111fd940f961f62cbefcae7c295e68dc"
+}

@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "The booking service correctly restores the 6-hour haul boundary so flights under 6 hours get the short-haul checked-bag fee and flights of 6 hours or more get the long-haul fee, while explicit extra prices still override the default logic. The targeted tests passed, including boundary and override coverage.",
+  "approval_reasons": [
+    "`_is_long_haul` now returns `True` for durations `>= 6 hours`, which matches the acceptance criteria and fixes the inversion at the threshold.",
+    "The checked-bag default pricing branch still chooses between `SHORT_HAUL_CHECKED_BAG_FEE` and `LONG_HAUL_CHECKED_BAG_FEE` based on `_is_long_haul`, preserving the existing structure while correcting the logic.",
+    "Explicit extra prices remain first-class overrides in `_resolved_extra_price`, so provided baggage prices continue to win over default haul-based pricing.",
+    "Automated tests passed: 8/8, including the new short-haul, long-haul, explicit override, and helper boundary cases."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

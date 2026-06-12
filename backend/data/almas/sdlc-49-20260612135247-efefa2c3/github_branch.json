@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-49-sorting-flight-search-by-price-does-not-order-by-price",
+  "base_branch": "main",
+  "base_sha": "5823ebec7a888a134dd7a656c51f973c3e642538",
+  "ref": "refs/heads/feature/SDLC-49-sorting-flight-search-by-price-does-not-order-by-price",
+  "created": true
+}

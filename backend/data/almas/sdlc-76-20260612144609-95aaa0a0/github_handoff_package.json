@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-76-rescheduling-a-booking-keeps-the-original-seat-occupied-on-the-old-flight",
+  "base_branch": "main",
+  "pr_title": "SDLC-76: Release original flight seats when rescheduling a booking",
+  "pr_body": "## Summary\nFix booking rescheduling so that moving a booking to a new flight also releases every seat inventory record held on the original flight.\n\n## What changes\n- Update booking reschedule flow to free source-flight seats before/while moving the booking\n- Ensure seat inventory helper logic can resolve booking/passenger seat associations\n- Add regression coverage for old-flight seat release and capacity restoration\n\n## Validation\n- Reschedule a booking from flight A to flight B\n- Confirm flight A seat inventory returns to available\n- Confirm booking remains assigned to flight B\n- Confirm no stale reserved seat records remain on flight A\n\n## Notes\nThis change is intentionally localized to the booking rescheduling path and should not affect normal booking creation/cancellation behavior.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/db/seat_inventory.py: committed in 088e7fa838983cb5278bedff31258d0da1f74010",
+    "backend/app/services/booking_service.py: committed in 088e7fa838983cb5278bedff31258d0da1f74010"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/54",
+  "commit_sha": "088e7fa838983cb5278bedff31258d0da1f74010"
+}

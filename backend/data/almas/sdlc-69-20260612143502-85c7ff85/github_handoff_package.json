@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-69-sorting-flight-search-by-price-does-not-order-by-price",
+  "base_branch": "main",
+  "pr_title": "Fix inverted flight search sorting by price",
+  "pr_body": "## Summary\nFix flight search sorting so `sort_by=price` orders results from cheapest to most expensive, and the default ordering remains by departure time.\n\n## What changed\n- Corrected the sort-selection logic in `backend/app/services/flight_service.py`.\n- Added/updated tests in `backend/app/tests/test_flight_service.py` to verify:\n  - `sort_by=price` sorts ascending by price\n  - the default search order is by departure time\n  - existing search behavior is preserved\n\n## Validation\n- Ran targeted flight search/service tests\n- Confirmed sorting behavior matches the acceptance criteria\n\n## Notes\n- Change is intentionally localized to the flight search ordering logic.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/flight_service.py: committed in 6e6ef94fcaa3f020cc5468bd0b069d61150c3407",
+    "backend/app/tests/test_flight_service.py: committed in 6e6ef94fcaa3f020cc5468bd0b069d61150c3407"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/47",
+  "commit_sha": "6e6ef94fcaa3f020cc5468bd0b069d61150c3407"
+}

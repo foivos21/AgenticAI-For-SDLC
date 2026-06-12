@@ -1,0 +1,68 @@
+{
+  "issue_key": "SDLC-63",
+  "problem_statement": "Searching flights with an origin airport code in lowercase (e.g. `origin=ath`) returns no matches even though flights exist for that airport. The search logic appears to compare the provided origin value case-sensitively against airport codes stored in uppercase.",
+  "goal": "Make flight origin search case-insensitive so that `GET /flights/search?origin=ath` matches flights whose origin airport code is stored as `ATH` (and similarly for other casings).",
+  "acceptance_criteria": [
+    "`GET /flights/search?origin=ath` returns the same results as `origin=ATH` when matching flights exist.",
+    "Origin filtering continues to work for uppercase input.",
+    "Existing search behavior for other filters is unchanged unless they share the same normalization issue."
+  ],
+  "constraints": [
+    "Keep the fix localized to the flight search implementation if possible.",
+    "Airport codes are stored in uppercase, so normalize the incoming search term before matching or compare in a case-insensitive way."
+  ],
+  "unknowns": [
+    "Whether destination filtering or other airport-code filters share the same case-sensitivity bug.",
+    "Whether the fix should be implemented in the service layer only or also mirrored in tests/API route validation."
+  ],
+  "repo_summary": "Backend service appears to own flight search logic; likely route `backend/app/api/routes/flights.py` delegates to `backend/app/services/flight_service.py`. Tests exist in `backend/app/tests/test_flight_service.py`.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "This is the affected implementation named in the issue; likely contains the origin filter comparison that is currently case-sensitive.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "FlightService",
+        "origin filter logic"
+      ]
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "symbol_name": "tests for search_flights",
+      "symbol_type": "test module",
+      "reason": "Add or update a regression test covering lowercase origin input matching uppercase airport codes.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "search_flights"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue explicitly names `backend/app/services/flight_service.py (search_flights)` as the affected file.",
+    "The symptom is narrowly scoped to origin airport search casing, which strongly suggests a single comparison/normalization bug inside the service method.",
+    "The most relevant follow-up area is the service test module to capture the regression."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

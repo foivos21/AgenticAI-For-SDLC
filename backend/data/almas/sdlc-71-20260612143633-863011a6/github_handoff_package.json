@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-71-paid-extras-lower-the-total-when-included-while-creating-a-booking",
+  "base_branch": "main",
+  "pr_title": "SDLC-71: Fix paid extras being subtracted from booking total on creation",
+  "pr_body": "## Summary\nFix the booking creation pricing logic so paid extras increase the total instead of reducing it.\n\n## What changed\n- Corrected the booking creation total calculation in `booking_service.py`\n- Added/updated service tests to verify paid extras are added to the booking total\n- Preserved existing behavior for bookings created without extras\n\n## Validation\n- Covered booking creation with one and multiple paid extras\n- Covered booking creation without extras as a regression check\n- Scoped the fix to booking creation pricing only\n\n## Notes\n- No schema or persistence changes are expected for this fix unless a deeper dependency is discovered during implementation.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/booking_service.py: committed in 8c3e7733c3f1edac163c52539a003fdabab7bf09",
+    "backend/tests/services/test_booking_service.py: committed in 8c3e7733c3f1edac163c52539a003fdabab7bf09"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/49",
+  "commit_sha": "8c3e7733c3f1edac163c52539a003fdabab7bf09"
+}

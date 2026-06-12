@@ -23,7 +23,557 @@
       },
       "mapping_valid": true,
       "updated_at": "2026-06-10T13:15:19.468+0300",
-      "synced_at": "2026-06-10T10:15:40.359780+00:00"
+      "synced_at": "2026-06-10T14:35:37.514459+00:00"
+    },
+    "SDLC-28": {
+      "issue_key": "SDLC-28",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "booking-create-extras-subtract",
+      "analysis": {
+        "issue_key": "SDLC-28",
+        "summary": "Paid extras lower the total when included while creating a booking",
+        "description": "When a new booking is created with paid extras, each extra reduces the total price instead of adding to it.\nSteps to reproduce:\nCreate a booking and include a paid extra (e.g. extra baggage)\nObserve the booking total is lower than the base fare\nExpected behaviour:\nEach extra added at creation increases the booking total by the extra's price.\nAffected file:\nbackend/app/services/booking_service.py (create_booking)",
+        "labels": [
+          "ai_task:booking-create-extras-subtract",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:28:09.422+0300",
+        "updated_at": "2026-06-10T17:28:09.560+0300",
+        "task_slug": "booking-create-extras-subtract",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:28:09.560+0300",
+      "synced_at": "2026-06-10T14:35:37.496566+00:00"
+    },
+    "SDLC-27": {
+      "issue_key": "SDLC-27",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-destination-case",
+      "analysis": {
+        "issue_key": "SDLC-27",
+        "summary": "Flight search by destination airport returns no results",
+        "description": "Searching flights by destination airport always returns an empty list, even for airports that clearly have flights.\nSteps to reproduce:\nCall GET /flights/search?destination=jfk\nObserve that no flights are returned although JFK has scheduled flights\nExpected behaviour:\nThe destination filter matches regardless of the casing of the supplied airport code (airport codes are stored in upper case).\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-destination-case",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:27:25.503+0300",
+        "updated_at": "2026-06-10T17:27:25.572+0300",
+        "task_slug": "flight-destination-case",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:27:25.572+0300",
+      "synced_at": "2026-06-10T14:35:37.498561+00:00"
+    },
+    "SDLC-26": {
+      "issue_key": "SDLC-26",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-sort-by-price-inverted",
+      "analysis": {
+        "issue_key": "SDLC-26",
+        "summary": "Sorting flight search by price does not order by price",
+        "description": "Requesting flight search results sorted by price returns them ordered by departure time instead, and the default ordering is swapped too.\nSteps to reproduce:\nCall GET /flights/search?sort_by=price\nObserve the results are not ordered from cheapest to most expensive\nExpected behaviour:\nsort_by=price orders results by price; the default orders by departure time.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-sort-by-price-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:26:31.909+0300",
+        "updated_at": "2026-06-10T17:26:32.074+0300",
+        "task_slug": "flight-sort-by-price-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:26:32.074+0300",
+      "synced_at": "2026-06-10T14:35:37.499126+00:00"
+    },
+    "SDLC-25": {
+      "issue_key": "SDLC-25",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "knowledge-get-by-topic-inverted",
+      "analysis": {
+        "issue_key": "SDLC-25",
+        "summary": "Browsing a knowledge topic returns articles from every other topic",
+        "description": "Fetching articles for a specific knowledge topic returns all the articles that do NOT belong to that topic.\nSteps to reproduce:\nRequest the articles for a topic (e.g. 'baggage')\nObserve that the results are from unrelated topics instead\nExpected behaviour:\nOnly articles whose topic matches the requested topic are returned.\nAffected file:\nbackend/app/services/knowledge_service.py (get_by_topic)",
+        "labels": [
+          "ai_task:knowledge-get-by-topic-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:25:52.627+0300",
+        "updated_at": "2026-06-10T17:25:52.777+0300",
+        "task_slug": "knowledge-get-by-topic-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:25:52.777+0300",
+      "synced_at": "2026-06-10T14:35:37.499939+00:00"
+    },
+    "SDLC-24": {
+      "issue_key": "SDLC-24",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "seat-available-count-inflated",
+      "analysis": {
+        "issue_key": "SDLC-24",
+        "summary": "Available seat count is inflated on flight details",
+        "description": "The number of available seats reported for a flight is too high. It is computed as total + booked instead of total - booked.\nSteps to reproduce:\nOpen any flight's details\nObserve that available_seats exceeds the aircraft capacity\nExpected behaviour:\nAvailable seats equal the total seats minus the booked seats.\nAffected file:\nbackend/app/db/seat_inventory.py (seat_inventory_counts)",
+        "labels": [
+          "ai_task:seat-available-count-inflated",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:24:55.258+0300",
+        "updated_at": "2026-06-10T17:24:55.395+0300",
+        "task_slug": "seat-available-count-inflated",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:24:55.395+0300",
+      "synced_at": "2026-06-10T14:35:37.500726+00:00"
+    },
+    "SDLC-23": {
+      "issue_key": "SDLC-23",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "booking-extras-subtract",
+      "analysis": {
+        "issue_key": "SDLC-23",
+        "summary": "Adding extras to a booking lowers the total price instead of raising it",
+        "description": "Adding paid extras to an existing booking reduces the total price instead of increasing it.\nSteps to reproduce:\nAdd a paid extra to a booking\nObserve the booking total goes down by the extra's price\nExpected behaviour:\nEach added extra increases the booking total by the extra's price.\nAffected file:\nbackend/app/services/booking_service.py (add_extras)",
+        "labels": [
+          "ai_task:booking-extras-subtract",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:23:35.587+0300",
+        "updated_at": "2026-06-10T17:23:35.728+0300",
+        "task_slug": "booking-extras-subtract",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:23:35.728+0300",
+      "synced_at": "2026-06-10T14:35:37.501830+00:00"
+    },
+    "SDLC-22": {
+      "issue_key": "SDLC-22",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "booking-total-wrong-operator",
+      "analysis": {
+        "issue_key": "SDLC-22",
+        "summary": "Booking total price is calculated incorrectly for multiple passengers",
+        "description": "When creating a booking, the base total is wrong for more than one passenger. It adds the passenger count to the fare instead of multiplying.\nSteps to reproduce:\nCreate a booking for a 200.00 flight with 3 passengers\nObserve the base total is 203.00 instead of 600.00\nExpected behaviour:\nThe base total equals the flight price multiplied by the number of passengers.\nAffected file:\nbackend/app/services/booking_service.py (create_booking)",
+        "labels": [
+          "ai_task:booking-total-wrong-operator",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:22:32.597+0300",
+        "updated_at": "2026-06-10T17:22:32.743+0300",
+        "task_slug": "booking-total-wrong-operator",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:22:32.743+0300",
+      "synced_at": "2026-06-10T14:35:37.502601+00:00"
+    },
+    "SDLC-21": {
+      "issue_key": "SDLC-21",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "knowledge-search-prefix-only",
+      "analysis": {
+        "issue_key": "SDLC-21",
+        "summary": "Knowledge base search misses articles that match in the middle of the text",
+        "description": "Searching the knowledge base only returns articles whose topic/title/content START with the query. Matches that occur in the middle of a field are missed.\nSteps to reproduce:\nSearch for a word that appears mid-sentence in an article's content\nObserve that the article is not returned\nExpected behaviour:\nSearch performs a contains match, returning any article where the query appears anywhere in the topic, title, or content.\nAffected file:\nbackend/app/services/knowledge_service.py (search)",
+        "labels": [
+          "ai_task:knowledge-search-prefix-only",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:21:54.980+0300",
+        "updated_at": "2026-06-10T17:21:55.117+0300",
+        "task_slug": "knowledge-search-prefix-only",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:21:55.117+0300",
+      "synced_at": "2026-06-10T14:35:37.503371+00:00"
+    },
+    "SDLC-20": {
+      "issue_key": "SDLC-20",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-origin-case",
+      "analysis": {
+        "issue_key": "SDLC-20",
+        "summary": "Flight search by origin airport returns no results",
+        "description": "Searching flights by origin airport always returns an empty list, even for airports that clearly have flights.\nSteps to reproduce:\nCall GET /flights/search?origin=ath\nObserve that no flights are returned although ATH has scheduled flights\nExpected behaviour:\nThe origin filter matches regardless of the casing of the supplied airport code (airport codes are stored in upper case).\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-origin-case",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:21:12.315+0300",
+        "updated_at": "2026-06-10T17:21:12.455+0300",
+        "task_slug": "flight-origin-case",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:21:12.455+0300",
+      "synced_at": "2026-06-10T14:35:37.504433+00:00"
+    },
+    "SDLC-19": {
+      "issue_key": "SDLC-19",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-19",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:20:31.519+0300",
+        "updated_at": "2026-06-10T17:20:31.674+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:20:31.674+0300",
+      "synced_at": "2026-06-10T14:35:37.505171+00:00"
+    },
+    "SDLC-18": {
+      "issue_key": "SDLC-18",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-18",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T17:00:07.523+0300",
+        "updated_at": "2026-06-10T17:00:07.605+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T17:00:07.605+0300",
+      "synced_at": "2026-06-10T14:35:37.505781+00:00"
+    },
+    "SDLC-17": {
+      "issue_key": "SDLC-17",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-17",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T16:59:03.007+0300",
+        "updated_at": "2026-06-10T16:59:03.170+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T16:59:03.170+0300",
+      "synced_at": "2026-06-10T14:35:37.506374+00:00"
+    },
+    "SDLC-16": {
+      "issue_key": "SDLC-16",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-16",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T16:57:01.923+0300",
+        "updated_at": "2026-06-10T16:57:02.088+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T16:57:02.088+0300",
+      "synced_at": "2026-06-10T14:35:37.507426+00:00"
+    },
+    "SDLC-15": {
+      "issue_key": "SDLC-15",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-15",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T16:55:50.757+0300",
+        "updated_at": "2026-06-10T16:55:50.888+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T16:55:50.888+0300",
+      "synced_at": "2026-06-10T14:35:37.508396+00:00"
+    },
+    "SDLC-14": {
+      "issue_key": "SDLC-14",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-14",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T16:54:55.318+0300",
+        "updated_at": "2026-06-10T16:54:55.456+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T16:54:55.456+0300",
+      "synced_at": "2026-06-10T14:35:37.508993+00:00"
+    },
+    "SDLC-13": {
+      "issue_key": "SDLC-13",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-13",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T16:53:53.656+0300",
+        "updated_at": "2026-06-10T16:53:53.797+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T16:53:53.797+0300",
+      "synced_at": "2026-06-10T14:35:37.509613+00:00"
+    },
+    "SDLC-12": {
+      "issue_key": "SDLC-12",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-12",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T16:52:20.612+0300",
+        "updated_at": "2026-06-10T16:52:20.695+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T16:52:20.695+0300",
+      "synced_at": "2026-06-10T14:35:37.510210+00:00"
+    },
+    "SDLC-11": {
+      "issue_key": "SDLC-11",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-11",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T16:51:04.481+0300",
+        "updated_at": "2026-06-10T16:51:04.668+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T16:51:04.668+0300",
+      "synced_at": "2026-06-10T14:35:37.510883+00:00"
+    },
+    "SDLC-10": {
+      "issue_key": "SDLC-10",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-10",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T16:49:47.275+0300",
+        "updated_at": "2026-06-10T16:49:47.419+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T16:49:47.419+0300",
+      "synced_at": "2026-06-10T14:35:37.511546+00:00"
+    },
+    "SDLC-9": {
+      "issue_key": "SDLC-9",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-9",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T16:48:27.342+0300",
+        "updated_at": "2026-06-10T16:48:27.612+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T16:48:27.612+0300",
+      "synced_at": "2026-06-10T14:35:37.512256+00:00"
+    },
+    "SDLC-8": {
+      "issue_key": "SDLC-8",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-8",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T15:59:00.339+0300",
+        "updated_at": "2026-06-10T15:59:00.504+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T15:59:00.504+0300",
+      "synced_at": "2026-06-10T14:35:37.512999+00:00"
+    },
+    "SDLC-7": {
+      "issue_key": "SDLC-7",
+      "state": "synced",
+      "jira_status": "To Do",
+      "task_slug": "flight-price-filter-inverted",
+      "analysis": {
+        "issue_key": "SDLC-7",
+        "summary": "Flight search 'max price' filter returns the most expensive flights",
+        "description": "Searching flights with a maximum price returns only flights that cost MORE than the limit, instead of flights at or under it.\nSteps to reproduce:\nCall GET /flights/search?max_price=200\nObserve that only flights priced above 200 are returned\nExpected behaviour:\nThe results include only flights whose price is less than or equal to the given max_price.\nAffected file:\nbackend/app/services/flight_service.py (search_flights)",
+        "labels": [
+          "ai_task:flight-price-filter-inverted",
+          "almas-eval"
+        ],
+        "priority": "Medium",
+        "reporter": "Epameinondas Douros",
+        "created_at": "2026-06-10T15:46:25.831+0300",
+        "updated_at": "2026-06-10T15:46:26.720+0300",
+        "task_slug": "flight-price-filter-inverted",
+        "analysis_notes": [],
+        "validation_errors": []
+      },
+      "mapping_valid": true,
+      "updated_at": "2026-06-10T15:46:26.720+0300",
+      "synced_at": "2026-06-10T14:35:37.513728+00:00"
     }
   }
 }

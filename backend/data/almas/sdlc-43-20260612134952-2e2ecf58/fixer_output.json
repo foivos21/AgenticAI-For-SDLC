@@ -1,0 +1,14 @@
+{
+  "decision": "approved",
+  "fix_summary": "Localized origin search normalization in `search_flights` now uppercases incoming origin values before comparison, and the added tests cover lowercase, mixed-case, and uppercase origin queries. Automated tests passed.",
+  "approval_reasons": [
+    "The implementation directly addresses the reported bug by normalizing only the origin filter, preserving the rest of the flight search behavior.",
+    "Destination filtering remains unchanged, matching the stated scope and acceptance criteria.",
+    "Automated test results passed (6/6), indicating the change is working as intended in the current test suite."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

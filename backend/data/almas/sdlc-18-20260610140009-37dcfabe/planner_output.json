@@ -1,0 +1,31 @@
+{
+  "solution_summary": "Modify the `search_flights` function in the `flight_service.py` to ensure it correctly filters flights that are priced at or below the specified maximum price limit instead of those that exceed it.",
+  "implementation_steps": [
+    "Review the existing logic in the `search_flights` function to identify how the price filtering is currently implemented.",
+    "Modify the condition used in the filtering logic to return flights whose prices are less than or equal to the `max_price` provided in the request.",
+    "Test the modified `search_flights` function to ensure it returns the correct filtered results with various max price values."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Update the price filtering logic in `search_flights` to include flights priced at or below the max_price limit.",
+      "rationale": "To ensure that the flight search functionality correctly filters and returns flights that meet the criteria defined by the max_price limit."
+    }
+  ],
+  "patch_strategy": "1. Create a feature branch based on the required branch name. 2. Modify the relevant portion of the `search_flights` function in the `flight_service.py` file. 3. Run tests to validate the functionality. 4. Commit the changes and push the branch to the repository. 5. Create a pull request for review.",
+  "validation_steps": [
+    "Run the appropriate unit tests for `search_flights` to ensure existing functionality is not broken.",
+    "Perform manual testing using the API endpoint to verify that the results returned conform to the max price filter criteria.",
+    "Check the logs for any errors or warnings during the API calls."
+  ],
+  "branch_name": "feature/SDLC-18-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix max price filter in flight search functionality",
+  "pr_body": "This PR addresses the issue with the flight search functionality where the max price filter was not correctly implemented, resulting in flights being returned that were priced above the specified max price limit. This change ensures that only flights priced at or below the specified limit are returned, in line with the expected behavior outlined in SDLC-18.",
+  "risks": [
+    "There may be edge cases that were not considered in modifying the filter logic.",
+    "Other parts of the application relying on the same filtering logic may be affected."
+  ],
+  "assumptions": [
+    "The current implementation of the `search_flights` function requires modification, and the filter logic can be simplified to meet the requirements."
+  ]
+}

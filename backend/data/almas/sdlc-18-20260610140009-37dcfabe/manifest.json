@@ -1,0 +1,83 @@
+{
+  "run_id": "sdlc-18-20260610140009-37dcfabe",
+  "issue_key": "SDLC-18",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-10T14:00:09.085189+00:00",
+  "updated_at": "2026-06-10T14:01:32.386977+00:00",
+  "explanation": "Pull request #15 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-4o-mini",
+    "planner": "openai:gpt-4o-mini",
+    "developer": "openai:gpt-4o-mini",
+    "fixer": "openai:gpt-4o-mini"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-18-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "commit_sha": "b624aafb888c1f5b12b78dc481159adc0229ac63",
+  "pr_number": 15,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/15",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781100009.087274,
+      "end_time": 1781100011.548856,
+      "duration_seconds": 2.462,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781100011.551483,
+      "end_time": 1781100022.0306401,
+      "duration_seconds": 10.479,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781100022.033887,
+      "end_time": 1781100038.533244,
+      "duration_seconds": 16.499,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781100038.538353,
+      "end_time": 1781100079.244664,
+      "duration_seconds": 40.706,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781100080.726778,
+      "end_time": 1781100082.950971,
+      "duration_seconds": 2.224,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781100082.954782,
+      "end_time": 1781100086.528644,
+      "duration_seconds": 3.574,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781100086.5323882,
+      "end_time": 1781100087.9585128,
+      "duration_seconds": 1.426,
+      "status": "success"
+    }
+  ]
+}

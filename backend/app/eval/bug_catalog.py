@@ -1,18 +1,21 @@
-"""Catalog of single-file bug fixtures for the ALMAS evaluation dataset.
+"""Catalog of bug fixtures and feature fixtures for the ALMAS evaluation dataset.
 
-Each :class:`BugFixture` describes one easy, self-contained defect injected into
-a **real application file**:
+:class:`BugFixture` — single-file, reversible defect
+    * ``target_file`` is the one real file the bug lives in.
+    * ``correct`` / ``broken`` are an exact search/replace pair. The ``correct``
+      text ships in the repo; injecting swaps it for ``broken``, restoring swaps
+      it back.
+    * ``summary`` / ``description`` become the Jira ticket (symptom + acceptance
+      criteria only — never the fix).
 
-* ``target_file`` is the single real file the bug lives in.
-* ``correct`` / ``broken`` are an exact, reversible search/replace pair. The
-  ``correct`` text is what ships in the repo; injecting the bug swaps it for
-  ``broken``, restoring swaps it back.
-* ``summary`` / ``description`` become the Jira ticket. The description states
-  only the *symptom* and acceptance criteria — it never reveals the fix.
+:class:`FeatureFixture` — multi-file missing feature
+    * No ``correct``/``broken`` pair — the current repo *is* the pre-state.
+    * ``test_file`` points to a backend-relative pytest suite that grades a
+      correct implementation purely by observable behaviour.
+    * ``expected_touched_files`` is documentation for reviewers; it does not
+      constrain what ALMAS is allowed to change.
 
-Every bug is a runtime logic error inside a function body, so injecting it never
-breaks Python import / app startup. The ``ai_task:<slug>`` label ties each ticket
-back to its fixture.
+The ``ai_task:<slug>`` label ties every ticket back to its fixture.
 """
 
 from __future__ import annotations
@@ -51,6 +54,29 @@ class BugFixture:
     def test_file(self) -> str | None:
         """Backend-relative pytest path that grades a fix for this bug."""
         return _TEST_FILES.get(self.target_file)
+
+
+@dataclass(frozen=True)
+class FeatureFixture:
+    """A missing-feature eval task that spans multiple files.
+
+    Unlike :class:`BugFixture` there is nothing to inject or restore — the repo
+    starts in the pre-state and ALMAS must add the feature from scratch.
+    Grading is entirely test-driven via ``test_file``.
+    """
+
+    slug: str
+    summary: str
+    description: str
+    test_file: str
+    expected_touched_files: list[str] = field(default_factory=list)
+    issue_type: str = "Story"
+    priority: str | None = None
+    extra_labels: list[str] = field(default_factory=list)
+
+    @property
+    def labels(self) -> list[str]:
+        return [f"ai_task:{self.slug}", DATASET_LABEL, *self.extra_labels]
 
 
 BUG_FIXTURES: list[BugFixture] = [
@@ -144,8 +170,8 @@ BUG_FIXTURES: list[BugFixture] = [
             "- backend/app/services/booking_service.py (add_extras)"
         ),
         target_file="backend/app/services/booking_service.py",
-        correct="            booking.total_price += extra_price",
-        broken="            booking.total_price -= extra_price",
+        correct="            total_extra_price += extra_price",
+        broken="            total_extra_price -= extra_price",
     ),
     BugFixture(
         slug="seat-available-count-inflated",
@@ -241,9 +267,229 @@ BUG_FIXTURES: list[BugFixture] = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Medium-level fixtures
+# ---------------------------------------------------------------------------
+
+MEDIUM_BUG_FIXTURES: list[BugFixture] = [
+    BugFixture(
+        slug="booking-cancel-seat-release-inverted",
+        summary="Cancelling a booking does not free up the seat for other passengers",
+        description=(
+            "When a booking is cancelled the seat remains marked as occupied, so the flight "
+            "never regains that capacity and future passengers cannot book it.\n\n"
+            "Steps to reproduce:\n"
+            "- Create a booking on a flight that has limited seats\n"
+            "- Cancel the booking\n"
+            "- Observe that the available seat count on the flight has not increased\n\n"
+            "Expected behaviour:\n"
+            "- Cancelling a booking releases every seat held by that booking, making them "
+            "available for new bookings immediately.\n\n"
+            "Affected file:\n"
+            "- backend/app/services/booking_service.py (cancel_booking)"
+        ),
+        target_file="backend/app/services/booking_service.py",
+        correct="                    inventory.is_booked = False",
+        broken="                    inventory.is_booked = True",
+    ),
+    BugFixture(
+        slug="booking-long-haul-threshold-inverted",
+        summary="Short-haul flights charge long-haul baggage fees and vice versa",
+        description=(
+            "The checked-baggage fee is calculated using the wrong haul classification. "
+            "Short flights (under 6 hours) are charged the long-haul rate of €70 while "
+            "long flights (6 hours or more) are charged the short-haul rate of €35.\n\n"
+            "Steps to reproduce:\n"
+            "- Add a checked bag extra to a booking on a 3-hour flight with no explicit price\n"
+            "- Observe the extra is priced at 70.00 instead of 35.00\n\n"
+            "Expected behaviour:\n"
+            "- Flights shorter than 6 hours use the short-haul rate (35.00); "
+            "flights of 6 hours or longer use the long-haul rate (70.00).\n\n"
+            "Affected file:\n"
+            "- backend/app/services/booking_service.py (_is_long_haul)"
+        ),
+        target_file="backend/app/services/booking_service.py",
+        correct="        return duration.total_seconds() >= 6 * 60 * 60",
+        broken="        return duration.total_seconds() <= 6 * 60 * 60",
+    ),
+    BugFixture(
+        slug="flight-available-filter-negated",
+        summary="Flight search with 'only available' returns fully-booked flights instead",
+        description=(
+            "The default flight search (only_available=true) returns flights that have no "
+            "seats left, while searching with only_available=false hides flights that still "
+            "have availability — the filter logic is backwards.\n\n"
+            "Steps to reproduce:\n"
+            "- Ensure at least one flight is fully booked and at least one has free seats\n"
+            "- Call GET /flights/search (only_available defaults to true)\n"
+            "- Observe that the fully-booked flight is included in results\n\n"
+            "Expected behaviour:\n"
+            "- only_available=true excludes any flight where every seat is already booked.\n\n"
+            "Affected file:\n"
+            "- backend/app/services/flight_service.py (search_flights)"
+        ),
+        target_file="backend/app/services/flight_service.py",
+        correct="        if only_available:",
+        broken="        if not only_available:",
+    ),
+    BugFixture(
+        slug="booking-refund-skip-wrong-status",
+        summary="Passengers with a pending refund can re-book the same flight",
+        description=(
+            "After cancelling a booking with a pending refund, the same passenger can "
+            "immediately create a new booking on the same flight. The refund conflict check "
+            "has its condition inverted — it now allows re-booking when an unresolved refund "
+            "IS present, and wrongly blocks passengers whose refund has already been resolved.\n\n"
+            "Steps to reproduce:\n"
+            "- Create a booking for passenger A on flight F\n"
+            "- Cancel that booking with refund_status=pending\n"
+            "- Attempt to create a new booking for passenger A on the same flight F\n"
+            "- Observe the second booking is created successfully (should be rejected with 409)\n\n"
+            "Expected behaviour:\n"
+            "- A passenger with an unresolved refund on a flight must not be able to re-book "
+            "that same flight until the refund is resolved.\n\n"
+            "Affected file:\n"
+            "- backend/app/services/booking_service.py (_ensure_no_duplicate_or_refund_conflicts)"
+        ),
+        target_file="backend/app/services/booking_service.py",
+        correct="            if booking.refund_status in UNRESOLVED_REFUND_STATUSES:",
+        broken="            if booking.refund_status not in UNRESOLVED_REFUND_STATUSES:",
+    ),
+    BugFixture(
+        slug="booking-reschedule-old-seat-not-freed",
+        summary="Rescheduling a booking keeps the original seat occupied on the old flight",
+        description=(
+            "After rescheduling a booking to a new flight, the seat on the original flight "
+            "is not released. It remains marked as booked, permanently reducing that flight's "
+            "available capacity.\n\n"
+            "Steps to reproduce:\n"
+            "- Create a booking on flight A, note the seat number\n"
+            "- Reschedule the booking to flight B\n"
+            "- Check flight A's seat inventory — the original seat is still marked as booked\n\n"
+            "Expected behaviour:\n"
+            "- Rescheduling must free every seat on the original flight that was held by the "
+            "rescheduled booking.\n\n"
+            "Affected file:\n"
+            "- backend/app/services/booking_service.py (reschedule_booking)"
+        ),
+        target_file="backend/app/services/booking_service.py",
+        correct="                    current_inventory.is_booked = False",
+        broken="                    current_inventory.is_booked = True",
+    ),
+    BugFixture(
+        slug="booking-duplicate-confirmed-check-skipped",
+        summary="A passenger can book the same flight twice at the same time",
+        description=(
+            "The duplicate-booking guard no longer blocks a second booking for the same "
+            "passenger when their first booking is still confirmed. The status check that "
+            "should trigger a 409 conflict is targeting the wrong booking status.\n\n"
+            "Steps to reproduce:\n"
+            "- Create booking B1 for passenger A on flight F\n"
+            "- Immediately create booking B2 for the same passenger A on the same flight F\n"
+            "- Observe that B2 is accepted instead of returning a 409 conflict error\n\n"
+            "Expected behaviour:\n"
+            "- If a passenger already has a confirmed booking on a flight, any attempt to "
+            "create a second booking for them on that same flight must be rejected with a "
+            "409 Conflict.\n\n"
+            "Affected file:\n"
+            "- backend/app/services/booking_service.py (_ensure_no_duplicate_or_refund_conflicts)"
+        ),
+        target_file="backend/app/services/booking_service.py",
+        correct="            if booking.status == BookingStatus.CONFIRMED:\n                identity = next(iter(matching_identities))",
+        broken="            if booking.status == BookingStatus.CANCELLED:\n                identity = next(iter(matching_identities))",
+    ),
+    BugFixture(
+        slug="knowledge-search-and-instead-of-or",
+        summary="Knowledge base search returns no results for most queries",
+        description=(
+            "Searching the knowledge base almost always returns an empty list. The search "
+            "condition requires the query to appear in the topic, title, AND content fields "
+            "simultaneously, so only articles where all three fields contain the exact keyword "
+            "are returned.\n\n"
+            "Steps to reproduce:\n"
+            "- Search for a keyword that appears only in the title of an article\n"
+            "- Observe that the article is not returned even though it is a clear match\n\n"
+            "Expected behaviour:\n"
+            "- A search result is returned if the query appears in ANY ONE of the topic, "
+            "title, or content fields.\n\n"
+            "Affected file:\n"
+            "- backend/app/services/knowledge_service.py (search)"
+        ),
+        target_file="backend/app/services/knowledge_service.py",
+        correct="            or_(",
+        broken="            and_(",
+    ),
+    BugFixture(
+        slug="flight-search-excludes-scheduled",
+        summary="Flight search returns cancelled flights instead of scheduled ones",
+        description=(
+            "The flight search endpoint returns flights that are NOT in scheduled status "
+            "(i.e. cancelled or delayed) and omits all scheduled flights. Customers see no "
+            "bookable flights.\n\n"
+            "Steps to reproduce:\n"
+            "- Ensure the database has both scheduled and cancelled flights\n"
+            "- Call GET /flights/search\n"
+            "- Observe that scheduled flights are absent and cancelled flights appear\n\n"
+            "Expected behaviour:\n"
+            "- Flight search returns only flights with SCHEDULED status.\n\n"
+            "Affected file:\n"
+            "- backend/app/services/flight_service.py (search_flights)"
+        ),
+        target_file="backend/app/services/flight_service.py",
+        correct="        statement: Select[tuple[Flight]] = select(Flight).where(Flight.status == FlightStatus.SCHEDULED)",
+        broken="        statement: Select[tuple[Flight]] = select(Flight).where(Flight.status != FlightStatus.SCHEDULED)",
+    ),
+    BugFixture(
+        slug="seat-type-business-window-column",
+        summary="Business class window-seat preference assigns middle seats instead of window seats",
+        description=(
+            "In the business cabin the seat-type classification is wrong: column D seats are "
+            "labelled 'standard' instead of 'window', and column C seats are labelled 'window' "
+            "instead of 'aisle'. Passengers who select a window preference in business class "
+            "receive a centre seat.\n\n"
+            "Steps to reproduce:\n"
+            "- Book a business-class flight and request a window seat preference\n"
+            "- Observe the assigned seat is in column C (centre) not column D (window)\n\n"
+            "Expected behaviour:\n"
+            "- In the business cabin columns A and D are window seats; columns B and C are "
+            "aisle seats.\n\n"
+            "Affected file:\n"
+            "- backend/app/db/seat_inventory.py (_seat_type_for)"
+        ),
+        target_file="backend/app/db/seat_inventory.py",
+        correct='        if column in {"A", "D"}:',
+        broken='        if column in {"A", "C"}:',
+    ),
+    BugFixture(
+        slug="seat-inventory-economy-window-column-a",
+        summary="Economy class column A seats are not classified as window seats",
+        description=(
+            "In economy (and premium economy) cabins, column A seats are incorrectly "
+            "classified as 'standard' instead of 'window'. Passengers requesting a window "
+            "preference are not assigned A-column seats, and the window-seat availability "
+            "count is understated.\n\n"
+            "Steps to reproduce:\n"
+            "- Generate seat inventory for an economy flight\n"
+            "- Inspect the seat_type for a seat in column A (e.g. 10A)\n"
+            "- Observe the type is 'standard' instead of 'window'\n\n"
+            "Expected behaviour:\n"
+            "- In economy and premium_economy cabins, columns A and F are window seats.\n\n"
+            "Affected file:\n"
+            "- backend/app/db/seat_inventory.py (_seat_type_for)"
+        ),
+        target_file="backend/app/db/seat_inventory.py",
+        correct='    if column in {"A", "F"}:',
+        broken='    if column in {"B", "F"}:',
+    ),
+]
+
+
+ALL_BUG_FIXTURES: list[BugFixture] = BUG_FIXTURES + MEDIUM_BUG_FIXTURES
+
+
 def get_fixture(slug: str) -> BugFixture:
-    for fixture in BUG_FIXTURES:
+    for fixture in ALL_BUG_FIXTURES:
         if fixture.slug == slug:
             return fixture
-    available = ", ".join(f.slug for f in BUG_FIXTURES)
+    available = ", ".join(f.slug for f in ALL_BUG_FIXTURES)
     raise KeyError(f"Unknown bug fixture '{slug}'. Available: {available}")

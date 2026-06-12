@@ -1,0 +1,53 @@
+{
+  "issue_key": "SDLC-21",
+  "problem_statement": "Knowledge base search is using prefix-only matching, so articles are returned only when the query appears at the start of the topic, title, or content field. Matches in the middle of those fields are missed.",
+  "goal": "Change knowledge base search to use substring/contains matching so any article is returned when the query appears anywhere in topic, title, or content.",
+  "acceptance_criteria": [
+    "A search term appearing mid-sentence in an article's content returns that article.",
+    "Search still returns articles for prefix matches.",
+    "Search covers topic, title, and content fields consistently."
+  ],
+  "constraints": [
+    "Keep the change localized to the backend search implementation.",
+    "Likely a single-file fix in backend/app/services/knowledge_service.py."
+  ],
+  "unknowns": [
+    "Whether search is implemented with Python string checks or a database query.",
+    "Whether search normalization includes case folding or punctuation handling."
+  ],
+  "repo_summary": "Backend repository with a dedicated knowledge service, API route, model, and schema for knowledge articles. The issue explicitly points to backend/app/services/knowledge_service.py as the affected area.",
+  "candidate_files": [
+    "backend/app/api/routes/knowledge.py",
+    "backend/app/models/knowledge_article.py",
+    "backend/app/schemas/knowledge.py",
+    "backend/app/services/knowledge_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/knowledge_service.py"
+  ],
+  "selected_symbols": [
+    "search"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "symbol_name": "search",
+      "symbol_type": "function/method",
+      "reason": "Most likely contains the prefix-only matching logic and is the smallest relevant implementation area named in the issue.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "knowledge article filtering",
+        "query normalization"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The symptom clearly indicates prefix matching, which is typically implemented in a search function using startswith or a leading-anchored SQL LIKE.",
+    "The issue explicitly identifies backend/app/services/knowledge_service.py (search) as the affected file, so localization is strong and narrow.",
+    "Route/model/schema files are likely just plumbing; the actual matching logic should live in the service layer."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

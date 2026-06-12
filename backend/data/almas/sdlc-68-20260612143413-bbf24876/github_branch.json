@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-68-browsing-a-knowledge-topic-returns-articles-from-every-other-topic",
+  "base_branch": "main",
+  "base_sha": "4b21758bc14c46db932b24ca20793605dfd2d030",
+  "ref": "refs/heads/feature/SDLC-68-browsing-a-knowledge-topic-returns-articles-from-every-other-topic",
+  "created": true
+}

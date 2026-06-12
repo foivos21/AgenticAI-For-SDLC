@@ -1,0 +1,21 @@
+{
+  "implementation_summary": "Updated knowledge base search to use substring/contains matching across topic, title, and content by changing the search pattern from a trailing-wildcard prefix match to a wildcard-on-both-sides contains match. The change is localized to the knowledge service as requested.",
+  "branch_name": "feature/SDLC-21-knowledge-base-search-misses-articles-that-match-in-the-middle-of-the-text",
+  "commit_message": "Fix knowledge search to match substrings in articles",
+  "changes": [
+    {
+      "path": "backend/app/services/knowledge_service.py",
+      "operation": "update",
+      "content": "from __future__ import annotations\n\nfrom sqlalchemy import or_, select\nfrom sqlalchemy.orm import Session\n\nfrom app.models.knowledge_article import KnowledgeArticle\n\n\nclass KnowledgeService:\n    \"\"\"Read-only knowledge base queries used by the agent and API layer.\"\"\"\n\n    def __init__(self, session: Session) -> None:\n        self.session = session\n\n    def list_topics(self) -> list[str]:\n        statement = (\n            select(KnowledgeArticle.topic)\n            .where(KnowledgeArticle.is_active.is_(True))\n            .distinct()\n            .order_by(KnowledgeArticle.topic)\n        )\n        return list(self.session.scalars(statement))\n\n    def get_by_topic(self, topic: str) -> list[KnowledgeArticle]:\n        statement = (\n            select(KnowledgeArticle)\n            .where(\n                KnowledgeArticle.is_active.is_(True),\n                KnowledgeArticle.topic == topic,\n            )\n            .order_by(KnowledgeArticle.title)\n        )\n        return list(self.session.scalars(statement))\n\n    def search(self, query: str) -> list[KnowledgeArticle]:\n        pattern = f\"%{query.strip()}%\"\n        statement = (\n            select(KnowledgeArticle)\n            .where(\n                KnowledgeArticle.is_active.is_(True),\n                or_(\n                    KnowledgeArticle.topic.ilike(pattern),\n                    KnowledgeArticle.title.ilike(pattern),\n                    KnowledgeArticle.content.ilike(pattern),\n                ),\n            )\n            .order_by(KnowledgeArticle.topic, KnowledgeArticle.title)\n        )\n        return list(self.session.scalars(statement))\n",
+      "change_summary": "",
+      "rationale": ""
+    }
+  ],
+  "validation_notes": [
+    "No tests were added or executed as part of this file-only change request."
+  ],
+  "assumptions": [
+    "The existing ORM/database backend supports SQLAlchemy `ilike` with `%...%` semantics for contains matching.",
+    "No additional query normalization or escaping is required beyond the current `query.strip()` behavior."
+  ]
+}

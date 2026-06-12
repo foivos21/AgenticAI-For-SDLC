@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-73-short-haul-flights-charge-long-haul-baggage-fees-and-vice-versa",
+  "base_branch": "main",
+  "pr_title": "SDLC-73: Fix inverted checked-baggage haul pricing",
+  "pr_body": "## Summary\nFix the checked-baggage pricing logic in `booking_service` so short-haul flights (< 6 hours) use the short-haul default fee (\u20ac35) and long-haul flights (>= 6 hours) use the long-haul default fee (\u20ac70).\n\n## Planned changes\n- Correct the haul classification / default fee selection in `backend/app/services/booking_service.py`\n- Add regression coverage in `backend/tests/services/test_booking_service.py`\n- Preserve explicit checked-bag prices as the highest-priority override\n\n## Validation\n- Targeted booking-service tests for 3-hour and 6-hour boundary cases\n- Explicit-price override test\n\n## Notes\nThis is a localized backend pricing fix with no expected frontend impact.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/booking_service.py: committed in 00389be96d99ccfd8365cba0fbe2c69439b3dd57",
+    "backend/tests/services/test_booking_service.py: committed in 00389be96d99ccfd8365cba0fbe2c69439b3dd57"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/51",
+  "commit_sha": "00389be96d99ccfd8365cba0fbe2c69439b3dd57"
+}

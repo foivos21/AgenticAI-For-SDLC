@@ -1,0 +1,95 @@
+{
+  "issue_key": "SDLC-79",
+  "problem_statement": "GET /flights/search is returning flights with non-scheduled statuses (cancelled/delayed) and excluding scheduled flights, so customers cannot see bookable inventory.",
+  "goal": "Make flight search return only flights whose status is SCHEDULED.",
+  "acceptance_criteria": [
+    "Calling GET /flights/search returns only flights with SCHEDULED status.",
+    "Cancelled, delayed, and other non-scheduled flights are excluded from search results.",
+    "Search results include scheduled flights when the database contains a mix of flight statuses."
+  ],
+  "constraints": [
+    "Fix should be localized to the flight search implementation path with minimal surface area.",
+    "Affected file is indicated as backend/app/services/flight_service.py, specifically search_flights."
+  ],
+  "unknowns": [
+    "Exact status field name and enum values in the database/model layer.",
+    "Whether filtering is applied in SQL/query construction or post-query transformation.",
+    "Whether there are companion tests already covering flight search status filtering."
+  ],
+  "repo_summary": "Monorepo with backend service code under backend/app, including API routes, models, schemas, services, seed scripts, migrations, and tests. The issue points to backend/app/services/flight_service.py as the likely implementation target.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/alembic/versions/20260403_0004_database_guardrails.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py",
+    "backend/app/models/flight.py",
+    "backend/app/db/flight_schema.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "This is the explicitly affected implementation area and the search logic likely needs a status filter correction to include only SCHEDULED flights.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "Flight status filtering/query construction",
+        "flight repository/query helpers"
+      ]
+    },
+    {
+      "file_path": "backend/app/models/flight.py",
+      "symbol_name": "Flight",
+      "symbol_type": "model",
+      "reason": "Needed to confirm the status field name/type and valid status values used by search filtering.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "FlightStatus enum"
+      ]
+    },
+    {
+      "file_path": "backend/app/db/flight_schema.py",
+      "symbol_name": "flight table schema",
+      "symbol_type": "database schema",
+      "reason": "May define persisted status column and help verify whether filtering should occur at query level.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "status column"
+      ]
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "symbol_name": "flight service tests",
+      "symbol_type": "test module",
+      "reason": "Likely location to add/adjust regression coverage for scheduled-only search results.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "search_flights tests"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description directly names backend/app/services/flight_service.py (search_flights) as the affected file.",
+    "The observed behavior is a classic search/filter bug, so the smallest likely fix is in the search query or result filtering logic rather than routes, schemas, or migrations.",
+    "Model/schema files are secondary candidates only to verify the status field and write a regression test.",
+    "The API route file is less likely to contain the bug because the endpoint behavior suggests incorrect service-layer filtering, not request handling."
+  ],
+  "confidence": 0.9,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

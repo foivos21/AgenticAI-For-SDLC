@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "The proposed change correctly fixes the business-class seat-type mapping in `_seat_type_for`, aligning A/D to `window` and B/C to `aisle` without altering unrelated cabin logic. Automated tests passed, indicating the localized fix resolves the issue as intended.",
+  "approval_reasons": [
+    "The diff is minimal and directly addresses the root cause identified in the issue.",
+    "Business-class mapping is corrected exactly as required: A/D -> window, B/C -> aisle.",
+    "Other cabin logic remains unchanged in the patch.",
+    "Automated tests passed (4/4), which is the source of truth for readiness."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

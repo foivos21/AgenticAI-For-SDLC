@@ -1,0 +1,41 @@
+{
+  "solution_summary": "Plan a narrowly scoped fix in the booking service so baggage defaults use the correct haul threshold: flights under 6 hours map to the short-haul default (\u20ac35) and flights 6 hours or longer map to the long-haul default (\u20ac70). The work should focus on `booking_service.py` and the companion booking service tests, preserving any explicit baggage price behavior.",
+  "implementation_steps": [
+    "Inspect `backend/app/services/booking_service.py` to confirm how `_default_extra_price` calls `_is_long_haul` and where the default baggage prices are selected.",
+    "Update `_is_long_haul` so the 6-hour threshold matches the intended business rule: duration < 6 hours => short-haul; duration >= 6 hours => long-haul.",
+    "Verify that `_default_extra_price` continues to honor any explicitly supplied baggage price and only changes the no-explicit-price fallback path.",
+    "Review existing booking service tests in `backend/tests/services/test_booking_service.py` for coverage of both under-6-hour and 6-or-more-hour bookings; update any assertions that currently encode the inverted behavior.",
+    "Add or adjust tests to assert the helper boundary behavior directly if the test suite exposes the helper, or indirectly through baggage pricing when helper tests are not part of the public interface.",
+    "Run the targeted test file first, then the broader booking-related test subset to confirm no unintended regressions."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the haul classification threshold used by `_is_long_haul` and ensure the default extra-price logic uses the corrected classification for baggage pricing.",
+      "rationale": "This is the source of the inverted pricing behavior identified in the issue and keeps the fix localized to the booking service as requested."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Update or add tests for baggage default pricing at the 6-hour boundary and for flights below 6 hours, including direct or indirect assertions of `_is_long_haul` behavior.",
+      "rationale": "Regression coverage is needed to prove the fix and prevent the threshold from being inverted again."
+    }
+  ],
+  "patch_strategy": "Make a minimal, service-local patch: first correct the boolean boundary in `_is_long_haul`, then confirm `_default_extra_price` still uses that helper only for the default path. Prefer updating existing tests over broad refactors; if current tests already assert the inverted behavior, rewrite them to the correct expectations. Keep explicit baggage pricing untouched, and validate both sides of the 6-hour boundary to cover the bug and the regression risk.",
+  "validation_steps": [
+    "Run `pytest backend/tests/services/test_booking_service.py` (or the project\u2019s equivalent targeted test command) to verify short-haul and long-haul baggage defaults.",
+    "If helper-level tests exist, confirm `_is_long_haul(5.99)` is false and `_is_long_haul(6.0)` is true; otherwise assert the same via baggage pricing outcomes.",
+    "Check that a booking with an explicit baggage price still returns the explicit price rather than the default.",
+    "Run the relevant booking service test subset or full backend test slice if the targeted file passes, to catch any dependent assumptions."
+  ],
+  "branch_name": "feature/SDLC-30-short-haul-flights-charge-long-haul-baggage-fees-and-vice-versa",
+  "pr_title": "SDLC-30: Fix baggage pricing haul threshold in booking service",
+  "pr_body": "## Summary\nFix the booking service haul classification so checked-baggage defaults are applied correctly:\n- flights shorter than 6 hours use the short-haul fee (\u20ac35)\n- flights 6 hours or longer use the long-haul fee (\u20ac70)\n\n## What changed\n- Corrected the haul threshold logic in `booking_service.py`\n- Updated booking service tests to cover both sides of the 6-hour boundary\n- Preserved explicit baggage pricing behavior\n\n## Validation\n- Targeted booking service tests pass\n- Boundary behavior verified at < 6 hours and >= 6 hours\n\n## Notes\nThis is a localized fix in the booking service only; no broader pricing changes were introduced.",
+  "risks": [
+    "Tests may currently encode the inverted behavior and need expectation updates rather than new coverage only.",
+    "If `_is_long_haul` is reused by another pricing path, changing the threshold could affect that path; review test failures carefully for unintended dependencies."
+  ],
+  "assumptions": [
+    "`_default_extra_price` is the only path that uses haul classification for default baggage pricing.",
+    "The repository\u2019s test suite includes or can easily support boundary tests around the 6-hour threshold without additional fixture changes."
+  ]
+}

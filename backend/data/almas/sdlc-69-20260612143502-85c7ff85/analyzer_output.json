@@ -1,0 +1,68 @@
+{
+  "issue_key": "SDLC-69",
+  "problem_statement": "Flight search sorting is inverted/misapplied: requesting GET /flights/search?sort_by=price returns results ordered by departure time instead of price, and the default ordering appears to be price instead of departure time.",
+  "goal": "Make search_flights honor sort_by=price by ordering results from cheapest to most expensive, while preserving the default sort order by departure time.",
+  "acceptance_criteria": [
+    "GET /flights/search?sort_by=price returns flights sorted ascending by price.",
+    "GET /flights/search without sort_by returns flights sorted by departure time.",
+    "Sorting logic does not regress other flight search filters or pagination behavior."
+  ],
+  "constraints": [
+    "Issue explicitly points to backend/app/services/flight_service.py (search_flights) as the affected file.",
+    "Keep the implementation localized to the flight search sort selection logic unless tests reveal a shared helper bug."
+  ],
+  "unknowns": [
+    "Whether sort_by values are translated correctly in the route/controller before reaching the service.",
+    "Whether the service currently swaps the mapping between 'price' and default/other sort modes, or whether the bug is in a shared query builder/helper."
+  ],
+  "repo_summary": "Backend-focused repository with flight search API, models, schemas, service layer, and tests. The reported behavior and affected file suggest the bug is in backend/app/services/flight_service.py, likely within search_flights or a helper it calls.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "Primary implementation area named in the issue; likely contains the sort_by handling that is inverted.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "FlightService",
+        "sort_by handling",
+        "query ordering"
+      ]
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "symbol_name": "flight search sorting tests",
+      "symbol_type": "test module",
+      "reason": "Best place to confirm expected ordering behavior and guard against regressions.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "search_flights"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue explicitly names backend/app/services/flight_service.py and the search_flights function as the affected area.",
+    "The symptom is a pure sort-order defect, so the smallest likely fix is in the service layer's ordering branch rather than schema or model definitions.",
+    "Route and database schema files are lower-probability unless search_flights delegates sort mapping elsewhere; tests should verify the mapping and expected defaults."
+  ],
+  "confidence": 0.91,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

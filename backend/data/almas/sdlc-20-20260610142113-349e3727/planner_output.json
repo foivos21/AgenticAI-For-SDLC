@@ -1,0 +1,43 @@
+{
+  "solution_summary": "Plan a minimal, localized fix in `backend/app/services/flight_service.py` so `search_flights` normalizes the `origin` query input before matching against stored uppercase airport codes. This preserves existing search behavior while making origin search case-insensitive for lowercase, uppercase, and mixed-case inputs.",
+  "implementation_steps": [
+    "Inspect `search_flights` to confirm where origin filtering is applied (in-memory filtering vs. query construction).",
+    "Normalize the incoming `origin` parameter to a consistent case at the point of comparison, using the same format as stored airport codes (uppercase).",
+    "Ensure only the origin filter is adjusted unless the function already applies the same normalization pattern to other airport-code filters and they are explicitly intended to be case-insensitive.",
+    "Preserve all other search predicates, pagination/sorting behavior, and result ordering.",
+    "Add or update targeted tests for lowercase, uppercase, and mixed-case origin values returning the same flight set as uppercase input.",
+    "Run the relevant backend test suite for flight search and any service-level tests that cover `search_flights`."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Update `search_flights` to compare the origin filter case-insensitively by normalizing the user-supplied origin code before filtering.",
+      "rationale": "The bug is localized to origin matching in this service function, and airport codes are stored in uppercase. This keeps the fix minimal and avoids changing unrelated layers."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add focused tests covering `origin=ath`, `origin=ATH`, and mixed-case values, asserting they all return flights whose stored origin code is `ATH` and that ordering/result counts remain stable.",
+      "rationale": "Regression coverage is needed to verify the case-insensitive behavior and ensure no unintended changes to other search behavior."
+    }
+  ],
+  "patch_strategy": "Make a surgical service-layer change: identify the exact origin comparison inside `search_flights`, normalize the incoming origin parameter to uppercase once, and leave all other filters untouched. Prefer the smallest change possible in the existing filtering path rather than refactoring query building or changing model/storage conventions. Back it with targeted tests that compare search results across input casing variants and confirm unchanged ordering for matching results.",
+  "validation_steps": [
+    "Run the flight service/unit tests that cover `search_flights`.",
+    "Add a regression test for `GET /flights/search?origin=ath` returning flights with origin `ATH`.",
+    "Verify mixed-case inputs such as `AtH` behave identically to `ATH`.",
+    "Confirm non-origin filters still work as before and result ordering is unchanged.",
+    "If available, run the backend test subset for flight search endpoints and service-layer search logic."
+  ],
+  "branch_name": "feature/SDLC-20-flight-search-by-origin-airport-returns-no-results",
+  "pr_title": "SDLC-20: Fix case-insensitive origin flight search",
+  "pr_body": "## Summary\nFix flight search so the `origin` filter matches airport codes regardless of input casing. Requests like `GET /flights/search?origin=ath` will now match flights stored with origin code `ATH`.\n\n## Changes\n- Normalize the origin search parameter in `backend/app/services/flight_service.py`\n- Add regression coverage for lowercase, uppercase, and mixed-case origin inputs\n- Preserve existing behavior for other flight search filters and ordering\n\n## Validation\n- Added/updated tests for `search_flights`\n- Verified origin searches are case-insensitive\n- Confirmed no regression in other search behavior\n\n## Notes\nThis is a localized service-layer fix aligned with the issue description and acceptance criteria.",
+  "risks": [
+    "If `search_flights` is used by other callers expecting case-sensitive origin matching, this change will alter that behavior; however, the issue explicitly requires case-insensitive origin matching.",
+    "If other airport-code filters exist in the same function, updating only origin may leave inconsistent casing behavior across filters; this plan intentionally limits scope to the reported bug."
+  ],
+  "assumptions": [
+    "`origin` is compared against stored airport codes directly or through a query/filter path that can be normalized at the service layer.",
+    "Uppercasing the incoming origin value is sufficient because airport codes are stored in uppercase and no locale-specific handling is required.",
+    "A service-level test file exists or can be added for flight search behavior without broader API changes."
+  ]
+}

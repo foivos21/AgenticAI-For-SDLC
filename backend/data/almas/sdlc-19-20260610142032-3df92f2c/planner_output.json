@@ -1,0 +1,48 @@
+{
+  "solution_summary": "Fix the inverted max_price comparison in the flight search service so GET /flights/search returns flights priced at or below the requested limit. Keep the change localized to the backend flight search implementation and add/adjust tests to lock in the correct <= behavior without altering other search filters.",
+  "implementation_steps": [
+    "Inspect backend/app/services/flight_service.py search_flights to find the max_price predicate and confirm whether it is inverted (e.g., using > instead of <= or equivalent reversed logic).",
+    "Correct the max_price filtering condition so it includes flights with price <= max_price and excludes prices above the threshold.",
+    "Verify backend/app/api/routes/flights.py only passes request parameters through and does not need changes; adjust only if parameter naming or type conversion reveals a mismatch.",
+    "Add or update service-level tests covering max_price boundary behavior: one flight exactly at max_price should be included, one above should be excluded, and existing non-price search behavior should remain unchanged.",
+    "Run the relevant test subset for flight search and review for regressions in related filters or pagination/sorting if present."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Update search_flights max_price filtering logic to use the correct less-than-or-equal comparison.",
+      "rationale": "The issue explicitly identifies this service function as the likely source of the bug, and the observed behavior indicates an inverted comparison in the search logic."
+    },
+    {
+      "file_path": "backend/app/api/routes/flights.py",
+      "change_summary": "Review the GET /flights/search handler to confirm max_price is forwarded unchanged and no parameter mapping issues exist; only modify if needed.",
+      "rationale": "This route is a secondary verification point to ensure the service receives the correct request parameter and to rule out wiring issues."
+    },
+    {
+      "file_path": "backend/app/services/flight_service.py or backend/app/tests/services/test_flight_service.py",
+      "change_summary": "Add or update tests covering max_price boundary cases and non-regression for other search filters.",
+      "rationale": "A regression test is needed to ensure flights at or below max_price are returned and higher-priced flights are excluded, preventing recurrence of the inversion."
+    }
+  ],
+  "patch_strategy": "Use a minimal, localized patch in the service layer: identify the predicate that applies max_price and flip it to the intended <= comparison. Prefer preserving the existing search pipeline, data access pattern, and any composition with other filters. Only touch the route file if inspection reveals parameter translation problems. Add focused tests around the service or API layer depending on the repository\u2019s existing test style, emphasizing boundary values and ensuring other filters remain unaffected.",
+  "validation_steps": [
+    "Run the flight search test suite or the smallest applicable subset covering search_flights and /flights/search.",
+    "Add a boundary test for max_price equal to a flight price and confirm it is included.",
+    "Add a test for a flight priced above max_price and confirm it is excluded.",
+    "Confirm unrelated search filters still behave as expected in existing tests.",
+    "If available, run lint/type checks for the backend package to ensure the small patch introduces no style or typing regressions."
+  ],
+  "branch_name": "feature/SDLC-19-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix inverted max_price filtering in flight search",
+  "pr_body": "## Summary\nFix the flight search max_price filter so results include flights priced at or below the requested maximum instead of flights above it.\n\n## What changed\n- Corrected the max_price comparison in `backend/app/services/flight_service.py`\n- Added/updated tests for max_price boundary behavior and non-regression coverage\n\n## Validation\n- Verified flights at `max_price` are included\n- Verified flights above `max_price` are excluded\n- Confirmed other search filters remain unchanged\n\n## Notes\nThis is a localized backend fix for the search service implementation.",
+  "risks": [
+    "There may be multiple search paths or helper predicates that also apply max_price; missing one could leave the bug partially unresolved.",
+    "If price values are stored as strings or decimals with custom comparison semantics, the fix may need to preserve the existing type handling.",
+    "Tests may currently be sparse, so adding the wrong layer of coverage could miss the actual service path used by the API."
+  ],
+  "assumptions": [
+    "The bug is in the service-layer search predicate as indicated by the issue context.",
+    "The route handler simply forwards max_price to the service without significant transformation.",
+    "Existing repository test structure will support either service-level or API-level tests with minimal additions."
+  ]
+}

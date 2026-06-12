@@ -1,0 +1,40 @@
+{
+  "solution_summary": "Fix the inverted availability filter in flight search so the default `only_available=true` excludes fully booked flights, while `only_available=false` does not hide flights with remaining seats. Keep the change localized to `search_flights` and add/adjust service tests to lock in the intended behavior.",
+  "implementation_steps": [
+    "Inspect `backend/app/services/flight_service.py::search_flights` to locate the current availability predicate and confirm whether the logic is negated or applied to the wrong branch.",
+    "Update the availability filtering so `only_available=True` keeps only flights with at least one unbooked seat, and `only_available=False` leaves availability unconstrained.",
+    "Preserve all other search criteria and pagination/sorting behavior; do not alter unrelated filters or route/schema contract.",
+    "Add or update service-level tests in `backend/app/tests/test_flight_service.py` to cover both a fully booked flight and a flight with remaining seats for `only_available=true` and `only_available=false`.",
+    "Run the relevant backend test subset and verify the bug reproduction steps now produce the expected search results."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Correct the `only_available` filter logic inside `search_flights` so it excludes flights with no remaining seats when the flag is true and does not exclude available flights when the flag is false.",
+      "rationale": "The Jira issue explicitly points to this function as the source of the inverted behavior, so fixing it here minimizes blast radius and aligns with the acceptance criteria."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add or revise tests covering search results for a fully booked flight versus a flight with remaining seats under both `only_available=true` and `only_available=false`.",
+      "rationale": "Regression coverage is needed to ensure the corrected filter stays correct and that the default search path behaves consistently."
+    }
+  ],
+  "patch_strategy": "Make a surgical service-layer fix only: identify the current availability calculation, invert or replace the predicate so it expresses the intended semantics directly, and avoid changing route, schema, or model layers. Then extend service tests to create deterministic flight/seat booking fixtures and assert the inclusion/exclusion behavior for both flag values. Keep existing non-availability search behavior unchanged by reusing the current query flow and only modifying the final availability constraint.",
+  "validation_steps": [
+    "Run the targeted backend tests for flight search/service behavior, including any new/updated `test_search_flights_only_available_filter` coverage.",
+    "Manually validate the reproduced scenario: one fully booked flight and one with free seats; confirm `GET /flights/search` with default parameters excludes the fully booked flight.",
+    "Verify `only_available=false` returns flights with remaining seats and does not incorrectly hide them.",
+    "Optionally run the broader backend test suite if the targeted tests reveal shared fixture or query regressions."
+  ],
+  "branch_name": "feature/SDLC-31-flight-search-with-only-available-returns-fully-booked-flights-instead",
+  "pr_title": "Fix inverted flight search availability filter",
+  "pr_body": "## Summary\nCorrect the flight search `only_available` filter so fully booked flights are excluded when `only_available=true`, and flights with remaining seats are not hidden when `only_available=false`.\n\n## Planned changes\n- Fix availability logic in `backend/app/services/flight_service.py::search_flights`\n- Add/adjust regression tests in `backend/app/tests/test_flight_service.py`\n\n## Validation\n- Targeted backend tests for flight search/service behavior\n- Manual reproduction of the reported search scenario\n\n## Notes\n- Change is intentionally localized to preserve unrelated search behavior.",
+  "risks": [
+    "Seat availability may be computed indirectly, so the fix must match the service\u2019s existing notion of a booked seat to avoid subtle mismatches.",
+    "If current tests rely on the old inverted behavior, they will need updating to reflect the correct contract."
+  ],
+  "assumptions": [
+    "`search_flights` is the only place where the availability filter is applied for `GET /flights/search`.",
+    "There is an existing or easily extendable service test setup that can model at least one fully booked flight and one flight with available seats."
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "issue_key": "SDLC-65",
+  "problem_statement": "Booking base total is computed with the wrong arithmetic operator when more than one passenger is included. Instead of multiplying the flight fare by passenger count, the current logic appears to add the passenger count to the fare, producing totals like 203.00 for a 200.00 flight with 3 passengers.",
+  "goal": "Ensure create_booking calculates the base total as flight price \u00d7 number of passengers.",
+  "acceptance_criteria": [
+    "Creating a booking with 3 passengers on a 200.00 fare yields a base total of 600.00.",
+    "Single-passenger bookings remain unchanged.",
+    "Booking total calculation uses multiplication by passenger count wherever base total is derived."
+  ],
+  "constraints": [
+    "Scope should be limited to the booking creation pricing logic unless tests reveal shared helper usage.",
+    "Maintain existing booking creation behavior aside from the pricing correction."
+  ],
+  "unknowns": [
+    "Whether the incorrect arithmetic is in a direct expression inside create_booking or in a shared pricing helper used by booking creation.",
+    "Whether any tests already cover multi-passenger totals and need updating/adding."
+  ],
+  "repo_summary": "Backend service-oriented booking workflow with booking models, API routes, schemas, and service-layer tests. The issue points specifically to backend/app/services/booking_service.py create_booking.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/booking_passenger.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "create_booking"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "create_booking",
+      "symbol_type": "function",
+      "reason": "Issue explicitly names this method as affected and the bug is in the base total calculation during booking creation.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking total calculation helper",
+        "passenger count handling"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description directly names backend/app/services/booking_service.py create_booking as the affected file.",
+    "The bug is narrowly described as a wrong operator in base total calculation for multiple passengers, so the smallest likely implementation area is the booking creation pricing expression or a helper it calls.",
+    "Tests in backend/tests/services/test_booking_service.py are the most relevant place to confirm and lock in the fix."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

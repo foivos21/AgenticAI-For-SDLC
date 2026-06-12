@@ -1,0 +1,44 @@
+{
+  "solution_summary": "Plan to fix the business-class seat-type classification bug by updating the seat column mapping in backend/app/db/seat_inventory.py so that business cabin seats resolve A/D to window and B/C to aisle. This should restore correct downstream window-seat preference assignment without changing schema or migrations.",
+  "implementation_steps": [
+    "1. Inspect backend/app/db/seat_inventory.py and confirm _seat_type_for contains cabin-specific column-to-seat-type logic.",
+    "2. Update the business-cabin branch so columns A and D map to 'window' and columns B and C map to 'aisle'.",
+    "3. Verify other cabin mappings remain unchanged, especially any economy/premium mappings that may reuse the same function.",
+    "4. Review callers of _seat_type_for and any preference-selection logic for assumptions about business-class seat types.",
+    "5. Add or update tests covering business-class seat classification and window-seat preference assignment.",
+    "6. Run the relevant unit/integration test subset and confirm a business-class window preference now resolves to an actual window seat."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "change_summary": "Correct the business-class seat column classification in _seat_type_for so A/D are window and B/C are aisle.",
+      "rationale": "The issue explicitly identifies this function as the source of the inversion; fixing the mapping here addresses the root cause with minimal blast radius."
+    },
+    {
+      "file_path": "backend/app/db/tests or backend/tests (exact location to confirm in repo)",
+      "change_summary": "Add or adjust tests for business-class seat-type mapping and preference assignment behavior.",
+      "rationale": "Regression coverage is needed to ensure business-class window requests continue to select window seats and that other cabin mappings are not unintentionally altered."
+    }
+  ],
+  "patch_strategy": "Use the smallest-possible localized patch: edit the business-cabin branch in _seat_type_for only, leaving schema, migrations, and unrelated seat logic untouched. Then add tests that assert the expected mapping for A/B/C/D in business class and a preference-driven scenario that demonstrates a window request selects a true window seat. Validate by running focused tests around seat inventory and seat assignment, plus a quick smoke check for non-business cabins to ensure no regression.",
+  "validation_steps": [
+    "Run focused unit tests for seat type classification in backend/app/db/seat_inventory.py.",
+    "Run seat preference/assignment tests that cover business-class window selection.",
+    "Add a regression assertion for business class columns A/D -> window and B/C -> aisle.",
+    "Run any existing tests for other cabin types to confirm their mappings are unchanged.",
+    "If available, execute a targeted integration or API test that books a business-class seat with a window preference and verifies the assigned seat column is A or D."
+  ],
+  "branch_name": "feature/SDLC-80-business-class-window-seat-preference-assigns-middle-seats-instead-of-window-seats",
+  "pr_title": "SDLC-80: Fix business-class window seat mapping",
+  "pr_body": "## Summary\nFix the business-class seat-type mapping so window-seat preferences select actual window seats.\n\n## What changes\n- Correct `_seat_type_for` in `backend/app/db/seat_inventory.py`\n- Ensure business cabin maps:\n  - A, D -> window\n  - B, C -> aisle\n- Add/adjust regression tests for business-class seat classification and preference assignment\n\n## Why\nBusiness-class passengers requesting a window seat were being assigned a centre/aisle-adjacent seat because the column mapping was inverted.\n\n## Validation\n- Focused unit tests for seat type mapping\n- Preference-selection test for business-class window requests\n- Sanity check that other cabin mappings remain unchanged",
+  "risks": [
+    "Downstream code may have implicit assumptions based on the incorrect mapping and could surface hidden test failures once the fix is applied.",
+    "If test coverage is sparse, the exact location of existing tests may need to be discovered in-repo before updates can be made.",
+    "If business-class seat assignment logic is duplicated elsewhere, a second mapping source could still conflict with this fix."
+  ],
+  "assumptions": [
+    "backend/app/db/seat_inventory.py contains the authoritative seat-type mapping used by assignment logic.",
+    "No schema, model, or migration changes are required for this bug.",
+    "The repository has unit or integration tests around seat inventory and seat preference assignment, or they can be added in the existing test suite."
+  ]
+}

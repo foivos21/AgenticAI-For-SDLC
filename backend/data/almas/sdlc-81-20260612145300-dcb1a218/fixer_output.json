@@ -1,0 +1,14 @@
+{
+  "decision": "approved",
+  "fix_summary": "Localized seat-type mapping in backend/app/db/seat_inventory.py now classifies A-column seats as window seats for economy and premium_economy cabins while preserving other mappings. Automated tests passed.",
+  "approval_reasons": [
+    "The change is tightly scoped to the targeted helper in backend/app/db/seat_inventory.py, matching the issue localization.",
+    "The diff correctly adds A-column as window for economy and premium_economy and leaves other cabin rules unchanged.",
+    "Automated test results passed (4/4), indicating the implementation resolves the issue as intended."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

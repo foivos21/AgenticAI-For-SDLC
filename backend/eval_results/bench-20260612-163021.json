@@ -1,0 +1,173 @@
+{
+  "generated_at": "2026-06-12T16:31:41",
+  "trials": 1,
+  "repeat": 1,
+  "rows": [
+    {
+      "slug": "booking-total-wrong-operator",
+      "level": "easy",
+      "issue_key": "SDLC-36",
+      "status": "needs_approval",
+      "revision_count": 0,
+      "files_changed": 2,
+      "folders_changed": 2,
+      "changed_paths": "backend/app/services/booking_service.py;backend/tests/services/test_booking_service.py",
+      "lines_added": 21,
+      "lines_removed": 4,
+      "first_attempt_passed": true,
+      "failure_mode": "none",
+      "prompt_tokens": 45914,
+      "completion_tokens": 11549,
+      "analyzer_model": "openai:gpt-5.4-mini-2026-03-17",
+      "planner_model": "openai:gpt-5.4-mini-2026-03-17",
+      "developer_model": "openai:gpt-5.4-mini-2026-03-17",
+      "fixer_model": "openai:gpt-5.4-mini-2026-03-17",
+      "analyzer_seconds": 4.942,
+      "planner_seconds": 5.559,
+      "developer_seconds": 47.644,
+      "fixer_seconds": 2.834,
+      "pipeline_seconds": 67.119,
+      "total_seconds": 78.604,
+      "fixed": true,
+      "trial": 1
+    }
+  ],
+  "summary": {
+    "accuracy": {
+      "fixed": 1,
+      "graded": 1,
+      "rate_pct": 100.0
+    },
+    "by_level": {
+      "easy": {
+        "fixed": 1,
+        "graded": 1,
+        "rate_pct": 100.0
+      }
+    },
+    "first_attempt": {
+      "passed": 1,
+      "graded": 1,
+      "rate_pct": 100.0
+    },
+    "revisions": {
+      "mean": 0,
+      "min": 0,
+      "median": 0,
+      "max": 0,
+      "n": 1
+    },
+    "files_changed": {
+      "mean": 2,
+      "min": 2,
+      "median": 2,
+      "max": 2,
+      "n": 1
+    },
+    "folders_changed": {
+      "mean": 2,
+      "min": 2,
+      "median": 2,
+      "max": 2,
+      "n": 1
+    },
+    "lines_added": {
+      "mean": 21,
+      "min": 21,
+      "median": 21,
+      "max": 21,
+      "n": 1
+    },
+    "lines_removed": {
+      "mean": 4,
+      "min": 4,
+      "median": 4,
+      "max": 4,
+      "n": 1
+    },
+    "pipeline_seconds": {
+      "mean": 67.119,
+      "min": 67.119,
+      "median": 67.119,
+      "max": 67.119,
+      "n": 1
+    },
+    "total_seconds": {
+      "mean": 78.604,
+      "min": 78.604,
+      "median": 78.604,
+      "max": 78.604,
+      "n": 1
+    },
+    "stage_seconds": {
+      "analyzer": {
+        "mean": 4.942,
+        "min": 4.942,
+        "median": 4.942,
+        "max": 4.942,
+        "n": 1
+      },
+      "planner": {
+        "mean": 5.559,
+        "min": 5.559,
+        "median": 5.559,
+        "max": 5.559,
+        "n": 1
+      },
+      "developer": {
+        "mean": 47.644,
+        "min": 47.644,
+        "median": 47.644,
+        "max": 47.644,
+        "n": 1
+      },
+      "fixer": {
+        "mean": 2.834,
+        "min": 2.834,
+        "median": 2.834,
+        "max": 2.834,
+        "n": 1
+      }
+    },
+    "tokens": {
+      "prompt": {
+        "mean": 45914,
+        "min": 45914,
+        "median": 45914,
+        "max": 45914,
+        "n": 1
+      },
+      "completion": {
+        "mean": 11549,
+        "min": 11549,
+        "median": 11549,
+        "max": 11549,
+        "n": 1
+      },
+      "total": {
+        "mean": 57463,
+        "min": 57463,
+        "median": 57463,
+        "max": 57463,
+        "n": 1
+      }
+    },
+    "failure_modes": {
+      "none": 1
+    },
+    "models": {
+      "analyzer": [
+        "openai:gpt-5.4-mini-2026-03-17"
+      ],
+      "planner": [
+        "openai:gpt-5.4-mini-2026-03-17"
+      ],
+      "developer": [
+        "openai:gpt-5.4-mini-2026-03-17"
+      ],
+      "fixer": [
+        "openai:gpt-5.4-mini-2026-03-17"
+      ]
+    }
+  }
+}

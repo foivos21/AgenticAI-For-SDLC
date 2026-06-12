@@ -1,0 +1,85 @@
+{
+  "run_id": "sdlc-77-20260612144833-7ae07bdd",
+  "issue_key": "SDLC-77",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-12T14:48:33.512923+00:00",
+  "updated_at": "2026-06-12T14:49:43.534793+00:00",
+  "explanation": "Pull request #55 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-77-a-passenger-can-book-the-same-flight-twice-at-the-same-time",
+  "commit_sha": "01d8c41b2536aea80b3b158fa91e39b058bb71e7",
+  "pr_number": 55,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/55",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781275713.516458,
+      "end_time": 1781275714.6163259,
+      "duration_seconds": 1.1,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781275714.61957,
+      "end_time": 1781275719.946081,
+      "duration_seconds": 5.327,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781275719.950507,
+      "end_time": 1781275727.6550558,
+      "duration_seconds": 7.705,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781275727.660023,
+      "end_time": 1781275770.250827,
+      "duration_seconds": 42.591,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781275771.632359,
+      "end_time": 1781275774.497261,
+      "duration_seconds": 2.865,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781275774.501843,
+      "end_time": 1781275778.320361,
+      "duration_seconds": 3.819,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781275778.326993,
+      "end_time": 1781275779.8586938,
+      "duration_seconds": 1.532,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 49411,
+  "total_completion_tokens": 9816
+}

@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-28-paid-extras-lower-the-total-when-included-while-creating-a-booking",
+  "base_branch": "main",
+  "pr_title": "Fix booking total calculation for paid extras during create_booking",
+  "pr_body": "## Summary\nFix the booking creation flow so paid extras are added to the booking total instead of being subtracted.\n\n## What changed\n- Corrected the total aggregation logic in `create_booking`\n- Added regression coverage for booking creation with paid extras\n\n## Why\nCreating a booking with paid extras was producing a lower total than the base fare, which is incorrect. The total should increase by the sum of all paid extras.\n\n## Validation\n- Added/updated tests for:\n  - no extras\n  - one paid extra\n  - multiple paid extras\n- Confirmed total equals base fare plus extras\n\n## Notes\nThe fix is intentionally localized to booking creation pricing logic to avoid changing unrelated booking behavior.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/booking_service.py: committed in c9e4a68de98ed2914eb11936247d7200f9375a7e",
+    "backend/tests/services/test_booking_service.py: committed in c9e4a68de98ed2914eb11936247d7200f9375a7e"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/25",
+  "commit_sha": "c9e4a68de98ed2914eb11936247d7200f9375a7e"
+}

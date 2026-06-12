@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-63-flight-search-by-origin-airport-returns-no-results",
+  "base_branch": "main",
+  "pr_title": "SDLC-63: Fix case-insensitive origin flight search",
+  "pr_body": "## Summary\nFix flight origin search so lowercase airport codes match uppercase-stored airport codes.\n\n## What changed\n- Normalize origin input inside `search_flights`\n- Add a regression test for lowercase origin queries\n\n## Why\n`GET /flights/search?origin=ath` was returning no results even when flights existed for `ATH`.\n\n## Validation\n- Added regression coverage for lowercase origin input\n- Confirmed uppercase origin search remains supported\n- Verified the change is localized to flight search origin matching",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/flight_service.py: committed in 00f60bf01f878a65f233b71c80eaf8638c544858",
+    "backend/app/tests/test_flight_service.py: committed in 00f60bf01f878a65f233b71c80eaf8638c544858"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/41",
+  "commit_sha": "00f60bf01f878a65f233b71c80eaf8638c544858"
+}

@@ -1,0 +1,126 @@
+{
+  "issue_key": "SDLC-29",
+  "problem_statement": "Cancelling a booking does not restore the seats reserved by that booking back to the flight\u2019s available inventory, so the flight continues to appear full and cannot be rebooked.",
+  "goal": "Ensure that booking cancellation releases all seats held by the booking and increments the flight\u2019s available seat count immediately.",
+  "acceptance_criteria": [
+    "After cancelling a booking, every seat reserved by that booking is marked free/unoccupied in seat inventory.",
+    "The flight\u2019s available seat count increases accordingly after cancellation.",
+    "A cancelled booking no longer blocks future bookings for those seats.",
+    "Cancellation remains idempotent or safely handles already-cancelled bookings if that behavior exists in the service."
+  ],
+  "constraints": [
+    "Affected area is likely backend/app/services/booking_service.py, specifically cancel_booking.",
+    "Seat inventory / flight occupancy state should stay consistent with booking state after cancellation.",
+    "Any updates should preserve existing booking cancellation behavior and database integrity."
+  ],
+  "unknowns": [
+    "Whether cancellation currently marks the booking as cancelled but omits seat inventory release entirely, or releases only some seat-related records.",
+    "Whether seat state is derived from booking_passenger records, seat_inventory rows, or both."
+  ],
+  "repo_summary": "The repo contains backend booking and seat-inventory domain code, including booking_service.py, booking/flight models and schemas, and tests around booking service behavior. The issue description and affected file strongly suggest the booking cancellation flow is responsible for updating seat inventory state.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/booking_passenger.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/db/seat_inventory.py",
+    "backend/app/models/flight.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/app/db/seat_inventory.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/models/booking_passenger.py",
+    "backend/app/models/flight.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "cancel_booking",
+    "release_seats",
+    "reserve_seats",
+    "SeatInventory",
+    "BookingPassenger"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "cancel_booking",
+      "symbol_type": "function",
+      "reason": "Directly named in the issue; likely where booking cancellation should trigger seat release and flight capacity recalculation.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "release_seats",
+        "Booking",
+        "BookingPassenger",
+        "SeatInventory"
+      ]
+    },
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "symbol_name": "release_seats",
+      "symbol_type": "function",
+      "reason": "Most likely helper for freeing seats and updating availability; cancellation should call into this logic or equivalent.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "reserve_seats",
+        "SeatInventory"
+      ]
+    },
+    {
+      "file_path": "backend/app/models/seat_inventory.py",
+      "symbol_name": "SeatInventory",
+      "symbol_type": "model",
+      "reason": "Represents seat occupancy state that should be updated when a booking is cancelled.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "Flight"
+      ]
+    },
+    {
+      "file_path": "backend/app/models/booking_passenger.py",
+      "symbol_name": "BookingPassenger",
+      "symbol_type": "model",
+      "reason": "May store per-seat assignments for a booking and be the source for which seats need to be released.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "Booking"
+      ]
+    },
+    {
+      "file_path": "backend/app/models/flight.py",
+      "symbol_name": "Flight",
+      "symbol_type": "model",
+      "reason": "Flight capacity/available seat count is the user-visible symptom and may be derived from seat inventory changes.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "SeatInventory"
+      ]
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "symbol_name": "test_cancel_booking",
+      "symbol_type": "test",
+      "reason": "Likely existing coverage to update or add assertions that seat inventory increases after cancellation.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "cancel_booking"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue explicitly names backend/app/services/booking_service.py (cancel_booking) as the affected file.",
+    "The symptom is state synchronization between booking cancellation and seat availability, which usually lives in service-layer transaction logic plus a seat-inventory helper.",
+    "Related model and DB helper files suggest seat occupancy is tracked separately from booking records, so the bug is likely a missing call to release/update that inventory during cancellation.",
+    "Service tests are the smallest adjacent place to confirm the regression and encode the expected behavior."
+  ],
+  "confidence": 0.91,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

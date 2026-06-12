@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-58-knowledge-base-search-returns-no-results-for-most-queries",
+  "base_branch": "main",
+  "base_sha": "95f7503c0c96c0bf283591a1ef916f0d2f6ad999",
+  "ref": "refs/heads/feature/SDLC-58-knowledge-base-search-returns-no-results-for-most-queries",
+  "created": true
+}

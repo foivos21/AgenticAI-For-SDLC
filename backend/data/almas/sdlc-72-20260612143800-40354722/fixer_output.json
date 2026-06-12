@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "The booking cancellation flow now releases each reserved seat, refreshes flight seat state, and keeps the existing cancelled-booking guard. The regression test confirms seats are freed on cancellation and can be immediately reused. Automated tests passed.",
+  "approval_reasons": [
+    "Automated tests passed: 8 passed in 0.25s.",
+    "The implementation is localized to the cancellation flow and preserves existing cancellation semantics aside from seat release.",
+    "The added regression test covers the core acceptance criteria: seats are released, flight availability is restored, and a freed seat can be booked again.",
+    "Repeat cancellation remains safe under the existing cancelled-booking guard."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

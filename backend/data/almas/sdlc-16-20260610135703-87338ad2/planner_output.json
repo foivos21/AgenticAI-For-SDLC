@@ -1,0 +1,29 @@
+{
+  "solution_summary": "Fix the flight search functionality to ensure the max_price filter correctly returns flights priced at or below the specified maximum price.",
+  "implementation_steps": [
+    "Review the existing implementation in flight_service.py, particularly how the max price filter is currently applied.",
+    "Modify the search logic to correctly compare flight prices to the max_price parameter, ensuring only flights that are at or below this value are returned.",
+    "Implement unit tests to cover the new logic and validate edge cases, such as adding flights with prices exactly equal to max_price.",
+    "Test the updated functionality locally and confirm it meets the acceptance criteria."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Update the flight search logic to return flights priced at or below the max price",
+      "rationale": "Ensure that the GET /flights/search endpoint behaves according to the expected criteria by modifying the filter applied to the flight prices."
+    }
+  ],
+  "patch_strategy": "Create a new branch from the main development branch, apply the changes to the selected file, commit the changes with a detailed message, push the branch to the remote repository, and create a pull request for review.",
+  "validation_steps": [
+    "Run the modified unit tests to ensure that the new logic works correctly across various scenarios.",
+    "Manually test the `/flights/search` endpoint using a tool like Postman or CURL to make sure the responses are as expected under different conditions, especially for edge cases around the max_price.",
+    "Ensure that any existing tests still pass and that no other functionality is broken by the changes."
+  ],
+  "branch_name": "feature/SDLC-16-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix max price filter in flight search endpoint",
+  "pr_body": "This PR addresses the issue where the flight search endpoint incorrectly returns flights that exceed the specified maximum price. The logic in flight_service.py has been modified to ensure that only flights priced at or below the specified max_price are returned. Additional unit tests have been added to confirm the behavior is as expected and edge cases are handled properly.",
+  "risks": [],
+  "assumptions": [
+    "The existing flight_service.py is the only file that needs modification to fix the max price filter issue."
+  ]
+}

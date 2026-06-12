@@ -1,0 +1,13 @@
+{
+  "branch_name": "feature/SDLC-80-business-class-window-seat-preference-assigns-middle-seats-instead-of-window-seats",
+  "base_branch": "main",
+  "pr_title": "SDLC-80: Fix business-class window seat mapping",
+  "pr_body": "## Summary\nFix the business-class seat-type mapping so window-seat preferences select actual window seats.\n\n## What changes\n- Correct `_seat_type_for` in `backend/app/db/seat_inventory.py`\n- Ensure business cabin maps:\n  - A, D -> window\n  - B, C -> aisle\n- Add/adjust regression tests for business-class seat classification and preference assignment\n\n## Why\nBusiness-class passengers requesting a window seat were being assigned a centre/aisle-adjacent seat because the column mapping was inverted.\n\n## Validation\n- Focused unit tests for seat type mapping\n- Preference-selection test for business-class window requests\n- Sanity check that other cabin mappings remain unchanged",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/db/seat_inventory.py: committed in b2dfe6050eb2bff004f6aba5f1a4e5f3f3913f00"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/58",
+  "commit_sha": "b2dfe6050eb2bff004f6aba5f1a4e5f3f3913f00"
+}

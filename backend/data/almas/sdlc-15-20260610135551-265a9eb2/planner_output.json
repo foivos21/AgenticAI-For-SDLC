@@ -1,0 +1,27 @@
+{
+  "solution_summary": "Fix the 'max price' filter in the flight search functionality to return only flights priced at or below the specified maximum price.",
+  "implementation_steps": [
+    "Update the filtering logic in the `search_flights` function to include flights priced at or below the specified `max_price`.",
+    "Add or update unit tests to ensure that the `max_price` filter works as expected."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Modify the filtering logic in the search_flights function to return flights priced at or below the specified maximum price.",
+      "rationale": "The current implementation incorrectly returns flights that exceed the specified max price, which needs to be corrected."
+    }
+  ],
+  "patch_strategy": "Create a new branch from the main branch, implement the changes to the filtering logic, run unit tests to validate the changes, and then create a pull request to merge the changes into the main branch.",
+  "validation_steps": [
+    "Run existing unit tests to ensure no other functionalities are broken.",
+    "Add new tests to cover cases where flights should be returned with prices less than or equal to `max_price`.",
+    "Manually test the flight search functionality using the API to verify correct filtering behavior."
+  ],
+  "branch_name": "feature/SDLC-15-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix max price filter in flight search API",
+  "pr_body": "This PR addresses the issue where the flight search functionality's 'max price' filter incorrectly returns flights priced above the maximum limit. The filtering logic has been updated to ensure that only flights priced at or below the specified maximum price are returned. Unit tests have also been added/updated to verify this functionality.",
+  "risks": [],
+  "assumptions": [
+    "The current functionality of the flight search API is functioning correctly in other aspects unrelated to the price filter."
+  ]
+}

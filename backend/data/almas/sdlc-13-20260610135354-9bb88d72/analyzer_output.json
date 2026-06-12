@@ -1,0 +1,41 @@
+{
+  "issue_key": "SDLC-13",
+  "problem_statement": "The max price filter in the flight search functionality is incorrectly implemented, causing it to return flights that exceed the specified maximum price instead of those that are within the limit.",
+  "goal": "To ensure that the flight search correctly filters and returns flights that are priced at or below the specified max price.",
+  "acceptance_criteria": [
+    "Flight search returns no flights priced above the specified max price.",
+    "Flight search includes flights priced exactly at the max price."
+  ],
+  "constraints": [],
+  "unknowns": [],
+  "repo_summary": "README.md(1), backend(181), docker-compose.yml(1), frontend(8), run_backend.sh(1), run_frontend.sh(1), run_local.sh(1), scripts(7)",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_symbols": [],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "This function is likely responsible for processing the flight search logic, including applying the max price filter.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": []
+    }
+  ],
+  "localization_rationale": [
+    "The issue specifically relates to how the max price filtering logic is implemented, which should be handled in the search_flights function within the flight_service."
+  ],
+  "confidence": 0.9,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

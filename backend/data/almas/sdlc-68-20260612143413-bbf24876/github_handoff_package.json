@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-68-browsing-a-knowledge-topic-returns-articles-from-every-other-topic",
+  "base_branch": "main",
+  "pr_title": "SDLC-68: Fix inverted topic filtering in knowledge articles",
+  "pr_body": "## Summary\nFix the knowledge service `get_by_topic` logic so topic requests return only matching articles instead of articles from other topics.\n\n## Planned changes\n- Correct the topic filter in `backend/app/services/knowledge_service.py`\n- Add regression coverage in `backend/app/services/test_knowledge_service.py`\n- Verify endpoint wiring remains unchanged unless a mismatch is found\n\n## Validation\n- Run targeted knowledge service tests\n- Confirm the topic endpoint returns only articles from the requested topic\n\n## Notes\nThis is intended to be a minimal, localized backend fix that does not alter unrelated knowledge retrieval behavior.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/knowledge_service.py: committed in 17f806f3fcb26869b976a68efde6c848eb2a72f9",
+    "backend/app/services/test_knowledge_service.py: committed in 17f806f3fcb26869b976a68efde6c848eb2a72f9"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/46",
+  "commit_sha": "17f806f3fcb26869b976a68efde6c848eb2a72f9"
+}

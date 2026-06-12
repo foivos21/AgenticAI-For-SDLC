@@ -1,0 +1,14 @@
+{
+  "decision": "approved",
+  "fix_summary": "The backend seat availability calculation was corrected at the source helper to use total - booked, and the regression test suite passed.",
+  "approval_reasons": [
+    "The issue-identified backend helper now computes available_seats as total minus booked, matching the acceptance criteria.",
+    "The change is localized and preserves the existing API/data shape.",
+    "A focused regression test was added and the automated test run passed (4/4)."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

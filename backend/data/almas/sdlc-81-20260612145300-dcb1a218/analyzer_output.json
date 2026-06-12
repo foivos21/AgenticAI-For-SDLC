@@ -1,0 +1,57 @@
+{
+  "issue_key": "SDLC-81",
+  "problem_statement": "Economy and premium_economy seats in column A are being classified as standard instead of window in seat inventory generation, so window-seat preference matching and availability counts are incorrect.",
+  "goal": "Update seat type classification so that in economy and premium_economy cabins, both A and F columns are treated as window seats when generating seat inventory.",
+  "acceptance_criteria": [
+    "Seat inventory generation classifies 10A (and all A-column seats) as window in economy and premium_economy cabins.",
+    "Seat inventory generation continues to classify F-column seats as window in economy and premium_economy cabins.",
+    "Seat type classification for other cabin/column combinations remains unchanged.",
+    "Window-seat preference matching can select A-column seats in the affected cabins.",
+    "Window-seat availability counts include A-column seats in the affected cabins."
+  ],
+  "constraints": [
+    "Localized fix should be in backend/app/db/seat_inventory.py, specifically _seat_type_for.",
+    "Behavior is limited to economy and premium_economy cabins per issue description."
+  ],
+  "unknowns": [
+    "Whether any tests already cover _seat_type_for or seat inventory generation for cabin/column mappings.",
+    "Whether business rules differ for other cabin classes beyond economy and premium_economy."
+  ],
+  "repo_summary": "Repo contains a backend-focused seat inventory implementation; the likely logic lives in backend/app/db/seat_inventory.py, with nearby model/schema/migration files in candidate_files.",
+  "candidate_files": [
+    "backend/alembic/versions/20260403_0002_seat_inventory.py",
+    "backend/app/db/seat_inventory.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/schemas/seat_inventory.py",
+    "backend/app/scripts/reconcile_seat_state.py"
+  ],
+  "selected_files": [
+    "backend/app/db/seat_inventory.py"
+  ],
+  "selected_symbols": [
+    "_seat_type_for"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "symbol_name": "_seat_type_for",
+      "symbol_type": "function",
+      "reason": "The issue explicitly points to this function as the place where seat type is derived, and the bug is specifically about A-column seats being classified as standard instead of window in economy/premium_economy cabins.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "seat inventory generation logic",
+        "cabin/column seat-type mapping"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug is deterministic and confined to seat type classification during inventory generation.",
+    "The issue description names the affected file and function directly: backend/app/db/seat_inventory.py (_seat_type_for).",
+    "The observed failure is a mapping error for cabin/column -> seat_type, not a persistence, schema, or reconciliation problem.",
+    "Model/schema/migration files are less likely because the behavior is wrong at generation time, before persistence or API exposure."
+  ],
+  "confidence": 0.98,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

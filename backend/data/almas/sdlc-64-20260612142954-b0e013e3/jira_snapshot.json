@@ -1,0 +1,273 @@
+{
+  "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+  "id": "10329",
+  "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/10329",
+  "key": "SDLC-64",
+  "fields": {
+    "statuscategorychangedate": "2026-06-12T17:29:54.393+0300",
+    "issuetype": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issuetype/10109",
+      "id": "10109",
+      "description": "Submit a request or report a problem.",
+      "iconUrl": "https://dourosepameinondas.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10306?size=medium",
+      "name": "Submit a request or incident",
+      "subtask": false,
+      "avatarId": 10306,
+      "entityId": "72251d9d-45c7-4897-a2ec-eb39644f6fa8",
+      "hierarchyLevel": 0
+    },
+    "timespent": null,
+    "customfield_10030": null,
+    "project": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/project/10066",
+      "id": "10066",
+      "key": "SDLC",
+      "name": "SDLC",
+      "projectTypeKey": "service_desk",
+      "simplified": true,
+      "avatarUrls": {
+        "48x48": "https://dourosepameinondas.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10404",
+        "24x24": "https://dourosepameinondas.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10404?size=small",
+        "16x16": "https://dourosepameinondas.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10404?size=xsmall",
+        "32x32": "https://dourosepameinondas.atlassian.net/rest/api/3/universal_avatar/view/type/project/avatar/10404?size=medium"
+      }
+    },
+    "customfield_10031": null,
+    "customfield_10032": null,
+    "fixVersions": [],
+    "aggregatetimespent": null,
+    "statusCategory": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/statuscategory/2",
+      "id": 2,
+      "key": "new",
+      "colorName": "blue-gray",
+      "name": "To Do"
+    },
+    "customfield_10111": null,
+    "resolution": null,
+    "customfield_10104": null,
+    "customfield_10105": null,
+    "customfield_10029": null,
+    "resolutiondate": null,
+    "workratio": -1,
+    "watches": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/SDLC-64/watchers",
+      "watchCount": 1,
+      "isWatching": true
+    },
+    "lastViewed": null,
+    "created": "2026-06-12T17:29:54.071+0300",
+    "priority": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/priority/3",
+      "iconUrl": "https://dourosepameinondas.atlassian.net/images/icons/priorities/medium_new.svg",
+      "name": "Medium",
+      "id": "3"
+    },
+    "customfield_10103": [],
+    "labels": [
+      "ai_task:knowledge-search-prefix-only",
+      "almas-eval"
+    ],
+    "timeestimate": null,
+    "aggregatetimeoriginalestimate": null,
+    "versions": [],
+    "issuelinks": [],
+    "assignee": null,
+    "updated": "2026-06-12T17:29:54.148+0300",
+    "status": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/status/10078",
+      "description": "",
+      "iconUrl": "https://dourosepameinondas.atlassian.net/",
+      "name": "To Do",
+      "id": "10078",
+      "statusCategory": {
+        "self": "https://dourosepameinondas.atlassian.net/rest/api/3/statuscategory/2",
+        "id": 2,
+        "key": "new",
+        "colorName": "blue-gray",
+        "name": "To Do"
+      }
+    },
+    "components": [],
+    "timeoriginalestimate": null,
+    "description": {
+      "type": "doc",
+      "version": 1,
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Searching the knowledge base only returns articles whose topic/title/content START with the query. Matches that occur in the middle of a field are missed."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Steps to reproduce:"
+            }
+          ]
+        },
+        {
+          "type": "bulletList",
+          "content": [
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Search for a word that appears mid-sentence in an article's content"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Observe that the article is not returned"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Expected behaviour:"
+            }
+          ]
+        },
+        {
+          "type": "bulletList",
+          "content": [
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Search performs a contains match, returning any article where the query appears anywhere in the topic, title, or content."
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Affected file:"
+            }
+          ]
+        },
+        {
+          "type": "bulletList",
+          "content": [
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "backend/app/services/knowledge_service.py (search)"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "customfield_10179": null,
+    "timetracking": {},
+    "security": null,
+    "attachment": [],
+    "aggregatetimeestimate": null,
+    "summary": "Knowledge base search misses articles that match in the middle of the text",
+    "creator": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/user?accountId=712020%3A5a87061d-28b4-425f-8687-cd5d099bc3e9",
+      "accountId": "712020:5a87061d-28b4-425f-8687-cd5d099bc3e9",
+      "emailAddress": "dourosepameinondas@gmail.com",
+      "avatarUrls": {
+        "48x48": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "24x24": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "16x16": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "32x32": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png"
+      },
+      "displayName": "Epameinondas Douros",
+      "active": true,
+      "timeZone": "Europe/Athens",
+      "accountType": "atlassian"
+    },
+    "subtasks": [],
+    "reporter": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/user?accountId=712020%3A5a87061d-28b4-425f-8687-cd5d099bc3e9",
+      "accountId": "712020:5a87061d-28b4-425f-8687-cd5d099bc3e9",
+      "emailAddress": "dourosepameinondas@gmail.com",
+      "avatarUrls": {
+        "48x48": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "24x24": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "16x16": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png",
+        "32x32": "https://secure.gravatar.com/avatar/098efc8c9384cdc74a57090dc91b2588?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FED-0.png"
+      },
+      "displayName": "Epameinondas Douros",
+      "active": true,
+      "timeZone": "Europe/Athens",
+      "accountType": "atlassian"
+    },
+    "aggregateprogress": {
+      "progress": 0,
+      "total": 0
+    },
+    "customfield_10002": [],
+    "environment": null,
+    "duedate": null,
+    "progress": {
+      "progress": 0,
+      "total": 0
+    },
+    "votes": {
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/SDLC-64/votes",
+      "votes": 0,
+      "hasVoted": false
+    },
+    "comment": {
+      "comments": [],
+      "self": "https://dourosepameinondas.atlassian.net/rest/api/3/issue/10329/comment",
+      "maxResults": 0,
+      "total": 0,
+      "startAt": 0
+    },
+    "worklog": {
+      "startAt": 0,
+      "maxResults": 20,
+      "total": 0,
+      "worklogs": []
+    }
+  }
+}

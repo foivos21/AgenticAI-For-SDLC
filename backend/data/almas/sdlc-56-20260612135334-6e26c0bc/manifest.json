@@ -1,0 +1,36 @@
+{
+  "run_id": "sdlc-56-20260612135334-6e26c0bc",
+  "issue_key": "SDLC-56",
+  "status": "failed",
+  "current_stage": "branch_created",
+  "revision_count": 0,
+  "created_at": "2026-06-12T13:53:34.262210+00:00",
+  "updated_at": "2026-06-12T13:53:38.318082+00:00",
+  "explanation": "status_code: 429, model_name: gpt-5.4-mini-2026-03-17, body: {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json"
+  },
+  "latest_fixer_decision": "",
+  "branch_name": "feature/SDLC-56-rescheduling-a-booking-keeps-the-original-seat-occupied-on-the-old-flight",
+  "commit_sha": "",
+  "pr_number": null,
+  "pr_url": "",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781272414.2656288,
+      "end_time": 1781272415.374909,
+      "duration_seconds": 1.109,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 0,
+  "total_completion_tokens": 0
+}

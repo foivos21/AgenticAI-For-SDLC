@@ -1,0 +1,51 @@
+{
+  "issue_key": "SDLC-40",
+  "problem_statement": "Knowledge base search is using prefix matching, so articles are only returned when the query matches the start of the topic/title/content field. Queries that appear later in the text are not found.",
+  "goal": "Update knowledge base search so it performs a contains/substring match across topic, title, and content, returning any article where the query appears anywhere within those fields.",
+  "acceptance_criteria": [
+    "Searching for a term that appears in the middle of an article's topic/title/content returns that article.",
+    "Existing prefix matches continue to work.",
+    "Search behavior is consistent across all searchable knowledge article fields."
+  ],
+  "constraints": [
+    "Likely limited to backend search logic; avoid unrelated schema/API changes unless required.",
+    "Preserve existing result shape and ordering unless the search implementation requires otherwise."
+  ],
+  "unknowns": [
+    "Whether the search is implemented in Python filtering or delegated to the database query layer.",
+    "Whether any normalization (case folding, trimming, tokenization) is already applied in the current search path."
+  ],
+  "repo_summary": "Backend service for knowledge base search appears to live under backend/app/services, with route and model definitions in adjacent files. The issue explicitly points to backend/app/services/knowledge_service.py search as the affected location.",
+  "candidate_files": [
+    "backend/app/api/routes/knowledge.py",
+    "backend/app/models/knowledge_article.py",
+    "backend/app/schemas/knowledge.py",
+    "backend/app/services/knowledge_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/knowledge_service.py"
+  ],
+  "selected_symbols": [],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "symbol_name": "search",
+      "symbol_type": "function/method",
+      "reason": "Issue explicitly identifies the search method as the affected area; likely where prefix matching is implemented and should be changed to substring matching.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "knowledge article query/filter logic",
+        "topic/title/content field matching"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug description clearly isolates search semantics rather than data shape, API routing, or model schema.",
+    "The affected file is explicitly named as backend/app/services/knowledge_service.py (search), making it the smallest likely implementation area.",
+    "Only the matching predicate needs to change from starts-with to contains across the knowledge article fields."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

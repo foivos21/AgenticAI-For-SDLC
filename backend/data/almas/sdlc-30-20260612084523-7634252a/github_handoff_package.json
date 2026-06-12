@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-30-short-haul-flights-charge-long-haul-baggage-fees-and-vice-versa",
+  "base_branch": "main",
+  "pr_title": "SDLC-30: Fix baggage pricing haul threshold in booking service",
+  "pr_body": "## Summary\nFix the booking service haul classification so checked-baggage defaults are applied correctly:\n- flights shorter than 6 hours use the short-haul fee (\u20ac35)\n- flights 6 hours or longer use the long-haul fee (\u20ac70)\n\n## What changed\n- Corrected the haul threshold logic in `booking_service.py`\n- Updated booking service tests to cover both sides of the 6-hour boundary\n- Preserved explicit baggage pricing behavior\n\n## Validation\n- Targeted booking service tests pass\n- Boundary behavior verified at < 6 hours and >= 6 hours\n\n## Notes\nThis is a localized fix in the booking service only; no broader pricing changes were introduced.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/booking_service.py: committed in c360f2970e9a5006e27aa4f7e60ca81fa5cb3e11",
+    "backend/tests/services/test_booking_service.py: committed in c360f2970e9a5006e27aa4f7e60ca81fa5cb3e11"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/27",
+  "commit_sha": "c360f2970e9a5006e27aa4f7e60ca81fa5cb3e11"
+}

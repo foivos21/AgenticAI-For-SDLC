@@ -1,0 +1,85 @@
+{
+  "run_id": "sdlc-29-20260612084402-ca610769",
+  "issue_key": "SDLC-29",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-12T08:44:02.035909+00:00",
+  "updated_at": "2026-06-12T08:45:17.723376+00:00",
+  "explanation": "Pull request #26 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-4o-mini"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-29-cancelling-a-booking-does-not-free-up-the-seat-for-other-passengers",
+  "commit_sha": "a4daf1e22186a8801040cad23017025a6cdaca51",
+  "pr_number": 26,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/26",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781253842.038135,
+      "end_time": 1781253842.950224,
+      "duration_seconds": 0.912,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781253842.953215,
+      "end_time": 1781253851.548673,
+      "duration_seconds": 8.595,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781253851.550686,
+      "end_time": 1781253859.9825878,
+      "duration_seconds": 8.432,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781253859.987541,
+      "end_time": 1781253899.725451,
+      "duration_seconds": 39.738,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781253901.112446,
+      "end_time": 1781253909.061173,
+      "duration_seconds": 7.949,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781253909.064909,
+      "end_time": 1781253913.014452,
+      "duration_seconds": 3.95,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781253913.016515,
+      "end_time": 1781253914.405555,
+      "duration_seconds": 1.389,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 46271,
+  "total_completion_tokens": 10719
+}

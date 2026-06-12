@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-65-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "base_branch": "main",
+  "pr_title": "SDLC-65: Fix booking total calculation for multi-passenger bookings",
+  "pr_body": "## Summary\nFix the booking base total calculation so multi-passenger bookings are priced by multiplying the fare by passenger count instead of adding the passenger count to the fare.\n\n## Scope\n- Update booking creation pricing logic in `backend/app/services/booking_service.py`\n- Add regression coverage in `backend/tests/services/test_booking_service.py`\n\n## Validation\n- 200.00 fare with 3 passengers now totals 600.00\n- 1-passenger bookings remain unchanged\n- Booking creation behavior otherwise remains intact\n\n## Notes\nThis is a narrow service-layer fix intended to avoid changes outside booking pricing logic.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/booking_service.py: committed in 9891ff5758e4cf4100523317511597c7fa3d1c62",
+    "backend/tests/services/test_booking_service.py: committed in 9891ff5758e4cf4100523317511597c7fa3d1c62"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/43",
+  "commit_sha": "9891ff5758e4cf4100523317511597c7fa3d1c62"
+}

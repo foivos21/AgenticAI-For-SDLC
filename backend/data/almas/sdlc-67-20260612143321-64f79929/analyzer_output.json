@@ -1,0 +1,58 @@
+{
+  "issue_key": "SDLC-67",
+  "problem_statement": "The flight details page shows an inflated available seat count because the calculation uses total + booked instead of total - booked.",
+  "goal": "Fix the seat availability computation so available seats reflect remaining capacity: total seats minus booked seats.",
+  "acceptance_criteria": [
+    "Flight details display available seats as total_seats - booked_seats.",
+    "Available seats never exceed aircraft capacity for a flight.",
+    "The calculation is corrected at the backend source used by flight details."
+  ],
+  "constraints": [
+    "Keep the change localized to the seat inventory availability computation unless tests reveal a broader shared helper is used.",
+    "Preserve existing data model and API shape unless absolutely necessary."
+  ],
+  "unknowns": [
+    "Whether the incorrect calculation is only in the seat inventory aggregate/query or also mirrored in a service/schema layer.",
+    "Whether any reconciliation or seed scripts rely on the same formula and should be updated for consistency."
+  ],
+  "repo_summary": "Backend-heavy repository with flight and seat inventory logic under backend/app/db, backend/app/services, backend/app/models, and backend/app/schemas; issue points specifically to backend/app/db/seat_inventory.py and function seat_inventory_counts.",
+  "candidate_files": [
+    "backend/app/db/seat_inventory.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/api/routes/flights.py",
+    "backend/app/schemas/seat_inventory.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/models/flight.py",
+    "backend/app/scripts/reconcile_seat_state.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/db/seat_inventory.py"
+  ],
+  "selected_symbols": [
+    "seat_inventory_counts"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "symbol_name": "seat_inventory_counts",
+      "symbol_type": "function",
+      "reason": "Explicitly identified in the issue as the affected implementation; likely contains the incorrect availability arithmetic.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "seat inventory aggregate/query helpers",
+        "any availability calculation used by flight details"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description directly names the affected file and function: backend/app/db/seat_inventory.py (seat_inventory_counts).",
+    "The bug is a simple arithmetic inversion in available seat computation, so the smallest relevant fix is likely in the backend seat inventory counting logic.",
+    "Flight details likely read from this backend helper through a service or route, but those layers are secondary unless the helper is only a thin wrapper."
+  ],
+  "confidence": 0.97,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

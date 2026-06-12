@@ -1,0 +1,48 @@
+{
+  "solution_summary": "Plan a minimal backend fix for the inverted `max_price` comparison in flight search, centered on `backend/app/services/flight_service.py::search_flights`, with a regression test in `backend/app/tests/test_flight_service.py` and a quick route-layer verification in `backend/app/api/routes/flights.py` to confirm the parameter is passed through unchanged.",
+  "implementation_steps": [
+    "Inspect `search_flights` to locate the `max_price` predicate and confirm whether the inversion is in service logic or a helper/query builder.",
+    "Correct the comparison so results are filtered with `price <= max_price` rather than `price > max_price` or the inverse equivalent.",
+    "Verify the route handler in `backend/app/api/routes/flights.py` passes `max_price` directly to the service without transformation.",
+    "Add or update a focused regression test in `backend/app/tests/test_flight_service.py` that seeds/uses flights both below, at, and above the threshold and asserts only `<= max_price` are returned.",
+    "Run the relevant test subset for flight search/service behavior and confirm no other search filters regress."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Fix the `max_price` filter logic inside `search_flights` so it applies an upper-bound comparison.",
+      "rationale": "This is the smallest likely fix and the issue explicitly identifies this function as the affected location."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add or update a regression test covering `GET /flights/search?max_price=200`-equivalent service behavior, asserting only flights priced at or below the limit are returned.",
+      "rationale": "Prevents the inverted filter from returning silently in the future and validates the expected acceptance criteria."
+    },
+    {
+      "file_path": "backend/app/api/routes/flights.py",
+      "change_summary": "Review the route handler to confirm `max_price` is forwarded unchanged to `search_flights`; only modify if a parameter mapping bug is found.",
+      "rationale": "Rules out route-layer transformation as the source of the inversion and ensures the API contract remains intact."
+    }
+  ],
+  "patch_strategy": "Apply a narrowly scoped service-layer patch first, because the defect is likely an inverted numeric comparison in `search_flights`. Then add a regression test that exercises boundary values around the max price to prove the fix. Use the route file only as a verification checkpoint unless it reveals an actual parameter mapping issue. Keep the change isolated to avoid impacting unrelated search filters or response shaping.",
+  "validation_steps": [
+    "Run the flight service test module, especially any tests around search filtering and `max_price` behavior.",
+    "Add a targeted assertion for boundary cases: one flight below the max, one exactly at the max, and one above the max.",
+    "If available, run the API-level route test for `/flights/search` to verify request-to-service wiring.",
+    "Confirm existing behavior for other search filters is unchanged by running the broader flight search test subset.",
+    "Manually review the result set ordering/shape to ensure only the comparison changed, not unrelated filtering semantics."
+  ],
+  "branch_name": "feature/SDLC-42-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix inverted max_price filtering in flight search",
+  "pr_body": "## Summary\nFix the flight search `max_price` filter so it behaves as an upper bound and returns only flights priced at or below the requested value.\n\n## Planned changes\n- Correct the `max_price` comparison in `backend/app/services/flight_service.py::search_flights`\n- Add a regression test in `backend/app/tests/test_flight_service.py`\n- Verify route-layer parameter passing in `backend/app/api/routes/flights.py`\n\n## Acceptance criteria\n- `GET /flights/search?max_price=200` returns only flights with price `<= 200`\n- Flights above the limit are excluded\n- Other search filters continue working as before\n\n## Validation\n- Run flight service/search tests\n- Confirm boundary coverage around the max price filter\n- Verify no unrelated search behavior regresses",
+  "risks": [
+    "The inversion may be implemented in a helper/query builder rather than directly in `search_flights`, requiring a small follow-up adjustment.",
+    "If tests currently rely on the buggy behavior, they will need to be updated to match the corrected contract.",
+    "Route or schema-level normalization could mask the true source of the bug, so the fix should be confirmed with test coverage at the service level."
+  ],
+  "assumptions": [
+    "`max_price` is meant to be inclusive (`<=`) based on the issue description and acceptance criteria.",
+    "The route handler already forwards `max_price` to the service without intentional transformation.",
+    "A focused service test is sufficient to cover the defect without needing broader schema/model changes."
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "issue_key": "SDLC-28",
+  "problem_statement": "When creating a booking with paid extras, the booking total is being reduced instead of increased by the extras' prices.",
+  "goal": "Fix booking creation so that any paid extras included during create_booking are added to the booking total, not subtracted.",
+  "acceptance_criteria": [
+    "Creating a booking with one or more paid extras increases the total by the sum of those extras' prices.",
+    "Base fare remains unchanged except for the additive effect of extras.",
+    "Regression coverage exists for create_booking with paid extras."
+  ],
+  "constraints": [
+    "Issue is localized to backend/app/services/booking_service.py in create_booking or its immediate helpers.",
+    "Do not change unrelated booking pricing behavior for non-extra cases."
+  ],
+  "unknowns": [
+    "Whether the bug is in price aggregation logic, sign handling, or a helper used by create_booking.",
+    "Whether tests already cover extras price calculation during booking creation."
+  ],
+  "repo_summary": "Backend-focused booking system; likely pricing logic lives in booking service and related booking/booking_extra models and service tests.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/app/models/booking_extra.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/models/booking.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "create_booking"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "create_booking",
+      "symbol_type": "function",
+      "reason": "Explicitly named affected area; likely contains the total calculation or extra-price accumulation bug.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking total calculation",
+        "booking extras creation/persistence"
+      ]
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "symbol_name": "booking creation price tests",
+      "symbol_type": "test module",
+      "reason": "Most likely place to confirm expected total increases with paid extras and add regression coverage.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "create_booking"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description directly points to booking creation with paid extras, and the affected file is explicitly identified as backend/app/services/booking_service.py:create_booking.",
+    "The symptom is specific to total-price computation, so the smallest relevant implementation area is the create_booking flow and any immediate helper used to aggregate extras into the total.",
+    "Model/schema files may define data shape, but they are less likely to contain the sign error causing totals to decrease."
+  ],
+  "confidence": 0.91,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

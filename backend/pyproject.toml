@@ -20,6 +20,16 @@ dependencies = [
     "uvicorn[standard]>=0.32,<1.0",
 ]
 
+[project.optional-dependencies]
+# Visualization tooling for the ALMAS eval harness (app/eval/plot_results.py).
+# Not required to run the app or the pipeline; install with:
+#   pip install -e ".[viz]"
+viz = [
+    "matplotlib>=3.8,<4.0",
+    "pandas>=2.0,<4.0",
+    "seaborn>=0.13,<1.0",
+]
+
 [tool.pytest.ini_options]
 # Default suite is the unit tests under tests/. The eval_grading/ behavioural
 # tests are run on demand by the ALMAS eval harness (they intentionally fail

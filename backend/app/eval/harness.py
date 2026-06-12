@@ -1,4 +1,9 @@
-"""Inject / restore single-file bugs and create the matching Jira tickets."""
+"""Inject / restore single-file bugs and create the matching Jira tickets.
+
+Also provides :func:`run_feature_grading` for multi-file feature fixtures
+(:class:`~app.eval.bug_catalog.FeatureFixture`) where there is no inject step
+and grading is purely test-driven.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.config import Settings, get_settings
-from app.eval.bug_catalog import BugFixture
+from app.eval.bug_catalog import BugFixture, FeatureFixture
 from app.services.jira_service import JiraApiError, JiraPipelineService
 
 # backend/app/eval/harness.py -> parents[3] == repository root
@@ -125,7 +130,7 @@ class TicketResult:
 
 
 def create_ticket(
-    fixture: BugFixture,
+    fixture: BugFixture | FeatureFixture,
     *,
     service: JiraPipelineService | None = None,
     settings: Settings | None = None,
@@ -174,45 +179,6 @@ def verify(fixture: BugFixture) -> tuple[bool | None, str]:
 
 
 def run_grading_with_changes(fixture: BugFixture, developer_output) -> dict:
-    """Apply the developer's proposed changes, run the grading test, then restore.
-
-    Returns ``{"ran": bool, "passed": bool, "output": str}`` (or
-    ``{"ran": False, "reason": str}`` when there is no grading test). The working
-    tree is always restored to its prior state, even on failure.
-    """
-    if not fixture.test_file:
-        return {"ran": False, "reason": "no grading test for this fixture"}
-
-    # path -> (existed_before, original_text_or_None)
-    backups: dict[str, tuple[bool, str | None]] = {}
-    try:
-        for change in getattr(developer_output, "changes", []):
-            target = REPO_ROOT / change.path
-            existed = target.exists()
-            backups[change.path] = (
-                existed,
-                target.read_text(encoding="utf-8") if existed else None,
-            )
-            if change.operation == "delete":
-                if existed:
-                    target.unlink()
-            else:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(change.content, encoding="utf-8")
-
-        passed, output = verify(fixture)
-        return {"ran": passed is not None, "passed": bool(passed), "output": output}
-    finally:
-        for rel_path, (existed, original) in backups.items():
-            target = REPO_ROOT / rel_path
-            if existed:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(original or "", encoding="utf-8")
-            elif target.exists():
-                target.unlink()
-
-
-def run_grading_with_changes(fixture: BugFixture, developer_output) -> dict:
     """Apply the developer's proposed changes, run the grading test, then revert.
 
     Returns a dict the Fixer can read: ``{ran, passed, output}``. The working
@@ -236,6 +202,76 @@ def run_grading_with_changes(fixture: BugFixture, developer_output) -> dict:
 
         passed, output = verify(fixture)
         return {"ran": True, "passed": bool(passed), "output": output}
+    finally:
+        for rel_path, (existed, content) in backups.items():
+            path = REPO_ROOT / rel_path
+            if existed:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content or "", encoding="utf-8")
+            elif path.exists():
+                path.unlink()
+
+
+# ---------------------------------------------------------------------------
+# Feature fixture helpers (no inject/restore — grading is purely test-driven)
+# ---------------------------------------------------------------------------
+
+def feature_status(fixture: FeatureFixture) -> str:
+    """Run the grading suite and return 'passing', 'failing', or 'error'."""
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", fixture.test_file, "-q"],
+        cwd=str(BACKEND_DIR),
+        capture_output=True,
+        text=True,
+    )
+    combined = (completed.stdout + completed.stderr).lower()
+    if completed.returncode == 0:
+        return "passing"
+    if "error" in combined and "failed" not in combined:
+        return "error"
+    return "failing"
+
+
+def verify_feature(fixture: FeatureFixture) -> tuple[bool, str]:
+    """Run the grading test suite for a feature fixture.
+
+    Returns ``(passed, tail_output)`` — always runs (there is always a test file).
+    """
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", fixture.test_file, "-q"],
+        cwd=str(BACKEND_DIR),
+        capture_output=True,
+        text=True,
+    )
+    output = (completed.stdout + completed.stderr).strip()
+    tail = "\n".join(output.splitlines()[-12:])
+    return completed.returncode == 0, tail
+
+
+def run_feature_grading(fixture: FeatureFixture, developer_output) -> dict:
+    """Apply the developer's proposed multi-file changes, run grading tests, then revert.
+
+    The working tree is always fully restored after the run — every file that
+    existed before is put back; every file created by the changes that did not
+    exist before is removed.
+
+    Returns ``{"ran": True, "passed": bool, "output": str}``.
+    """
+    backups: dict[str, tuple[bool, str | None]] = {}
+    try:
+        for change in developer_output.changes:
+            path = REPO_ROOT / change.path
+            existed = path.exists()
+            backups[change.path] = (existed, path.read_text(encoding="utf-8") if existed else None)
+            if change.operation == "delete":
+                if existed:
+                    path.unlink()
+            else:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(change.content, encoding="utf-8")
+
+        passed, output = verify_feature(fixture)
+        return {"ran": True, "passed": passed, "output": output}
     finally:
         for rel_path, (existed, content) in backups.items():
             path = REPO_ROOT / rel_path

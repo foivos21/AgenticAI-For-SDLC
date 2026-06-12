@@ -1,0 +1,83 @@
+{
+  "issue_key": "SDLC-26",
+  "problem_statement": "Flight search sorting is inverted/misapplied: requests with sort_by=price return results ordered by departure time, and the default ordering appears swapped to price instead of departure time.",
+  "goal": "Fix GET /flights/search sorting so sort_by=price orders flights from cheapest to most expensive, while the default sort orders by departure time.",
+  "acceptance_criteria": [
+    "GET /flights/search?sort_by=price returns flights sorted ascending by price.",
+    "GET /flights/search without sort_by returns flights sorted by departure time.",
+    "The implementation matches the intended sort mapping in the flight search service and any route-level parameter handling.",
+    "Existing flight search behavior other than sort order remains unchanged."
+  ],
+  "constraints": [
+    "Issue explicitly points to backend/app/services/flight_service.py search_flights as the affected file.",
+    "Keep the fix localized to the backend search/sort logic unless tests reveal a route parameter mapping bug."
+  ],
+  "unknowns": [
+    "Whether the bug is in sort-key mapping inside search_flights or in the route/controller translating sort_by into service arguments.",
+    "Whether tests currently cover both default ordering and sort_by=price ordering."
+  ],
+  "repo_summary": "Backend-focused repository with flight search API and service layer; relevant likely files include backend/app/api/routes/flights.py, backend/app/services/flight_service.py, backend/app/models/flight.py, backend/app/schemas/flight.py, and backend/app/tests/test_flight_service.py.",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py",
+    "backend/app/api/routes/flights.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "Explicitly named in the issue as the affected implementation area; likely contains the sort-by mapping or default ordering logic.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "sort_by",
+        "departure_time",
+        "price"
+      ]
+    },
+    {
+      "file_path": "backend/app/api/routes/flights.py",
+      "symbol_name": "GET /flights/search route handler",
+      "symbol_type": "route",
+      "reason": "May translate query parameters into service arguments; needed if the bug is due to inverted parameter wiring rather than service sorting.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "sort_by",
+        "search_flights"
+      ]
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "symbol_name": "flight search sort tests",
+      "symbol_type": "test",
+      "reason": "Likely place to confirm/lock the expected default and price sort behavior after the fix.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "search_flights"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue directly names backend/app/services/flight_service.py search_flights as the affected file, making it the smallest likely implementation area.",
+    "The symptom indicates a sort-key inversion or wrong default branch in the service layer, with the API route as a secondary check if query parameters are mapped incorrectly.",
+    "Tests in backend/app/tests/test_flight_service.py are the most relevant nearby verification area for reproducing and preventing regression."
+  ],
+  "confidence": 0.9,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

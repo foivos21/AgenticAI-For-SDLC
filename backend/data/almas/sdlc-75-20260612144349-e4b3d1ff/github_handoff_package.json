@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-75-passengers-with-a-pending-refund-can-re-book-the-same-flight",
+  "base_branch": "main",
+  "pr_title": "SDLC-75: Fix refund conflict check for re-booking on pending refunds",
+  "pr_body": "## Summary\nFix the booking service refund-conflict guard so passengers with an unresolved refund cannot re-book the same flight, while resolved refunds no longer block legitimate bookings.\n\n## Changes\n- Correct the refund-status condition in `BookingService._ensure_no_duplicate_or_refund_conflicts`\n- Add focused regression coverage in `backend/tests/services/test_booking_service.py`\n- Preserve existing duplicate-booking behavior\n\n## Validation\n- Run focused booking service tests\n- Verify pending/unresolved refunds return HTTP 409 on same-flight re-booking\n- Verify resolved refunds do not block a legitimate new booking\n\n## Notes\nThis is intended as a minimal, targeted fix in the booking service layer.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/booking_service.py: committed in 47c098c44502bcca5915910e604df25a68354419",
+    "backend/tests/services/test_booking_service.py: committed in 47c098c44502bcca5915910e604df25a68354419"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/53",
+  "commit_sha": "47c098c44502bcca5915910e604df25a68354419"
+}

@@ -1,0 +1,85 @@
+{
+  "run_id": "sdlc-81-20260612145300-dcb1a218",
+  "issue_key": "SDLC-81",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-12T14:53:00.923538+00:00",
+  "updated_at": "2026-06-12T14:53:47.325434+00:00",
+  "explanation": "Pull request #59 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-81-economy-class-column-a-seats-are-not-classified-as-window-seats",
+  "commit_sha": "775388eba655e32f35e3dc218288fec2e3defc02",
+  "pr_number": 59,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/59",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781275980.927745,
+      "end_time": 1781275981.954093,
+      "duration_seconds": 1.026,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781275981.9596028,
+      "end_time": 1781275988.73541,
+      "duration_seconds": 6.776,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781275988.742442,
+      "end_time": 1781275999.6638138,
+      "duration_seconds": 10.921,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781275999.669913,
+      "end_time": 1781276014.9414148,
+      "duration_seconds": 15.272,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781276016.153499,
+      "end_time": 1781276018.4657128,
+      "duration_seconds": 2.312,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781276018.470198,
+      "end_time": 1781276021.759457,
+      "duration_seconds": 3.289,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781276021.763327,
+      "end_time": 1781276023.071441,
+      "duration_seconds": 1.308,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 16328,
+  "total_completion_tokens": 4273
+}

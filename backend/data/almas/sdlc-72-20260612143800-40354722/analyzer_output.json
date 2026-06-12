@@ -1,0 +1,89 @@
+{
+  "issue_key": "SDLC-72",
+  "problem_statement": "Cancelling a booking does not restore the seat inventory for the flight. The cancellation path appears to mark the booking as cancelled without releasing the seats that were reserved by that booking, so the flight's occupied-seat count stays inflated and capacity is never made available again.",
+  "goal": "Ensure that `cancel_booking` frees every seat reserved by the booking and updates the flight/seat inventory so those seats become immediately available for new bookings.",
+  "acceptance_criteria": [
+    "When a booking is cancelled, all seats associated with that booking are released from occupied/reserved state.",
+    "The flight's available seat count increases accordingly after cancellation.",
+    "Subsequent bookings can successfully use seats freed by a cancelled booking.",
+    "Cancellation remains idempotent/safe if invoked on already-cancelled bookings, if supported by current behavior."
+  ],
+  "constraints": [
+    "Fix should be localized to booking cancellation flow unless a deeper seat-inventory invariant requires a small supporting change.",
+    "Preserve existing booking cancellation semantics aside from seat release.",
+    "Update or add tests covering seat release on cancellation."
+  ],
+  "unknowns": [
+    "How seat occupancy is represented in the backend (direct flight counters vs seat_inventory rows vs per-booking seat records).",
+    "Whether cancellation already updates booking status/events and only misses inventory release, or whether both booking and inventory state need adjustment.",
+    "Whether there are transactional requirements to keep booking cancellation and seat release atomic."
+  ],
+  "repo_summary": "Backend service with booking, flight, and seat inventory models/services. The issue likely lives in the booking cancellation service path and interacts with seat inventory persistence and related tests.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/db/seat_inventory.py",
+    "backend/app/models/flight.py",
+    "backend/app/api/routes/bookings.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/schemas/booking.py",
+    "backend/alembic/versions/20260403_0002_seat_inventory.py",
+    "backend/alembic/versions/20260403_0003_booking_duplicate_guardrails.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/db/seat_inventory.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "cancel_booking"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "cancel_booking",
+      "symbol_type": "function",
+      "reason": "Primary implementation point mentioned in the issue; likely where booking status is changed and seat release should be added.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking model/status transitions",
+        "seat inventory update helpers"
+      ]
+    },
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "symbol_name": "seat inventory update helpers",
+      "symbol_type": "module",
+      "reason": "Likely contains the persistence logic for incrementing/decrementing available seats or releasing reservations that cancel_booking must call.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking_service.cancel_booking"
+      ]
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "symbol_name": "cancel_booking tests",
+      "symbol_type": "test suite",
+      "reason": "Best place to verify cancellation frees seats and prevents regression.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking_service.cancel_booking"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue explicitly names `backend/app/services/booking_service.py (cancel_booking)` as the affected file, so the smallest likely fix starts there.",
+    "The symptom is inventory not being restored after cancellation, which suggests the cancellation path updates booking state but misses the seat-release side effect.",
+    "Seat availability is likely tracked in dedicated seat-inventory code, so `cancel_booking` probably needs to invoke a helper or transaction there rather than changing API routes or schemas.",
+    "Tests in the booking service suite are the most targeted validation point for this behavior."
+  ],
+  "confidence": 0.89,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

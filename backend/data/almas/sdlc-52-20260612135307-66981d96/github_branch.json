@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-52-cancelling-a-booking-does-not-free-up-the-seat-for-other-passengers",
+  "base_branch": "main",
+  "base_sha": "d473ef1d623d6a9ccce45829147e9e3df11b3f17",
+  "ref": "refs/heads/feature/SDLC-52-cancelling-a-booking-does-not-free-up-the-seat-for-other-passengers",
+  "created": true
+}

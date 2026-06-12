@@ -1,0 +1,60 @@
+{
+  "run_id": "sdlc-45-20260612135118-8f43f378",
+  "issue_key": "SDLC-45",
+  "status": "failed",
+  "current_stage": "developer",
+  "revision_count": 0,
+  "created_at": "2026-06-12T13:51:18.643007+00:00",
+  "updated_at": "2026-06-12T13:52:23.043487+00:00",
+  "explanation": "status_code: 429, model_name: gpt-5.4-mini-2026-03-17, body: {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json"
+  },
+  "latest_fixer_decision": "",
+  "branch_name": "feature/SDLC-45-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "commit_sha": "",
+  "pr_number": null,
+  "pr_url": "",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781272278.646265,
+      "end_time": 1781272279.7620249,
+      "duration_seconds": 1.116,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781272279.7658508,
+      "end_time": 1781272287.866528,
+      "duration_seconds": 8.101,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781272287.870618,
+      "end_time": 1781272293.222983,
+      "duration_seconds": 5.352,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781272293.226778,
+      "end_time": 1781272338.3593311,
+      "duration_seconds": 45.133,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 14197,
+  "total_completion_tokens": 11647
+}

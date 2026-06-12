@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-27-flight-search-by-destination-airport-returns-no-results",
+  "base_branch": "main",
+  "base_sha": "c2fc8b0e397dfa4c3d451c33b48e109dffa4145b",
+  "ref": "refs/heads/feature/SDLC-27-flight-search-by-destination-airport-returns-no-results",
+  "created": true
+}

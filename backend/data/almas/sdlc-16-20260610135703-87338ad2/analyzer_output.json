@@ -1,0 +1,31 @@
+{
+  "issue_key": "SDLC-16",
+  "problem_statement": "The flight search endpoint incorrectly returns flights that exceed the specified maximum price instead of those that are at or below that price.",
+  "goal": "Ensure the GET /flights/search endpoint returns only flights priced less than or equal to the specified max_price.",
+  "acceptance_criteria": [
+    "The search should return only flights priced at or below the max_price",
+    "Functional testing ensures that edge cases around the price limit work as expected."
+  ],
+  "constraints": [],
+  "unknowns": [],
+  "repo_summary": "README.md(1), backend(211), docker-compose.yml(1), frontend(8), run_backend.sh(1), run_frontend.sh(1), run_local.sh(1), scripts(7)",
+  "candidate_files": [
+    "backend/app/api/routes/flights.py",
+    "backend/app/scripts/seed_flights.py",
+    "backend/app/db/flight_schema.py",
+    "backend/app/models/flight.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_symbols": [],
+  "targeted_symbols": [],
+  "localization_rationale": [
+    "The function responsible for searching flights is implemented in flight_service.py which handles search logic."
+  ],
+  "confidence": 0.9,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

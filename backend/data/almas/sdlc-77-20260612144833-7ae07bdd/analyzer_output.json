@@ -1,0 +1,66 @@
+{
+  "issue_key": "SDLC-77",
+  "problem_statement": "The duplicate-booking check in booking creation is using the wrong booking status, so it no longer blocks a second booking when the passenger already has an existing confirmed booking on the same flight.",
+  "goal": "Ensure that creating a booking for a passenger/flight pair is rejected with HTTP 409 Conflict whenever a confirmed booking for that same passenger and flight already exists.",
+  "acceptance_criteria": [
+    "Creating booking B2 for the same passenger and same flight as an existing confirmed booking B1 returns 409 Conflict.",
+    "The duplicate-booking guard specifically checks for the confirmed status, not a different status.",
+    "Normal booking creation still succeeds when no confirmed booking exists for that passenger/flight pair."
+  ],
+  "constraints": [
+    "Fix should be localized to the booking duplicate/conflict guard logic in the backend service layer.",
+    "Behavior should remain aligned with existing API error handling for conflict responses."
+  ],
+  "unknowns": [
+    "Exact status enum/value currently checked in _ensure_no_duplicate_or_refund_conflicts is not shown in the issue description.",
+    "It is unclear whether tests already cover the confirmed-status duplicate path or need adjustment."
+  ],
+  "repo_summary": "Backend service-oriented repository with booking API, models, schemas, and tests. The issue points directly to backend/app/services/booking_service.py and specifically the _ensure_no_duplicate_or_refund_conflicts helper, making this a narrowly localized backend validation bug.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/api/routes/bookings.py",
+    "backend/app/models/booking.py",
+    "backend/app/schemas/booking.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "_ensure_no_duplicate_or_refund_conflicts"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "_ensure_no_duplicate_or_refund_conflicts",
+      "symbol_type": "function",
+      "reason": "This is the function explicitly named in the issue and is the likely place where the booking-status check is incorrect, causing the duplicate-confirmed booking guard to be skipped.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "create_booking",
+        "BookingStatus"
+      ]
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "symbol_name": "booking creation duplicate/conflict tests",
+      "symbol_type": "test module",
+      "reason": "Tests should verify that a second booking for the same passenger/flight is rejected with 409 when the first booking is confirmed, and protect against regressions.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "_ensure_no_duplicate_or_refund_conflicts"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue explicitly names backend/app/services/booking_service.py and the helper _ensure_no_duplicate_or_refund_conflicts as the affected area.",
+    "The symptom is a validation/guard failure during booking creation rather than an API routing or database schema problem.",
+    "The minimal fix likely involves correcting the status enum comparison in the service helper and, if needed, updating or adding a unit test in the corresponding booking service test file."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

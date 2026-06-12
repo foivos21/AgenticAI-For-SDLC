@@ -1,0 +1,70 @@
+{
+  "issue_key": "SDLC-45",
+  "problem_statement": "Booking base total is being computed with the wrong operator for multi-passenger bookings: instead of multiplying the flight fare by passenger count, the current logic appears to add the passenger count to the fare, producing totals like 203.00 for a 200.00 fare with 3 passengers.",
+  "goal": "Update booking creation so the base total equals flight price \u00d7 number of passengers during booking creation.",
+  "acceptance_criteria": [
+    "Creating a booking with N passengers sets base total to fare multiplied by N.",
+    "Example: 200.00 fare and 3 passengers yields 600.00, not 203.00.",
+    "Single-passenger bookings continue to compute correctly.",
+    "Relevant booking service tests cover multi-passenger total calculation."
+  ],
+  "constraints": [
+    "Keep the change localized to booking creation logic unless tests reveal shared helper usage.",
+    "Preserve existing booking pricing semantics for any extras/fees unless explicitly affected.",
+    "Follow existing rounding/currency handling used elsewhere in booking totals."
+  ],
+  "unknowns": [
+    "Exact method/body in booking_service.py where the base total is calculated.",
+    "Whether a shared pricing helper or model property also contributes to the incorrect arithmetic.",
+    "Whether existing tests already cover passenger count pricing and need adjustment or only a new assertion."
+  ],
+  "repo_summary": "Monorepo with backend service and tests. Booking-related domain logic is in backend/app/services/booking_service.py, with supporting models/schemas/routes and service tests under backend/tests/services/test_booking_service.py.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/api/routes/bookings.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "create_booking"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "BookingService.create_booking",
+      "symbol_type": "method",
+      "reason": "Reported affected implementation area; likely contains the base total calculation with the wrong operator.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "BookingService",
+        "booking total calculation helper if present"
+      ]
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "symbol_name": "booking service tests for create_booking",
+      "symbol_type": "test module section",
+      "reason": "Best place to validate and lock in the corrected multi-passenger total behavior.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "create_booking test cases"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "Issue description is specific: the bug is an arithmetic operator mistake in booking total calculation.",
+    "The user already identifies the affected file and method: backend/app/services/booking_service.py#create_booking.",
+    "A minimal fix is likely isolated to the create_booking path, with tests in the corresponding service test module.",
+    "No evidence suggests API, schema, or model changes are required beyond verifying the service logic."
+  ],
+  "confidence": 0.97,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

@@ -1,0 +1,13 @@
+{
+  "decision": "approved",
+  "fix_summary": "",
+  "approval_reasons": [
+    "Automated tests passed successfully, confirming the functionality works as intended.",
+    "The implementation correctly addresses the issue of filtering flights based on max price."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

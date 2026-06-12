@@ -1,0 +1,106 @@
+{
+  "run_id": "sdlc-30-20260612084523-7634252a",
+  "issue_key": "SDLC-30",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 1,
+  "created_at": "2026-06-12T08:45:23.434521+00:00",
+  "updated_at": "2026-06-12T08:48:59.399490+00:00",
+  "explanation": "Pull request #27 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-4o-mini"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-30-short-haul-flights-charge-long-haul-baggage-fees-and-vice-versa",
+  "commit_sha": "c360f2970e9a5006e27aa4f7e60ca81fa5cb3e11",
+  "pr_number": 27,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/27",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781253923.436403,
+      "end_time": 1781253924.466696,
+      "duration_seconds": 1.03,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781253924.471436,
+      "end_time": 1781253933.992276,
+      "duration_seconds": 9.521,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781253933.9944692,
+      "end_time": 1781253940.783162,
+      "duration_seconds": 6.789,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781253940.787076,
+      "end_time": 1781253986.107751,
+      "duration_seconds": 45.321,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781253987.758379,
+      "end_time": 1781253996.6394072,
+      "duration_seconds": 8.881,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781253996.643163,
+      "end_time": 1781254070.886244,
+      "duration_seconds": 74.243,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781254070.8909519,
+      "end_time": 1781254115.867889,
+      "duration_seconds": 44.977,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781254117.597277,
+      "end_time": 1781254131.025044,
+      "duration_seconds": 13.428,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781254131.027998,
+      "end_time": 1781254134.8649,
+      "duration_seconds": 3.837,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781254134.867095,
+      "end_time": 1781254136.110708,
+      "duration_seconds": 1.244,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 85507,
+  "total_completion_tokens": 21492
+}

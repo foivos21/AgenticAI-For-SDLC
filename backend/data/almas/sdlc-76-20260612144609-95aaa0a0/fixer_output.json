@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "The reschedule flow now releases all booked seats on the source flight before creating the replacement booking, and the automated test suite passed.",
+  "approval_reasons": [
+    "Automated tests passed (8/8), indicating the change works end-to-end.",
+    "The implementation is localized to the rescheduling path and preserves existing create/cancel behavior.",
+    "Source-flight seat inventory is explicitly released via a helper scoped to the original booking flight before reassignment.",
+    "The new helper enumerates passenger seat records, which addresses the multi-seat/passenger concern noted in the plan."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

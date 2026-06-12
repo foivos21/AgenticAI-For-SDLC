@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "Changed knowledge base search from prefix-only matching to substring/contains matching across topic, title, and content by switching the SQLAlchemy pattern from `query.strip()%` to `%query.strip()%` while preserving the existing result shape and ordering.",
+  "approval_reasons": [
+    "The implementation directly addresses the reported bug in the identified service method.",
+    "The search predicate now uses wildcard-wrapped `ilike`, so terms appearing anywhere in topic/title/content are matched.",
+    "Existing prefix matches still work because prefix strings are still a substring of the broader pattern.",
+    "Automated tests passed (3/3), which is the source of truth for readiness."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

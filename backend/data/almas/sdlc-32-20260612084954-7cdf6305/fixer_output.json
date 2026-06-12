@@ -1,0 +1,12 @@
+{
+  "decision": "approved",
+  "fix_summary": "The implementation correctly adjusts the booking conflict guard to block re-booking for cancelled bookings with unresolved refunds and adds regression tests for this behavior.",
+  "approval_reasons": [
+    "Automated tests passed, confirming the implementation resolves the issue as intended."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

@@ -1,0 +1,55 @@
+{
+  "issue_key": "SDLC-75",
+  "problem_statement": "A booking/refund conflict check in the booking service has inverted logic: it currently permits a passenger to re-book the same flight while a refund is still pending, and it blocks cases where the refund has already been resolved.",
+  "goal": "Prevent creation of a new booking for the same passenger on the same flight whenever there is an unresolved refund associated with the prior cancellation; the API should return 409 until the refund is resolved.",
+  "acceptance_criteria": [
+    "If passenger A has a cancelled booking on flight F with refund_status=pending (or otherwise unresolved), a new booking for passenger A on flight F is rejected with HTTP 409.",
+    "If the refund for the prior cancellation is resolved, the conflict check should not block a legitimate new booking on that flight.",
+    "The duplicate/refund guard should distinguish unresolved vs resolved refund states correctly."
+  ],
+  "constraints": [
+    "Target the smallest implementation area possible.",
+    "Likely fix is in backend/app/services/booking_service.py within _ensure_no_duplicate_or_refund_conflicts.",
+    "Keep existing duplicate-booking behavior intact except for the refund-status condition."
+  ],
+  "unknowns": [
+    "Exact refund status enum/value names and whether the guard checks null/terminal states in addition to 'pending'.",
+    "Whether there are existing tests covering the inverted condition and which statuses count as 'resolved'."
+  ],
+  "repo_summary": "Backend service for booking/refund logic; likely a single service method enforces duplicate and refund conflict rules, with tests in backend/tests/services/test_booking_service.py.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/schemas/booking.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "_ensure_no_duplicate_or_refund_conflicts"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "BookingService._ensure_no_duplicate_or_refund_conflicts",
+      "symbol_type": "method",
+      "reason": "Issue explicitly names this method as the location of the inverted refund-conflict condition; likely where the status check should be corrected.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "BookingService.create_booking",
+        "BookingService.cancel_booking"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug description points directly to a single service method in backend/app/services/booking_service.py.",
+    "The symptom is a logical inversion in a guard clause, so the smallest fix is likely a condition change rather than a broader model or route update.",
+    "Tests should be updated or added in the booking service test suite to lock in the corrected 409 behavior."
+  ],
+  "confidence": 0.97,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

@@ -1,0 +1,53 @@
+{
+  "solution_summary": "Plan a minimal backend fix in `search_flights` so `/flights/search` returns only flights with `SCHEDULED` status, and tighten the regression test to assert only the scheduled flight is returned. Keep the change localized to the service and test layers, with no route/schema/migration changes unless inspection reveals a status-field mismatch.",
+  "implementation_steps": [
+    "Inspect `backend/app/services/flight_service.py` to confirm how `search_flights` currently builds its query and where status filtering should be applied.",
+    "Verify the status field and enum values in `backend/app/models/flight.py` and `backend/app/db/flight_schema.py` so the filter uses the canonical `SCHEDULED` value/column name.",
+    "Update `search_flights` to include an explicit filter for scheduled flights only, ensuring cancelled, delayed, and any other non-scheduled statuses are excluded at the source query level.",
+    "Review `backend/app/tests/test_flight_service.py` and update `test_search_flights_returns_only_scheduled_flights` so it asserts the exact returned IDs match only the scheduled flight.",
+    "If the model exposes a delayed status and existing test fixtures can represent it, include a delayed flight in the regression fixture and assert it is excluded; otherwise keep the test focused on the statuses available in the enum.",
+    "Run the relevant service/unit test subset to confirm the bug is fixed and the regression is covered."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Add or correct the status predicate in `search_flights` so only flights with `SCHEDULED` status are returned.",
+      "rationale": "This is the primary defect location identified by the issue and should be the smallest, most targeted fix."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Strengthen the existing search regression test to assert that only the scheduled flight is returned, not just that one scheduled flight is present.",
+      "rationale": "The current test likely under-specifies the behavior; tightening it prevents regressions where non-scheduled flights leak into results."
+    },
+    {
+      "file_path": "backend/app/models/flight.py",
+      "change_summary": "Inspect the flight status enum/model definitions to confirm the exact scheduled status constant and any delayed status support.",
+      "rationale": "Needed to ensure the service filter and test fixtures use the correct canonical status values."
+    },
+    {
+      "file_path": "backend/app/db/flight_schema.py",
+      "change_summary": "Inspect the persisted status column definition and any schema-level status conventions used by flight search.",
+      "rationale": "Confirms the query should filter on the correct field and helps avoid mismatched column/value usage."
+    }
+  ],
+  "patch_strategy": "Apply a narrow service-layer patch that forces `search_flights` to filter by the scheduled status at query construction time rather than relying on downstream filtering. Keep the API contract unchanged. Then update the regression test to assert the result set is exactly the scheduled flight(s), with any non-scheduled fixture entries explicitly excluded. Prefer adjusting only one existing test and its fixture data over adding broad new coverage to minimize churn. Do not introduce migrations or route changes unless inspection reveals the status field name or enum value differs from the assumed implementation.",
+  "validation_steps": [
+    "Run the focused test module: `backend/app/tests/test_flight_service.py` (or the project\u2019s equivalent test command for that file).",
+    "Confirm the regression test `test_search_flights_returns_only_scheduled_flights` passes and fails when the scheduled-status filter is removed.",
+    "Manually reason through a mixed-status fixture: scheduled + cancelled (+ delayed if supported) should produce only scheduled IDs in the output.",
+    "If available, run the `/flights/search` endpoint integration test or the service-layer test path that exercises the endpoint to verify the API response matches the service behavior."
+  ],
+  "branch_name": "feature/SDLC-79-flight-search-returns-cancelled-flights-instead-of-scheduled-ones",
+  "pr_title": "SDLC-79: Restrict flight search to scheduled flights",
+  "pr_body": "## Summary\nFix flight search so `/flights/search` returns only flights with `SCHEDULED` status.\n\n## What changes\n- Correct the status filtering in `backend/app/services/flight_service.py` (`search_flights`)\n- Tighten the regression test in `backend/app/tests/test_flight_service.py` to assert only scheduled flights are returned\n\n## Validation\n- Focused service test pass for mixed-status search results\n- Regression test confirms cancelled/delayed flights are excluded\n\n## Notes\nThis is intended as a minimal, localized fix with no API contract changes.",
+  "risks": [
+    "The exact status enum/column name may differ slightly from expectations, requiring a small adjustment after inspection.",
+    "If search results are post-processed after query execution, the fix may need to be applied earlier in the data access path to avoid hidden leakage.",
+    "Existing fixtures may not include a delayed status, so coverage for delayed exclusion may be limited to available enum values."
+  ],
+  "assumptions": [
+    "`search_flights` is the sole path responsible for assembling flight search results.",
+    "The model/schema already contain a status field that can be filtered directly.",
+    "The test suite already has a regression test for this behavior and only needs strengthening, not a new end-to-end test."
+  ]
+}

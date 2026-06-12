@@ -1,0 +1,83 @@
+{
+  "run_id": "sdlc-25-20260610142553-8360dbe4",
+  "issue_key": "SDLC-25",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-10T14:25:53.655351+00:00",
+  "updated_at": "2026-06-10T14:26:27.883492+00:00",
+  "explanation": "Pull request #22 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-4o-mini"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-25-browsing-a-knowledge-topic-returns-articles-from-every-other-topic",
+  "commit_sha": "c8765ba666492f2724b16b9ad9a360cb7cbde38f",
+  "pr_number": 22,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/22",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781101553.657583,
+      "end_time": 1781101554.707181,
+      "duration_seconds": 1.05,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781101554.7108102,
+      "end_time": 1781101559.072869,
+      "duration_seconds": 4.362,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781101559.075425,
+      "end_time": 1781101567.537569,
+      "duration_seconds": 8.462,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781101567.541579,
+      "end_time": 1781101571.568717,
+      "duration_seconds": 4.027,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781101572.5700312,
+      "end_time": 1781101579.1774569,
+      "duration_seconds": 6.607,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781101579.181709,
+      "end_time": 1781101582.617238,
+      "duration_seconds": 3.436,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781101582.618867,
+      "end_time": 1781101584.1688142,
+      "duration_seconds": 1.55,
+      "status": "success"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "run_id": "sdlc-35-20260612130650-4dbfb8f0",
+  "issue_key": "SDLC-35",
+  "status": "code_generated",
+  "current_stage": "developer",
+  "revision_count": 0,
+  "created_at": "2026-06-12T13:06:50.468625+00:00",
+  "updated_at": "2026-06-12T13:07:17.420583+00:00",
+  "explanation": "Developer generated file changes.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json"
+  },
+  "latest_fixer_decision": "",
+  "branch_name": "feature/SDLC-35-flight-search-by-origin-airport-returns-no-results",
+  "commit_sha": "",
+  "pr_number": null,
+  "pr_url": "",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781269610.470881,
+      "end_time": 1781269611.483976,
+      "duration_seconds": 1.013,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781269611.488251,
+      "end_time": 1781269617.143324,
+      "duration_seconds": 5.655,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781269617.147139,
+      "end_time": 1781269625.1214652,
+      "duration_seconds": 7.974,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781269625.1246579,
+      "end_time": 1781269637.418008,
+      "duration_seconds": 12.293,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 0,
+  "total_completion_tokens": 0
+}

@@ -1,0 +1,44 @@
+{
+  "solution_summary": "Plan a minimal, targeted fix in the booking service to correct the refund-conflict guard so only unresolved refunds block re-booking of the same passenger/flight. Back it with focused regression tests in the booking service test suite, while preserving existing duplicate-booking behavior and restoring the full test file contents with only small additions/edits.",
+  "implementation_steps": [
+    "Update the refund conflict predicate in `BookingService._ensure_no_duplicate_or_refund_conflicts` so the guard rejects re-booking when an associated refund is unresolved (e.g., pending/in-progress/non-terminal), and does not reject when the refund is already resolved/terminal.",
+    "Keep the duplicate booking check unchanged except for the refund-status branch, ensuring the 409 response remains the same for true conflicts.",
+    "Restore `backend/tests/services/test_booking_service.py` to the full original file contents if it was truncated in prior work, then add only the minimal regression coverage needed for the refund-state inversion.",
+    "Add or adjust focused tests for: (1) pending/unresolved refund blocks a same-passenger same-flight booking with HTTP 409, and (2) resolved refund allows the booking path to proceed.",
+    "Verify test names and assertions are aligned with the actual refund status values used in the service/model layer (e.g., pending vs resolved/terminal), without broadening the scope to unrelated booking logic."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the inverted refund-status condition inside `_ensure_no_duplicate_or_refund_conflicts` so unresolved refunds block booking and resolved refunds do not.",
+      "rationale": "This is the smallest implementation area and directly matches the bug localization and acceptance criteria."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Restore the test file to its full original contents if needed, then add minimal regression tests covering unresolved vs resolved refund behavior for same-passenger same-flight re-booking.",
+      "rationale": "Locks in the corrected behavior while satisfying the revision request to avoid truncation or placeholder-based edits."
+    }
+  ],
+  "patch_strategy": "Make a surgical logic fix in the service method rather than altering models, schemas, or API routes. First identify the existing refund-state check in `_ensure_no_duplicate_or_refund_conflicts` and invert/replace the condition so that only unresolved refund states trigger the 409 conflict. Preserve any duplicate-booking checks and error message/status handling already in place. Then restore the booking service test file to its original full content if it was previously reduced, and append only narrowly scoped regression tests that exercise the two key states: unresolved refund rejected, resolved refund allowed. Keep the diff small and avoid refactoring unrelated test helpers or service methods.",
+  "validation_steps": [
+    "Run the focused booking service test module: `pytest backend/tests/services/test_booking_service.py` (or the repo\u2019s equivalent test invocation).",
+    "If available, run the single/newly added refund regression test cases directly to confirm the pending-refund 409 and resolved-refund pass-through behaviors.",
+    "Check the diff to ensure `backend/tests/services/test_booking_service.py` contains the full original contents plus only the minimal additions/edits requested, with no truncation or placeholder comments.",
+    "Confirm the booking creation flow still returns the expected 409 for duplicate-booking conflicts unrelated to refund status.",
+    "Review any failing assertions for refund status enum/value mismatches and align the tests to the actual terminal vs unresolved state names used by the codebase."
+  ],
+  "branch_name": "feature/SDLC-75-passengers-with-a-pending-refund-can-re-book-the-same-flight",
+  "pr_title": "SDLC-75: Fix refund conflict check for re-booking on pending refunds",
+  "pr_body": "## Summary\nFix the booking service refund-conflict guard so passengers with an unresolved refund cannot re-book the same flight, while resolved refunds no longer block legitimate bookings.\n\n## Changes\n- Correct the refund-status condition in `BookingService._ensure_no_duplicate_or_refund_conflicts`\n- Add focused regression coverage in `backend/tests/services/test_booking_service.py`\n- Preserve existing duplicate-booking behavior\n\n## Validation\n- Run focused booking service tests\n- Verify pending/unresolved refunds return HTTP 409 on same-flight re-booking\n- Verify resolved refunds do not block a legitimate new booking\n\n## Notes\nThis is intended as a minimal, targeted fix in the booking service layer.",
+  "risks": [
+    "Refund status names may differ from assumptions (e.g., terminal vs non-terminal states), requiring the test assertions to match the actual enum/constant values.",
+    "If the guard currently combines duplicate and refund checks in one branch, a small logic change could unintentionally alter the order or wording of the conflict response.",
+    "Restoring the test file must preserve existing unrelated coverage; if the file was previously truncated, careful reconstruction is needed to avoid accidental test loss."
+  ],
+  "assumptions": [
+    "The booking/refund conflict logic is centralized in `backend/app/services/booking_service.py::_ensure_no_duplicate_or_refund_conflicts` as indicated by the issue context.",
+    "The repository already has a focused test suite at `backend/tests/services/test_booking_service.py` suitable for adding regression coverage.",
+    "HTTP 409 is the existing and correct response for booking conflicts in this service.",
+    "The required branch name should be used exactly as provided."
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "issue_key": "SDLC-33",
+  "problem_statement": "Business-class seat type mapping is incorrect in the seat inventory logic: columns D are being classified as standard instead of window, and columns C are being classified as window instead of aisle. As a result, a window preference in business class can be assigned a center/aisle-adjacent seat rather than an actual window seat.",
+  "goal": "Fix the business-cabin seat-type classification so that columns A and D are treated as window seats, and columns B and C are treated as aisle seats, ensuring window-preference passengers receive a true window seat.",
+  "acceptance_criteria": [
+    "In business cabin, seat type mapping returns 'window' for columns A and D.",
+    "In business cabin, seat type mapping returns 'aisle' for columns B and C.",
+    "Window-seat preference in business class no longer assigns a center/incorrect seat.",
+    "Existing seat classification for other cabins remains unchanged unless intentionally affected by the same mapping function."
+  ],
+  "constraints": [
+    "Localized fix should be minimal and focused on seat-type classification logic.",
+    "Likely implementation area is backend/app/db/seat_inventory.py in _seat_type_for.",
+    "Do not change unrelated booking or assignment flow unless necessary."
+  ],
+  "unknowns": [
+    "Whether the same seat-type mapping helper is used by economy/premium cabins and if they share the same classification table.",
+    "Whether any tests already cover business cabin seat mapping or seat preference assignment."
+  ],
+  "repo_summary": "Backend-focused repository with seat inventory and booking logic under backend/app/db and related models/schemas. Candidate files suggest the seat inventory implementation and migration/state reconciliation scripts are the most relevant area.",
+  "candidate_files": [
+    "backend/alembic/versions/20260403_0002_seat_inventory.py",
+    "backend/app/db/seat_inventory.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/schemas/seat_inventory.py",
+    "backend/app/scripts/reconcile_seat_state.py"
+  ],
+  "selected_files": [
+    "backend/app/db/seat_inventory.py"
+  ],
+  "selected_symbols": [
+    "_seat_type_for"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "symbol_name": "_seat_type_for",
+      "symbol_type": "function",
+      "reason": "This is explicitly named in the issue as the affected implementation point and is the most likely place where business cabin column-to-seat-type mapping is encoded.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "seat inventory classification helpers",
+        "business cabin seat assignment logic"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug is a pure classification error, not a persistence or schema issue, because the observed behavior is a wrong seat type label leading to wrong assignment.",
+    "The issue explicitly names backend/app/db/seat_inventory.py and the _seat_type_for helper, making it the smallest and most direct fix location.",
+    "Candidate model/schema/migration files are less likely because the symptoms involve runtime seat preference behavior rather than stored data shape or migration state."
+  ],
+  "confidence": 0.98,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

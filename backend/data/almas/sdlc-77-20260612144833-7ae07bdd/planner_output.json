@@ -1,0 +1,42 @@
+{
+  "solution_summary": "Localize the fix to the booking service duplicate/conflict guard so a second booking for the same passenger and flight is rejected with HTTP 409 whenever an existing booking is already confirmed. The plan focuses on correcting the status check in _ensure_no_duplicate_or_refund_conflicts and adding/adjusting service-level tests to lock in the regression behavior.",
+  "implementation_steps": [
+    "Inspect backend/app/services/booking_service.py to confirm the current status comparison inside _ensure_no_duplicate_or_refund_conflicts and identify the incorrect status value or branch condition.",
+    "Update the duplicate-booking guard to explicitly reject when an existing booking for the same passenger/flight pair has confirmed status, preserving the existing 409 Conflict error path and message conventions.",
+    "Review the surrounding refund/duplicate logic in the same helper to ensure the fix does not alter unrelated conflict handling.",
+    "Add or update unit tests in backend/tests/services/test_booking_service.py to cover: (1) confirmed existing booking -> second booking raises 409, (2) no confirmed booking -> booking creation succeeds, and (3) any existing non-confirmed/refund path still follows prior behavior if already covered.",
+    "Run the relevant booking service test subset and, if available, the broader backend test suite slice that exercises booking creation flows."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the duplicate-booking guard so it checks for an existing confirmed booking on the same passenger/flight pair before allowing creation.",
+      "rationale": "This is the directly affected service-layer helper named in the issue; the bug is caused by checking the wrong booking status, so the fix should stay narrowly scoped here."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add or update tests to verify the duplicate confirmed-booking path returns 409 Conflict and normal booking creation still succeeds when no confirmed booking exists.",
+      "rationale": "Service tests provide regression coverage for the exact bug and protect the status check from being accidentally changed again."
+    }
+  ],
+  "patch_strategy": "Make a minimal, service-layer-only patch. First, inspect the current helper logic and the BookingStatus enum values to determine the incorrect comparison. Then change only the conditional that gates duplicate booking creation so it matches confirmed bookings explicitly. Avoid touching routing, schemas, or persistence unless a test reveals an unexpected dependency. Next, update tests to reflect the expected conflict behavior for confirmed bookings and ensure the happy path remains unchanged. Keep the existing conflict error semantics intact so API behavior continues to return HTTP 409 without altering downstream error handling.",
+  "validation_steps": [
+    "Run backend/tests/services/test_booking_service.py or the repository's targeted booking service test command.",
+    "Execute the specific regression test for creating a second booking for the same passenger and flight after a confirmed booking exists.",
+    "Verify a normal booking creation case still passes when no confirmed booking exists.",
+    "If available, run a broader booking API/service test subset to confirm no unintended change in refund or other conflict behavior."
+  ],
+  "branch_name": "feature/SDLC-77-a-passenger-can-book-the-same-flight-twice-at-the-same-time",
+  "pr_title": "SDLC-77: Fix confirmed duplicate booking conflict guard",
+  "pr_body": "## Summary\nFix the booking duplicate/conflict guard so a passenger cannot create a second booking on the same flight while a confirmed booking already exists.\n\n## What changed\n- Corrected the status check in the booking service duplicate guard\n- Added/updated service tests for the confirmed-booking conflict path\n- Preserved existing 409 Conflict behavior for duplicate booking attempts\n\n## Validation\n- Targeted booking service tests\n- Regression coverage for confirmed duplicate booking rejection\n- Happy-path booking creation remains unchanged\n\n## Notes\nThis is a localized backend service fix in `backend/app/services/booking_service.py` with regression coverage in `backend/tests/services/test_booking_service.py`.",
+  "risks": [
+    "The helper may also be involved in refund-related conflict logic, so a narrowly scoped status change must avoid altering unrelated branches.",
+    "If the project uses multiple booking statuses or aliases, the exact enum value should be verified to avoid checking the wrong constant again.",
+    "Existing tests may encode the previous buggy behavior and need adjustment rather than only new coverage."
+  ],
+  "assumptions": [
+    "The incorrect status comparison is confined to `_ensure_no_duplicate_or_refund_conflicts` in `backend/app/services/booking_service.py`.",
+    "The repository already has a standard way to assert HTTP 409 conflict behavior at the service test layer.",
+    "No schema, routing, or database migration changes are required for this bug fix."
+  ]
+}

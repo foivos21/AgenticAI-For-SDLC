@@ -1,0 +1,41 @@
+{
+  "solution_summary": "Implement a localized fix in the flight search service so destination airport filtering is case-insensitive, matching lowercase request input against uppercase-stored airport codes. Add a focused service-level test proving `/flights/search?destination=jfk` returns flights with destination `JFK` while leaving other search behavior unchanged.",
+  "implementation_steps": [
+    "Inspect `backend/app/services/flight_service.py` to confirm how `search_flights` applies destination filtering and whether comparison happens in Python or in a query builder.",
+    "Normalize the destination search input to a consistent case before comparison, or apply case-insensitive matching at the query layer, while preserving existing behavior for all non-airport filters.",
+    "Keep the change scoped to destination filtering unless the code path shows origin/other airport-code filters use the same comparison pattern and can be aligned without expanding scope.",
+    "Add/adjust a focused test in `backend/app/tests/test_flight_service.py` that seeds or mocks flights with uppercase destination codes and verifies lowercase destination input returns matches.",
+    "Run the service test file and any related search tests to validate no regressions in filtering semantics."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Update `search_flights` destination filter to compare airport codes case-insensitively, most likely by normalizing the incoming destination parameter to uppercase before matching stored values.",
+      "rationale": "The issue is caused by mismatch between lowercase request input and uppercase stored airport codes; fixing it in the service keeps the change localized and directly addresses the failing search path."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add a test case covering lowercase destination input against uppercase stored destination codes and asserting the expected flights are returned.",
+      "rationale": "A targeted test is the clearest regression guard for the specific bug and confirms the service behaves correctly without altering unrelated search filters."
+    }
+  ],
+  "patch_strategy": "Make the smallest possible change in `search_flights`: normalize destination input before applying the filter, keeping all other search criteria untouched. Prefer the simplest implementation consistent with current code structure\u2014if filtering is done in-memory, uppercase the request value before comparison; if filtering is done in a DB query, use a case-insensitive comparison or normalize the parameter to match stored uppercase values. Add a narrowly scoped test that reproduces the lowercase-input scenario and proves the fix, while asserting unrelated filters continue to behave as before.",
+  "validation_steps": [
+    "Run `backend/app/tests/test_flight_service.py` and verify the new destination case-insensitive test passes.",
+    "Run any existing flight search tests to ensure no regressions in origin, date, or other filters.",
+    "Manually verify the expected scenario conceptually: `GET /flights/search?destination=jfk` returns flights whose destination is stored as `JFK`.",
+    "If available, run the backend test suite subset covering flight service/search paths to confirm the patch is isolated."
+  ],
+  "branch_name": "feature/SDLC-70-flight-search-by-destination-airport-returns-no-results",
+  "pr_title": "SDLC-70: Fix case-insensitive destination airport search",
+  "pr_body": "## Summary\nFix flight destination search so airport code matching is case-insensitive. This resolves `/flights/search?destination=jfk` returning no results when stored airport codes are uppercase (e.g. `JFK`).\n\n## Changes\n- Normalize destination airport code comparison in `search_flights`\n- Add a regression test for lowercase destination search input\n\n## Validation\n- Added coverage for lowercase request input matching uppercase stored destination codes\n- Existing search behavior for other filters remains unchanged",
+  "risks": [
+    "If `search_flights` also supports origin or other airport-code filters using the same comparison logic, leaving them unchanged could preserve an inconsistent case-sensitivity experience elsewhere.",
+    "If the comparison is delegated to a database query, an incorrect normalization strategy could still miss matches depending on collation or ORM behavior."
+  ],
+  "assumptions": [
+    "`search_flights` is the correct and only place needed for this bug fix, as indicated by the issue context.",
+    "Airport codes are stored in uppercase and the destination request parameter may arrive in lowercase or mixed case.",
+    "There is an existing unit or service test harness in `backend/app/tests/test_flight_service.py` that can exercise `search_flights` directly."
+  ]
+}

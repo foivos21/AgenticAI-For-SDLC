@@ -1,0 +1,44 @@
+{
+  "solution_summary": "Planned fix: correct the booking conflict guard so a passenger cannot create a new booking for the same flight while any prior booking for that passenger/flight still has an unresolved pending refund, even if that prior booking is cancelled. The implementation should remain narrowly scoped to the booking service conflict check and be verified with regression tests at the service layer.",
+  "implementation_steps": [
+    "Inspect backend/app/services/booking_service.py:_ensure_no_duplicate_or_refund_conflicts to confirm the current status filter and identify the exact condition that excludes cancelled bookings incorrectly.",
+    "Update the conflict logic so the guard treats any booking with the same passenger and flight as blocking when refund_status is pending/unresolved, regardless of whether the booking status is cancelled.",
+    "Preserve existing duplicate-booking behavior for non-refund cases so only the refund-related false negative changes.",
+    "Add or adjust service tests in backend/tests/services/test_booking_service.py to reproduce the regression: cancelled booking with pending refund blocks re-booking with 409.",
+    "Add a complementary test for the resolved-refund path to ensure the same passenger can re-book once refund_status is no longer pending, consistent with existing duplicate rules.",
+    "Run focused backend tests for booking service and, if available, any related booking cancellation/creation tests to ensure no unintended regression."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Adjust _ensure_no_duplicate_or_refund_conflicts to stop skipping cancelled bookings when refund_status is still pending/unresolved.",
+      "rationale": "This is the root cause identified in the issue; the service-level guard must consider unresolved refunds as blocking re-booking on the same flight."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add regression coverage for a cancelled booking with pending refund preventing a second booking on the same flight, and add/verify resolved-refund behavior.",
+      "rationale": "Service tests should lock in the corrected conflict semantics and prevent reintroducing the status-filter bug."
+    }
+  ],
+  "patch_strategy": "Use a minimal, behavior-preserving patch in the booking service only. First, audit the helper\u2019s query/conditional logic to find where cancelled bookings are excluded. Then revise the condition so the refund conflict check is driven by refund state, not cancellation state. Keep all other duplicate-booking rules intact. Add focused regression tests that assert 409 for pending refund and success after refund resolution, ensuring the implementation is validated at the same abstraction level as the bug.",
+  "validation_steps": [
+    "Run backend service tests targeting booking_service, especially backend/tests/services/test_booking_service.py.",
+    "Verify the regression case returns HTTP 409 when a passenger attempts to re-book the same flight after cancelling with refund_status=pending.",
+    "Verify the resolved-refund case allows booking again when refund_status is no longer pending, subject to existing duplicate rules.",
+    "If test fixtures are used, confirm they cover both cancelled and non-cancelled booking states so the status filter behavior is explicit.",
+    "Check for any unrelated failures in booking creation/cancellation tests that might indicate the helper change affected other duplicate protections."
+  ],
+  "branch_name": "feature/SDLC-32-passengers-with-a-pending-refund-can-re-book-the-same-flight",
+  "pr_title": "SDLC-32: block re-booking while a refund is still pending",
+  "pr_body": "## Summary\nFix the booking conflict guard so a passenger cannot re-book the same flight while a prior booking has an unresolved pending refund.\n\n## What changes\n- Correct the conflict check in `backend/app/services/booking_service.py`\n- Add regression coverage in `backend/tests/services/test_booking_service.py`\n\n## Behavior\n- Re-booking the same flight is rejected with HTTP 409 when a matching booking still has `refund_status=pending`\n- Once the refund is resolved, booking can proceed according to existing duplicate rules\n\n## Validation\n- Focused booking service tests\n- Regression test for pending refund blocking re-booking",
+  "risks": [
+    "The helper may have additional status-based branches; changing the filter too broadly could alter existing duplicate-booking behavior.",
+    "Test fixtures may encode status assumptions that need updating if the helper currently relies on specific enum values or booking states.",
+    "If the service query is optimized around cancellation status, the minimal fix may require careful adjustment to avoid performance or semantic regressions."
+  ],
+  "assumptions": [
+    "The bug is localized to `_ensure_no_duplicate_or_refund_conflicts` as indicated by the issue.",
+    "HTTP 409 is the correct response for this conflict, consistent with existing booking duplicate handling.",
+    "Service-level tests are the appropriate place to validate the fix without needing API route changes."
+  ]
+}

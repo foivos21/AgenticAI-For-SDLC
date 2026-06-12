@@ -1,0 +1,43 @@
+{
+  "solution_summary": "Update the knowledge base search implementation to use contains/substring matching instead of prefix-only matching, while preserving the existing API and result shape. Add or adjust service-level tests to verify that articles are returned when the query appears anywhere in topic, title, or content, and that existing prefix matches still succeed as part of the broader match behavior.",
+  "implementation_steps": [
+    "Inspect backend/app/services/knowledge_service.py search logic to identify where topic/title/content filters are built and confirm whether the current behavior uses startswith/prefix-style matching.",
+    "Replace the prefix-only predicate with a contains-style predicate for each searchable article field, keeping the rest of the query flow unchanged.",
+    "Ensure the search remains consistent across all article fields used by the endpoint and does not alter sorting, pagination, or response structure.",
+    "Update backend/app/services/test_knowledge_service.py to cover mid-string matches in topic/title/content and to confirm prefix matches still pass.",
+    "Run focused service tests first, then any broader knowledge search test subset if available."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "change_summary": "Modify the search implementation to use substring/contains matching across topic, title, and content instead of prefix-only matching.",
+      "rationale": "This is the issue\u2019s named affected file and the smallest likely code change required to fix the search semantics without changing the API contract."
+    },
+    {
+      "file_path": "backend/app/services/test_knowledge_service.py",
+      "change_summary": "Add or update tests to verify mid-field matches are returned and that existing prefix matches remain supported.",
+      "rationale": "Search semantics should be locked in with regression coverage to prevent reintroducing prefix-only behavior."
+    }
+  ],
+  "patch_strategy": "Make a minimal service-layer change only: adjust the search predicate in knowledge_service.py from prefix-based comparison to contains-based comparison for all searchable knowledge article fields, preserving existing filtering, ordering, and result formatting. Then add focused service tests that construct articles with the query embedded in the middle of topic/title/content, plus a control case for prefix matching, to prove the broadened semantics and protect against regressions.",
+  "validation_steps": [
+    "Run the knowledge service test module, especially search-related cases in backend/app/services/test_knowledge_service.py.",
+    "Add a targeted assertion that a query appearing mid-sentence in content returns the matching article.",
+    "Add a targeted assertion that a query appearing in the middle of title/topic also returns the matching article if those fields are part of the search.",
+    "Verify a prefix match still returns results, confirming the new logic is a superset of the old behavior.",
+    "If available, run the broader backend test subset touching knowledge search to confirm no downstream contract changes."
+  ],
+  "branch_name": "feature/SDLC-64-knowledge-base-search-misses-articles-that-match-in-the-middle-of-the-text",
+  "pr_title": "SDLC-64: Fix knowledge base search to match substrings in articles",
+  "pr_body": "## Summary\nFix knowledge base search so it returns articles when the query appears anywhere in topic, title, or content, not only at the beginning of a field.\n\n## What changed\n- Update search matching logic in `backend/app/services/knowledge_service.py` to use contains/substring semantics\n- Add regression coverage in `backend/app/services/test_knowledge_service.py`\n\n## Why\nUsers searching for terms embedded in the middle of article text were missing relevant results due to prefix-only matching.\n\n## Validation\n- Focused service tests for mid-field matches\n- Confirm prefix matches still pass under the broader contains behavior",
+  "risks": [
+    "If the search implementation relies on database-specific operators or case-sensitivity behavior, changing to contains matching may alter matching breadth slightly.",
+    "Broader matching can return more results than before, which may affect implicit assumptions in downstream consumers or tests.",
+    "If search currently uses indexed prefix lookups for performance, substring matching may be less efficient on large datasets."
+  ],
+  "assumptions": [
+    "The search logic is centralized in backend/app/services/knowledge_service.py as indicated by the issue context.",
+    "No API response schema change is required; only search semantics need updating.",
+    "Existing tests either already cover search behavior lightly or can be extended without restructuring the test suite."
+  ]
+}

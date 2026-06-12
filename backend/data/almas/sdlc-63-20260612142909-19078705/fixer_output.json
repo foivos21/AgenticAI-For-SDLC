@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "The implementation correctly normalizes the origin search term to uppercase in `search_flights`, making origin filtering case-insensitive while leaving other filters unchanged. The regression test covers lowercase/mixed-case/uppercase origin inputs, and the automated test suite passed.",
+  "approval_reasons": [
+    "The code change is localized to the flight search service as requested.",
+    "`origin.upper()` fixes the uppercase-storage mismatch without altering other search filters.",
+    "The added test demonstrates the expected case-insensitive behavior for origin matching.",
+    "Automated tests passed (6/6), indicating the change is working as intended."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

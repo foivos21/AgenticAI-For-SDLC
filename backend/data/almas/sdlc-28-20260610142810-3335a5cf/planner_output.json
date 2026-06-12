@@ -1,0 +1,40 @@
+{
+  "solution_summary": "Implement a focused fix in booking creation so paid extras are added to the booking total instead of subtracting from it, and add regression coverage for create_booking with paid extras. The change should stay localized to the booking service and its service tests, preserving non-extra pricing behavior.",
+  "implementation_steps": [
+    "Inspect create_booking in backend/app/services/booking_service.py to locate the total aggregation path for extras and confirm whether the sign is inverted in the arithmetic or in a helper call.",
+    "Adjust the booking total calculation so each paid extra contributes a positive additive amount to the total; keep base fare logic unchanged.",
+    "Verify any helper used by create_booking for extras pricing/persistence does not negate values before aggregation; if it does, correct the sign at the smallest possible point in the flow.",
+    "Add or update regression tests in backend/tests/services/test_booking_service.py covering: no extras, one paid extra, multiple paid extras, and ensuring the total equals base fare plus the sum of paid extras.",
+    "Run the relevant service test subset and confirm there are no regressions in unrelated booking creation scenarios."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Fix create_booking total-price logic so paid extras are added to the booking total rather than subtracted.",
+      "rationale": "This is the issue\u2019s identified source file and the most likely location of the arithmetic/sign bug."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add regression tests for booking creation with paid extras, asserting the total increases by the extras\u2019 prices.",
+      "rationale": "Needed to lock in the corrected behavior and prevent future regressions in create_booking pricing."
+    }
+  ],
+  "patch_strategy": "Use a minimal, localized patch: first identify the exact arithmetic path in create_booking that folds paid extras into the booking total, then correct only the sign or accumulation operation responsible for the decrease. Avoid changing model/schema definitions or unrelated pricing paths. Follow with targeted service-level tests that assert the base fare remains unchanged and the final total equals base fare plus the sum of extras. Prefer adding focused assertions over broad refactors so non-extra booking behavior stays intact.",
+  "validation_steps": [
+    "Run the booking service test module or the narrowest test selection covering create_booking and pricing behavior.",
+    "Manually verify a booking with one paid extra and with multiple paid extras produces total = base fare + extras sum.",
+    "Confirm a booking without extras still returns the original base fare unchanged.",
+    "Check for no failures in adjacent booking creation tests to ensure the fix did not alter unrelated flows."
+  ],
+  "branch_name": "feature/SDLC-28-paid-extras-lower-the-total-when-included-while-creating-a-booking",
+  "pr_title": "Fix booking total calculation for paid extras during create_booking",
+  "pr_body": "## Summary\nFix the booking creation flow so paid extras are added to the booking total instead of being subtracted.\n\n## What changed\n- Corrected the total aggregation logic in `create_booking`\n- Added regression coverage for booking creation with paid extras\n\n## Why\nCreating a booking with paid extras was producing a lower total than the base fare, which is incorrect. The total should increase by the sum of all paid extras.\n\n## Validation\n- Added/updated tests for:\n  - no extras\n  - one paid extra\n  - multiple paid extras\n- Confirmed total equals base fare plus extras\n\n## Notes\nThe fix is intentionally localized to booking creation pricing logic to avoid changing unrelated booking behavior.",
+  "risks": [
+    "The exact bug may be in a helper called by create_booking rather than in create_booking itself, so the fix should be carefully scoped to avoid double-counting or changing persistence behavior.",
+    "If tests rely on old sign behavior, they may need updates to expected totals."
+  ],
+  "assumptions": [
+    "The bug is localized to backend/app/services/booking_service.py:create_booking or an immediate helper, as indicated by the issue context.",
+    "There is an existing test harness in backend/tests/services/test_booking_service.py suitable for adding regression coverage."
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "solution_summary": "Implement a fix in the flight_service.py file to ensure the 'max price' filter correctly returns flights priced at or below the specified maximum price.",
+  "implementation_steps": [
+    "Review the current implementation of the search_flights function in flight_service.py to understand how filtering is currently handled.",
+    "Modify the logic in the search_flights function to ensure it filters for flights at or below the given max_price instead of above it.",
+    "Add unit tests to verify the correct functionality of the filtering logic, ensuring it meets the specified acceptance criteria."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Update search_flights function to filter flights at or below the specified max_price instead of above it.",
+      "rationale": "Current implementation returns flights that exceed the max_price limit, violating expected behavior."
+    }
+  ],
+  "patch_strategy": "Single commit patch for the update in flight_service.py with the addition of unit tests in the same commit to maintain atomicity of changes.",
+  "validation_steps": [
+    "Run unit tests to validate the new behavior of the search_flights function.",
+    "Manually test the API endpoint GET /flights/search with various max price values to ensure correct filtering."
+  ],
+  "branch_name": "feature/SDLC-11-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix max price filter in flight search API (SDLC-11)",
+  "pr_body": "This PR addresses the issue observed in SDLC-11 where the flight search API was returning flights priced above the specified max_price instead of those equal to or below it.\n\n### Changes:\n- Updated the logic in the search_flights function to retain flights priced <= max_price.\n- Added unit tests to ensure the functionality meets acceptance criteria.\n\n### Acceptance Criteria:\n- API call GET /flights/search?max_price=<value> returns flights priced at or below <value>.\n- Conducted tests with multiple max price values to confirm expected results.",
+  "risks": [
+    "Changes in the flight search logic may lead to unexpected outcomes if not properly validated with tests.",
+    "Potential for introducing bugs if existing filtering logic is complex.",
+    "Need to ensure backward compatibility with previous versions of the API."
+  ],
+  "assumptions": [
+    "The existing implementation of search_flights has a well-defined structure that can be modified without extensive refactoring.",
+    "Unit tests can effectively validate the changes and ensure the desired functionality."
+  ]
+}

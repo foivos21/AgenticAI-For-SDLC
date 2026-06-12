@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-44-knowledge-base-search-misses-articles-that-match-in-the-middle-of-the-text",
+  "base_branch": "main",
+  "base_sha": "3d786b21224277836d9ab29fc0207d22b21f835e",
+  "ref": "refs/heads/feature/SDLC-44-knowledge-base-search-misses-articles-that-match-in-the-middle-of-the-text",
+  "created": true
+}

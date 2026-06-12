@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-31-flight-search-with-only-available-returns-fully-booked-flights-instead",
+  "base_branch": "main",
+  "base_sha": "28819764bbffb38b6ceb55d0bb2109be0d8aade3",
+  "ref": "refs/heads/feature/SDLC-31-flight-search-with-only-available-returns-fully-booked-flights-instead",
+  "created": true
+}

@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "The booking service refund-conflict predicate was corrected so unresolved refunds now block same-passenger same-flight rebooking with HTTP 409, while resolved refunds no longer block legitimate bookings. Focused regression coverage was added, and the provided automated tests passed.",
+  "approval_reasons": [
+    "The implementation is tightly scoped to `BookingService._ensure_no_duplicate_or_refund_conflicts`, matching the issue localization and smallest-change constraint.",
+    "The refund-state branch is inverted in the correct direction: unresolved refund statuses raise 409, resolved statuses do not.",
+    "The added tests cover both acceptance criteria paths: pending/unresolved refund blocks rebooking, and resolved refund allows it.",
+    "Automated test results passed (`8 passed`), which is the source of truth for readiness."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

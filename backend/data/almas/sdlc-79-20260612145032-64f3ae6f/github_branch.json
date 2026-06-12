@@ -1,0 +1,7 @@
+{
+  "branch_name": "feature/SDLC-79-flight-search-returns-cancelled-flights-instead-of-scheduled-ones",
+  "base_branch": "main",
+  "base_sha": "096153b87c365f3c9f136c7f85c26cf85c3ede11",
+  "ref": "refs/heads/feature/SDLC-79-flight-search-returns-cancelled-flights-instead-of-scheduled-ones",
+  "created": true
+}

@@ -1,0 +1,85 @@
+{
+  "run_id": "sdlc-63-20260612142909-19078705",
+  "issue_key": "SDLC-63",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-12T14:29:09.552435+00:00",
+  "updated_at": "2026-06-12T14:29:49.542362+00:00",
+  "explanation": "Pull request #41 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-63-flight-search-by-origin-airport-returns-no-results",
+  "commit_sha": "00f60bf01f878a65f233b71c80eaf8638c544858",
+  "pr_number": 41,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/41",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781274549.554626,
+      "end_time": 1781274550.653909,
+      "duration_seconds": 1.099,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781274550.657357,
+      "end_time": 1781274555.8261619,
+      "duration_seconds": 5.169,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781274555.830783,
+      "end_time": 1781274562.337024,
+      "duration_seconds": 6.506,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781274562.342174,
+      "end_time": 1781274575.027346,
+      "duration_seconds": 12.685,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781274576.387022,
+      "end_time": 1781274580.308088,
+      "duration_seconds": 3.921,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781274580.3132749,
+      "end_time": 1781274584.116528,
+      "duration_seconds": 3.803,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781274584.1209972,
+      "end_time": 1781274585.703213,
+      "duration_seconds": 1.582,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 17028,
+  "total_completion_tokens": 4379
+}

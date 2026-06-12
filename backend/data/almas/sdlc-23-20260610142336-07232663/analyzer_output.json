@@ -1,0 +1,84 @@
+{
+  "issue_key": "SDLC-23",
+  "problem_statement": "When a paid extra is added to an existing booking, the booking total is being decreased instead of increased by the extra's price.",
+  "goal": "Fix the booking extras flow so that adding one or more paid extras increases the booking total by the sum of the added extras' prices.",
+  "acceptance_criteria": [
+    "Adding a paid extra to an existing booking increases the booking total by that extra's price.",
+    "Adding multiple paid extras increases the total by the combined prices of all added extras.",
+    "The fix should apply in the booking extras service path used when modifying an existing booking."
+  ],
+  "constraints": [
+    "Keep the fix localized to the booking extras total-calculation path if possible.",
+    "Do not change unrelated booking pricing behavior."
+  ],
+  "unknowns": [
+    "Whether the bug is caused by subtracting the extra price directly, using a negative sign in the delta calculation, or reusing a removal/unassignment code path.",
+    "Whether any booking total is stored redundantly in the booking model versus computed from line items/extras."
+  ],
+  "repo_summary": "Backend-centered booking system with booking models, services, schemas, and API routes. The relevant behavior is likely in the booking service layer where extras are added to an existing booking and totals are recalculated.",
+  "candidate_files": [
+    "backend/app/models/booking_extra.py",
+    "backend/alembic/versions/20260403_0003_booking_duplicate_guardrails.py",
+    "backend/app/api/routes/bookings.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/booking_event.py",
+    "backend/app/models/booking_passenger.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/scripts/seed_bookings.py",
+    "backend/app/services/booking_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/booking_extra.py"
+  ],
+  "selected_symbols": [
+    "add_extras"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "add_extras",
+      "symbol_type": "function",
+      "reason": "Explicitly named affected file and method; most likely location of the wrong price delta when adding extras to an existing booking.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking total recalculation",
+        "extra price aggregation"
+      ]
+    },
+    {
+      "file_path": "backend/app/models/booking.py",
+      "symbol_name": "Booking",
+      "symbol_type": "model",
+      "reason": "May define how booking totals are stored or updated, which could reveal whether the sign error is in persisted total adjustment vs computed total.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "total",
+        "extras relationship"
+      ]
+    },
+    {
+      "file_path": "backend/app/models/booking_extra.py",
+      "symbol_name": "BookingExtra",
+      "symbol_type": "model",
+      "reason": "Defines the extra and its price fields, useful to confirm whether the service should add this price directly or via a quantity/association field.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "price",
+        "booking_id"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description points directly to backend/app/services/booking_service.py:add_extras as the affected location.",
+    "The observed behavior is a sign error in a price update path, which is typically isolated to a single service method or helper that mutates the booking total.",
+    "Related model files are included only to verify how totals and extra prices are represented; the smallest implementation area remains the add_extras service flow."
+  ],
+  "confidence": 0.93,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

@@ -1,0 +1,17 @@
+{
+  "decision": "approved",
+  "fix_summary": "The patch correctly flips the `only_available` predicate in `search_flights` so availability filtering now applies only when requested, and the route continues forwarding the flag unchanged. Regression tests were added and automated tests passed.",
+  "approval_reasons": [
+    "The service-layer logic now uses `if only_available:` instead of the inverted condition, matching the stated semantics.",
+    "The `/flights/search` route did not need a code change because it already forwards `only_available` unchanged.",
+    "Regression coverage was added for both `only_available=True` and `only_available=False` behavior.",
+    "Automated tests passed: 6 passed."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [
+    "None identified; the provided automated test run passed."
+  ],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

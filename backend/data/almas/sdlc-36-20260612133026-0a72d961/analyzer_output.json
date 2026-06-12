@@ -1,0 +1,65 @@
+{
+  "issue_key": "SDLC-36",
+  "problem_statement": "Booking creation computes the base total incorrectly for multiple passengers by adding the passenger count to the fare instead of multiplying fare by passenger count.",
+  "goal": "Fix booking creation so the base total equals flight price \u00d7 number of passengers (e.g. 200.00 \u00d7 3 = 600.00).",
+  "acceptance_criteria": [
+    "Creating a booking with multiple passengers sets base total to fare multiplied by passenger count.",
+    "Single-passenger bookings remain unchanged.",
+    "Relevant service logic is covered by tests for one and multiple passengers."
+  ],
+  "constraints": [
+    "Likely localized to backend/app/services/booking_service.py in create_booking.",
+    "Keep changes minimal and aligned with existing booking pricing logic."
+  ],
+  "unknowns": [
+    "Exact line in create_booking where total is calculated.",
+    "Whether there are related adjustments for taxes/fees or only the base total is affected."
+  ],
+  "repo_summary": "Backend service-oriented booking flow; likely pricing calculation lives in booking service, with service tests available under backend/tests/services.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/schemas/booking.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    ".create_booking"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "create_booking",
+      "symbol_type": "function",
+      "reason": "Issue explicitly names create_booking and describes a wrong arithmetic operator in the base total computation.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "BookingService",
+        "booking total calculation"
+      ]
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "symbol_name": "booking service tests",
+      "symbol_type": "test module",
+      "reason": "Add or adjust tests to verify correct total calculation for multiple passengers and prevent regression.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "create_booking"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug description points directly to booking_service.py:create_booking.",
+    "The symptom is a simple arithmetic error in base total computation, so the smallest fix is likely a one-line change in service logic.",
+    "Tests in the booking service test module are the most relevant validation point."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

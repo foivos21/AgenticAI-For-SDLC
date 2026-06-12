@@ -1,0 +1,14 @@
+{
+  "decision": "approved",
+  "fix_summary": "Localized booking creation now adds paid extras to the total instead of subtracting them, and the service tests confirm correct totals for single extra, multiple extras, and no-extras cases.",
+  "approval_reasons": [
+    "The implementation change is minimal and correctly flips the arithmetic in create_booking only.",
+    "The scope stays within booking creation pricing logic and does not alter unrelated update/persistence flows.",
+    "Automated tests passed (8/8), which is the source of truth for this localized fix."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

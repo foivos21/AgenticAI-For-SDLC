@@ -1,0 +1,53 @@
+{
+  "solution_summary": "Fix the knowledge topic retrieval bug by correcting the filter logic in the knowledge service so get_by_topic returns only articles whose topic matches the requested topic, and add/update route-level or service-level coverage if present to prevent regression.",
+  "implementation_steps": [
+    "Inspect backend/app/services/knowledge_service.py:get_by_topic to locate the current inverted predicate or exclusion-based query.",
+    "Change the topic filtering logic to use the requested topic as an inclusion match against the article topic field, preserving any existing normalization/case-handling used elsewhere in the backend.",
+    "Review backend/app/api/routes/knowledge.py to confirm the topic path/query parameter is passed through unchanged and that no route-level inversion is occurring.",
+    "If the model defines topic conventions or normalized topic storage in backend/app/models/knowledge_article.py, align the service comparison with that convention rather than introducing a new one.",
+    "Add or update tests for topic-based retrieval to verify that a requested topic returns only matching articles and excludes unrelated topics, including the example topic 'baggage'.",
+    "Run the relevant backend test subset and a targeted manual request against the knowledge topic endpoint to confirm the fixed behavior."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "change_summary": "Correct the get_by_topic filter so it selects articles with a matching topic instead of excluding them.",
+      "rationale": "The Jira issue localizes the defect to this function and the symptom strongly indicates an inverted predicate in the query/filter logic."
+    },
+    {
+      "file_path": "backend/app/api/routes/knowledge.py",
+      "change_summary": "Verify the request parameter is forwarded directly to the service and update route documentation or handler logic only if an inversion is found there.",
+      "rationale": "This ensures the bug is not caused by parameter handling before the service call and keeps the fix minimal."
+    },
+    {
+      "file_path": "backend/app/models/knowledge_article.py",
+      "change_summary": "Confirm the topic field type, indexing, and any normalization expectations used by the service comparison; adjust only if necessary for consistency.",
+      "rationale": "The service fix should match the established model conventions to avoid introducing mismatched filtering semantics."
+    },
+    {
+      "file_path": "backend/app/tests/test_knowledge_service.py",
+      "change_summary": "Add regression coverage for get_by_topic with matching and non-matching topics.",
+      "rationale": "A focused test will prevent the inverted-filter bug from reappearing and validate the acceptance criteria."
+    }
+  ],
+  "patch_strategy": "Apply the smallest possible server-side fix in the knowledge service: replace any negated/exclusion logic in get_by_topic with a direct topic match using the repository/query pattern already used in the codebase. Preserve existing topic normalization, pagination, and ordering behavior. Then add targeted tests for exact behavior: the requested topic returns only same-topic articles, unrelated topics are excluded, and the baggage example passes. Use route/model inspection only to confirm the service input/output contract and avoid widening the scope unless a second inversion is discovered.",
+  "validation_steps": [
+    "Run the backend unit/integration tests covering knowledge service topic retrieval.",
+    "Add or run a focused test for the 'baggage' topic to confirm only baggage articles are returned.",
+    "Manually exercise the topic endpoint with at least one valid topic and one invalid/unrelated topic to confirm response contents.",
+    "Check that existing knowledge article listing behavior for other endpoints remains unchanged."
+  ],
+  "branch_name": "feature/SDLC-25-browsing-a-knowledge-topic-returns-articles-from-every-other-topic",
+  "pr_title": "SDLC-25: Fix knowledge topic article filtering",
+  "pr_body": "## Summary\nFix the knowledge topic listing bug where requesting a topic returns articles from other topics instead of matching ones.\n\n## Planned changes\n- Correct `get_by_topic` filtering in `backend/app/services/knowledge_service.py`\n- Verify route parameter flow in `backend/app/api/routes/knowledge.py`\n- Add regression coverage for matching vs non-matching topics\n\n## Validation\n- Run targeted backend tests for knowledge topic retrieval\n- Verify the `baggage` example returns only baggage articles\n- Confirm unrelated topic articles are excluded\n\n## Notes\nThis is expected to be a small server-side fix with minimal surface area.",
+  "risks": [
+    "Topic matching may depend on existing normalization/casing rules; changing the predicate without respecting those conventions could alter expected results.",
+    "If the inversion originates outside the service layer, a service-only fix may not fully resolve the bug.",
+    "Missing or weak test coverage could allow the same filter inversion to recur."
+  ],
+  "assumptions": [
+    "The bug is localized primarily to backend/app/services/knowledge_service.py:get_by_topic as described in the issue.",
+    "The backend already has an established topic field on knowledge articles and a consistent way to query it.",
+    "No schema changes are required to fix this issue."
+  ]
+}

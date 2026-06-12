@@ -1,0 +1,13 @@
+{
+  "decision": "approved",
+  "fix_summary": "Implemented changes to ensure that adding paid extras to a booking correctly increases the booking total.",
+  "approval_reasons": [
+    "The changes correctly fix the booking extras flow so that adding paid extras increases the booking total as intended.",
+    "Automated tests for the changes passed, confirming the fix works as expected."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

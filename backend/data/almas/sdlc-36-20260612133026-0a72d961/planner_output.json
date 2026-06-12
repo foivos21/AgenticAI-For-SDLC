@@ -1,0 +1,41 @@
+{
+  "solution_summary": "Fix the booking base total calculation in `create_booking` so it multiplies the flight fare by passenger count instead of adding the count. Add or update service-level tests to cover both multi-passenger and single-passenger bookings, keeping the change minimal and localized to booking pricing logic.",
+  "implementation_steps": [
+    "Update `backend/app/services/booking_service.py` in `create_booking` to compute base total as `fare * passenger_count`.",
+    "Verify the booking flow still uses the same inputs/outputs and that only the arithmetic operator changes.",
+    "Add a regression test in `backend/tests/services/test_booking_service.py` for a booking with multiple passengers (e.g. 200.00 \u00d7 3 = 600.00).",
+    "Add or confirm a single-passenger test to ensure existing behavior remains unchanged.",
+    "Run the relevant test subset for booking service pricing behavior."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the base total arithmetic in `create_booking` from addition to multiplication when deriving the booking price from fare and passenger count.",
+      "rationale": "The issue is explicitly caused by using the wrong operator; fixing it here resolves the incorrect total at the source with minimal impact."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add/adjust tests that assert base total is calculated as fare multiplied by passenger count for multiple passengers and remains unchanged for one passenger.",
+      "rationale": "Regression coverage ensures the arithmetic fix is preserved and validates both the bug scenario and the non-regression case."
+    }
+  ],
+  "patch_strategy": "Make a focused one-line business-logic correction in the booking service, then back it with narrowly scoped service tests. Avoid touching models or schemas unless test setup reveals an unexpected contract dependency. Keep the patch minimal to reduce risk and ensure the pricing bug is fixed only at the calculation point that produces the base total.",
+  "validation_steps": [
+    "Run `pytest backend/tests/services/test_booking_service.py` or the equivalent booking service test module.",
+    "Confirm a multi-passenger booking example now returns the expected total (e.g. 200.00 \u00d7 3 = 600.00).",
+    "Confirm a single-passenger booking still returns the original fare amount.",
+    "If the project uses formatting/linting on changed files, run the relevant formatter or lint target for backend Python code."
+  ],
+  "branch_name": "feature/SDLC-36-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "pr_title": "Fix booking total calculation for multiple passengers",
+  "pr_body": "## Summary\nFix the booking base total calculation so it multiplies fare by passenger count instead of adding the passenger count.\n\n## Changes\n- Correct the total calculation in `backend/app/services/booking_service.py`\n- Add/adjust tests in `backend/tests/services/test_booking_service.py`\n\n## Validation\n- Covers multi-passenger pricing regression\n- Preserves single-passenger behavior\n\n## Context\nAddresses SDLC-36: booking total price was being calculated incorrectly for bookings with more than one passenger.",
+  "risks": [
+    "The booking service may also derive taxes/fees from the base total; if so, the corrected base total could change downstream computed amounts and test expectations.",
+    "Existing tests may have encoded the incorrect behavior and will need updates to reflect the intended pricing rule."
+  ],
+  "assumptions": [
+    "`create_booking` is the only place where the base total is calculated for this booking flow.",
+    "The bug is strictly an arithmetic operator issue and does not require schema or model changes.",
+    "Service tests can be extended without needing broader integration or API test changes."
+  ]
+}

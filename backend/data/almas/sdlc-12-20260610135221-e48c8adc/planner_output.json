@@ -1,0 +1,29 @@
+{
+  "solution_summary": "Fix the flight search functionality so that the 'max price' filter correctly returns flights priced at or below the specified maximum price.",
+  "implementation_steps": [
+    "Modify the filtering condition in the search_flights function in flight_service.py to filter out flights with prices that exceed the max_price parameter.",
+    "Ensure that the updated implementation returns the expected flight results during testing."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Update the filtering logic in the search_flights function to correctly include flights priced at or below max_price.",
+      "rationale": "The current implementation erroneously returns flights that exceed the specified max price, which is a functional bug."
+    }
+  ],
+  "patch_strategy": "Create a new branch from the main branch, implement the changes in the selected file, and then commit the changes with a clear message. Push the changes to the remote repository and create a PR for review.",
+  "validation_steps": [
+    "Run existing unit tests to ensure no other functionality is broken.",
+    "Write and execute new unit tests specifically for the search_flights function to verify that it correctly filters flights based on the max_price parameter.",
+    "Perform manual testing by invoking the API endpoint with different max_price values and verifying the returned flight data."
+  ],
+  "branch_name": "feature/SDLC-12-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix max price filter in Flight Search functionality",
+  "pr_body": "This PR addresses the issue where the flight search feature incorrectly returns flights that exceed the specified maximum price limit. The filtering logic in the search_flights function has been updated to ensure only flights priced at or below the specified max_price are returned. Unit tests have been added to validate this functionality.",
+  "risks": [
+    "Potential regression in existing flight search functionality if not tested thoroughly."
+  ],
+  "assumptions": [
+    "The current filtering implementation can be modified without impacting other unrelated functionalities."
+  ]
+}

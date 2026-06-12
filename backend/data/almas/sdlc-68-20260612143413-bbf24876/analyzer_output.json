@@ -1,0 +1,82 @@
+{
+  "issue_key": "SDLC-68",
+  "problem_statement": "The knowledge API\u2019s `get_by_topic` behavior is inverted: when a topic is requested, it returns articles that belong to other topics instead of articles whose topic matches the request.",
+  "goal": "Fix the topic filter logic in the knowledge service so `get_by_topic(topic)` returns only articles whose topic equals the requested topic.",
+  "acceptance_criteria": [
+    "Requesting articles for a topic returns only articles assigned to that same topic.",
+    "Articles from unrelated topics are excluded from the response.",
+    "Behavior is corrected in the backend service layer that powers the knowledge topic endpoint."
+  ],
+  "constraints": [
+    "Keep the fix localized if possible, ideally in `backend/app/services/knowledge_service.py` within `get_by_topic`.",
+    "Do not change unrelated topic/article retrieval behavior unless required for this bug."
+  ],
+  "unknowns": [
+    "Exact filter condition currently used in `get_by_topic` is not shown, so the bug may be an inverted predicate or negated comparison.",
+    "Need to confirm whether topic matching is done via article topic field, topic id, or relationship/joined model."
+  ],
+  "repo_summary": "Backend service-oriented repository with API routes, schemas, models, seed scripts, and tests for knowledge articles/topics. The issue explicitly points to `backend/app/services/knowledge_service.py (get_by_topic)` as the affected area.",
+  "candidate_files": [
+    "backend/app/api/routes/knowledge.py",
+    "backend/app/models/knowledge_article.py",
+    "backend/app/schemas/knowledge.py",
+    "backend/app/scripts/seed_knowledge.py",
+    "backend/app/services/knowledge_service.py",
+    "backend/app/services/test_knowledge_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/knowledge_service.py",
+    "backend/app/services/test_knowledge_service.py",
+    "backend/app/api/routes/knowledge.py",
+    "backend/app/models/knowledge_article.py"
+  ],
+  "selected_symbols": [
+    "get_by_topic"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/knowledge_service.py",
+      "symbol_name": "get_by_topic",
+      "symbol_type": "function",
+      "reason": "Explicitly identified in the issue as the affected method; likely contains the inverted topic filter causing unrelated articles to be returned.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": []
+    },
+    {
+      "file_path": "backend/app/services/test_knowledge_service.py",
+      "symbol_name": "tests for get_by_topic",
+      "symbol_type": "test module",
+      "reason": "Best place to add or adjust coverage proving topic filtering returns only matching articles and guards against regression.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": []
+    },
+    {
+      "file_path": "backend/app/api/routes/knowledge.py",
+      "symbol_name": "knowledge topic route",
+      "symbol_type": "route handler",
+      "reason": "Useful to confirm the endpoint wiring and request parameter passed into the service, though the bug is likely deeper in the service.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": []
+    },
+    {
+      "file_path": "backend/app/models/knowledge_article.py",
+      "symbol_name": "KnowledgeArticle model",
+      "symbol_type": "model",
+      "reason": "Needed to verify which field represents topic membership and whether the filter should compare topic name, slug, or foreign key.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": []
+    }
+  ],
+  "localization_rationale": [
+    "The issue description directly names the affected method, so the smallest likely fix is in `knowledge_service.get_by_topic` rather than the API route or schema layer.",
+    "The observed symptom ('returns all articles that do NOT belong to that topic') strongly suggests an inverted predicate such as `!=` instead of `==`, or a negated membership filter.",
+    "Tests around the service are the most targeted way to validate the corrected behavior and prevent regression."
+  ],
+  "confidence": 0.92,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

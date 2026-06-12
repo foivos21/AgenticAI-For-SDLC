@@ -1,0 +1,13 @@
+{
+  "branch_name": "feature/SDLC-25-browsing-a-knowledge-topic-returns-articles-from-every-other-topic",
+  "base_branch": "main",
+  "pr_title": "SDLC-25: Fix knowledge topic article filtering",
+  "pr_body": "## Summary\nFix the knowledge topic listing bug where requesting a topic returns articles from other topics instead of matching ones.\n\n## Planned changes\n- Correct `get_by_topic` filtering in `backend/app/services/knowledge_service.py`\n- Verify route parameter flow in `backend/app/api/routes/knowledge.py`\n- Add regression coverage for matching vs non-matching topics\n\n## Validation\n- Run targeted backend tests for knowledge topic retrieval\n- Verify the `baggage` example returns only baggage articles\n- Confirm unrelated topic articles are excluded\n\n## Notes\nThis is expected to be a small server-side fix with minimal surface area.",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/knowledge_service.py: committed in c8765ba666492f2724b16b9ad9a360cb7cbde38f"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/22",
+  "commit_sha": "c8765ba666492f2724b16b9ad9a360cb7cbde38f"
+}

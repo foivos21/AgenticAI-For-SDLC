@@ -1,0 +1,42 @@
+{
+  "solution_summary": "Plan a narrowly scoped fix for booking total calculation in `create_booking` so the base total multiplies flight fare by passenger count instead of adding the count. Update or add service tests to cover multi-passenger and single-passenger cases, ensuring persisted/output totals remain correct.",
+  "implementation_steps": [
+    "Inspect `backend/app/services/booking_service.py:create_booking` to confirm how passenger count is derived and where the base total is computed.",
+    "Replace the incorrect arithmetic in the base-total formula so it uses `fare * passenger_count` rather than `fare + passenger_count` (or equivalent erroneous addition).",
+    "Verify any downstream fields assigned from the computed total continue to use the corrected value without altering unrelated pricing logic.",
+    "Review `backend/tests/services/test_booking_service.py` for existing coverage around booking totals; add or adjust tests for multi-passenger and single-passenger bookings.",
+    "Run targeted tests for booking service behavior and confirm the expected persisted booking total and response payload are unchanged except for the corrected base total."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the booking base total calculation in `create_booking` to multiply flight fare by the number of passengers.",
+      "rationale": "This is the localized source of the bug described in the Jira issue and should resolve the incorrect total for multi-passenger bookings without affecting unrelated pricing logic."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add or update tests that validate total calculation for multi-passenger bookings and confirm single-passenger bookings remain unchanged.",
+      "rationale": "Regression coverage is needed to ensure the operator fix behaves correctly for both the reported failure case and the unchanged baseline case."
+    }
+  ],
+  "patch_strategy": "Apply the smallest possible code change in `create_booking` to correct the arithmetic at the point where the booking base total is derived. Keep passenger-count sourcing unchanged unless the test setup reveals ambiguity, and avoid touching pricing models, schemas, or persistence code. Then extend service-level tests to assert the total for a 200.00 fare with 3 passengers is 600.00, and that a 1-passenger booking still returns the original fare. Prefer focused assertions on the computed base total and any persisted booking total field to catch regressions without broad refactoring.",
+  "validation_steps": [
+    "Run the booking service test module, especially any tests in `backend/tests/services/test_booking_service.py`.",
+    "Add/verify a test case for a 200.00 flight with 3 passengers expecting 600.00 base total.",
+    "Add/verify a test case for a single-passenger booking expecting the fare unchanged.",
+    "Confirm the created booking record/output persists the corrected total.",
+    "If available, run lint/format checks for the modified backend files."
+  ],
+  "branch_name": "feature/SDLC-41-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "pr_title": "SDLC-41: Fix multi-passenger booking total calculation",
+  "pr_body": "## Summary\nFix the booking base total calculation in `create_booking` so it multiplies the flight fare by passenger count instead of adding the count.\n\n## Planned changes\n- Correct the arithmetic in `backend/app/services/booking_service.py`\n- Add/update service tests in `backend/tests/services/test_booking_service.py`\n\n## Validation\n- Multi-passenger booking totals compute correctly (e.g. 200.00 \u00d7 3 = 600.00)\n- Single-passenger bookings remain unchanged\n- Booking output/persisted total reflects the corrected calculation\n\n## Notes\nThis is a localized fix intended to avoid unrelated pricing changes.",
+  "risks": [
+    "Passenger count derivation may be ambiguous if the service accepts multiple representations (count field vs passenger list), which could require a small test-driven clarification.",
+    "Existing tests may encode the incorrect behavior and need updates to prevent false failures."
+  ],
+  "assumptions": [
+    "`create_booking` is the only location where the base total is computed for this flow.",
+    "`backend/tests/services/test_booking_service.py` contains or is the right place for service-level coverage of booking totals.",
+    "No schema or model changes are required for this arithmetic fix."
+  ]
+}

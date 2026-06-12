@@ -1,0 +1,53 @@
+{
+  "solution_summary": "Plan a localized backend fix for booking extra pricing so that adding paid extras increases the booking total by the sum of the added extras, without changing unrelated booking pricing behavior. The likely fix is in `backend/app/services/booking_service.py:add_extras`, with a small verification pass over booking total handling in the related models.",
+  "implementation_steps": [
+    "Inspect `booking_service.py:add_extras` to identify where the booking total delta is applied when extras are attached to an existing booking.",
+    "Confirm whether the service currently subtracts the extra price, applies a negative delta, or routes through removal logic intended for deleting extras.",
+    "Adjust the total-update logic so each added extra contributes a positive price delta to the booking total; ensure the update aggregates multiple extras correctly in one operation.",
+    "Verify whether booking totals are persisted directly or derived from related records; if totals are stored redundantly, update only the minimal persisted field needed by the add-extras flow.",
+    "Review `booking_extra.py` and `booking.py` only for field semantics/relationships needed to keep the fix aligned with the data model.",
+    "Add or update focused tests covering: one paid extra increases total; multiple paid extras increase total by combined price; existing non-extra booking behavior remains unchanged.",
+    "Run the relevant backend test subset for booking services and pricing calculations, then sanity-check any API-level behavior that consumes the service result."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the add-extras pricing delta so the booking total increases by the price of each added paid extra, including when multiple extras are added together.",
+      "rationale": "This is the explicitly affected file and the most likely location of the sign error causing totals to decrease."
+    },
+    {
+      "file_path": "backend/app/models/booking.py",
+      "change_summary": "Review booking total field semantics and relationship usage to ensure the service update matches the model's persisted pricing behavior; adjust only if a model-level helper or invariant is necessary.",
+      "rationale": "Confirms whether totals are stored or derived and prevents introducing inconsistencies outside the targeted flow."
+    },
+    {
+      "file_path": "backend/app/models/booking_extra.py",
+      "change_summary": "Verify extra price field usage and relationship mapping so the service applies the correct positive amount per added extra.",
+      "rationale": "Ensures the service reads the correct price source and that the implementation aligns with the extra model structure."
+    },
+    {
+      "file_path": "backend/app/services/booking_service.py tests or associated service test file",
+      "change_summary": "Add regression coverage for add-extras total calculations with single and multiple paid extras.",
+      "rationale": "Protects the fix and validates the exact bug path described in the issue."
+    }
+  ],
+  "patch_strategy": "Keep the patch narrowly scoped to the booking extras service path. First, trace how `add_extras` computes the delta and applies it to the booking total. Then replace any subtraction/negative-delta behavior with explicit positive aggregation of the added extras' prices. Preserve existing booking pricing logic elsewhere, and avoid refactoring unrelated total-recalculation code unless it is required to isolate the bug. Add focused regression tests around the service method to confirm the total increases correctly for one and multiple extras.",
+  "validation_steps": [
+    "Run unit/service tests covering booking extras addition and total recalculation.",
+    "Add a regression test for adding one paid extra and assert the booking total increases by exactly that price.",
+    "Add a regression test for adding multiple paid extras and assert the total increases by the sum of their prices.",
+    "Run adjacent booking pricing tests to ensure no unrelated booking total behavior regressed.",
+    "If available, exercise the API endpoint or integration path that triggers `add_extras` to confirm end-to-end correctness."
+  ],
+  "branch_name": "feature/SDLC-23-adding-extras-to-a-booking-lowers-the-total-price-instead-of-raising-it",
+  "pr_title": "SDLC-23: Fix booking total increase when adding paid extras",
+  "pr_body": "## Summary\nFix the booking extras flow so adding paid extras to an existing booking increases the booking total instead of decreasing it.\n\n## What changes\n- Correct the price delta applied in `booking_service.py:add_extras`\n- Keep the fix localized to the booking extras total-calculation path\n- Add regression coverage for single and multiple paid extras\n\n## Validation\n- Add-extras service tests for one extra and multiple extras\n- Booking pricing regression checks to ensure unrelated behavior is unchanged\n\n## Notes\nThis change is scoped to the booking extras service path and avoids altering unrelated booking pricing logic.",
+  "risks": [
+    "The booking total may be persisted in more than one place, so a narrow fix must ensure no duplicate total fields remain inconsistent.",
+    "If `add_extras` reuses helper logic shared with removal/unassignment flows, changing the sign there could affect other booking mutations."
+  ],
+  "assumptions": [
+    "`backend/app/services/booking_service.py:add_extras` is the primary code path responsible for updating the booking total when extras are added.",
+    "The bug is a sign/delta calculation issue rather than a broader pricing-model redesign."
+  ]
+}

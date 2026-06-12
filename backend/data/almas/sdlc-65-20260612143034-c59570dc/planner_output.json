@@ -1,0 +1,43 @@
+{
+  "solution_summary": "Plan a narrowly scoped fix in booking creation pricing logic so base total equals fare multiplied by passenger count, with service tests added/updated to cover both single-passenger and multi-passenger bookings. Keep behavior unchanged outside the pricing calculation and verify no shared helper is unintentionally affected.",
+  "implementation_steps": [
+    "Inspect `backend/app/services/booking_service.py:create_booking` to locate the base total computation and confirm whether the wrong operator is inlined or delegated to a helper.",
+    "Update the booking total arithmetic so the base total is computed as `flight_fare * passenger_count` for all passenger counts.",
+    "Preserve existing single-passenger behavior and any downstream fields/side effects in `create_booking`.",
+    "Review `backend/tests/services/test_booking_service.py` to identify current coverage for booking totals and add a regression test for a 3-passenger booking on a 200.00 fare expecting 600.00.",
+    "Add or adjust a single-passenger test case if needed to ensure the fix does not alter the existing expected value.",
+    "If the pricing calculation is shared by another helper used only in booking creation, limit the fix to that helper and keep the change surface minimal."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "change_summary": "Correct the base total calculation in `create_booking` from addition to multiplication by passenger count.",
+      "rationale": "This is the issue\u2019s explicitly affected file and the most likely location of the arithmetic bug."
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "change_summary": "Add regression coverage for multi-passenger booking totals and confirm single-passenger bookings remain unchanged.",
+      "rationale": "Service-layer tests will lock in the pricing fix and prevent operator regressions."
+    }
+  ],
+  "patch_strategy": "Make the smallest possible code change in `create_booking` to replace the incorrect arithmetic operator with multiplication. Keep the rest of booking creation flow untouched. Then add focused service tests that reproduce the bug with a 200.00 fare and 3 passengers, asserting the base total is 600.00, plus a guard test for 1 passenger to ensure no regression. If the base total is derived through a helper, patch only that helper and verify no other booking paths rely on different semantics before expanding scope.",
+  "validation_steps": [
+    "Run the booking service test subset, especially `backend/tests/services/test_booking_service.py`.",
+    "Add/execute the regression scenario: 200.00 fare \u00d7 3 passengers => 600.00.",
+    "Confirm a single-passenger booking still returns the original fare amount.",
+    "Run any nearby service or pricing tests if the repository has shared booking total utilities.",
+    "Inspect test output for formatting/precision issues around currency values if amounts are stored as decimals."
+  ],
+  "branch_name": "feature/SDLC-65-booking-total-price-is-calculated-incorrectly-for-multiple-passengers",
+  "pr_title": "SDLC-65: Fix booking total calculation for multi-passenger bookings",
+  "pr_body": "## Summary\nFix the booking base total calculation so multi-passenger bookings are priced by multiplying the fare by passenger count instead of adding the passenger count to the fare.\n\n## Scope\n- Update booking creation pricing logic in `backend/app/services/booking_service.py`\n- Add regression coverage in `backend/tests/services/test_booking_service.py`\n\n## Validation\n- 200.00 fare with 3 passengers now totals 600.00\n- 1-passenger bookings remain unchanged\n- Booking creation behavior otherwise remains intact\n\n## Notes\nThis is a narrow service-layer fix intended to avoid changes outside booking pricing logic.",
+  "risks": [
+    "Currency/decimal precision handling could expose rounding issues if totals are not already using Decimal-safe arithmetic.",
+    "If the pricing logic is shared, a narrowly scoped change may still affect other booking flows that depend on the same helper."
+  ],
+  "assumptions": [
+    "`create_booking` is the authoritative location for base total calculation or calls a helper used only for booking creation.",
+    "Existing tests either lack this multi-passenger case or need only minimal updates to reflect the corrected arithmetic.",
+    "`required_branch_name` must be used exactly as provided for the branch name."
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "issue_key": "SDLC-24",
+  "problem_statement": "Flight details are reporting an inflated available seat count because the calculation uses total + booked instead of total - booked.",
+  "goal": "Fix the seat availability computation so available seats reflect remaining capacity: total seats minus booked seats.",
+  "acceptance_criteria": [
+    "Flight details show available_seats equal to aircraft total seats minus booked seats.",
+    "available_seats never exceeds aircraft capacity due to this calculation.",
+    "The change is applied at the backend data source feeding flight detail output."
+  ],
+  "constraints": [
+    "Keep the fix localized to the seat inventory availability calculation if possible.",
+    "Do not change unrelated flight detail fields or frontend display logic unless required by the backend contract."
+  ],
+  "unknowns": [
+    "Whether seat_inventory_counts is used in multiple code paths that may also need the same correction.",
+    "Whether any downstream tests or seeds assume the incorrect inflated value."
+  ],
+  "repo_summary": "Backend-focused repository with flight and seat inventory domain code under backend/app. The issue points directly to backend/app/db/seat_inventory.py and the seat_inventory_counts implementation, with adjacent schema/service/model files likely consuming the computed counts.",
+  "candidate_files": [
+    "backend/app/db/seat_inventory.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/api/routes/flights.py",
+    "backend/app/schemas/flight.py",
+    "backend/app/models/seat_inventory.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/db/seat_inventory.py",
+    "backend/app/services/flight_service.py",
+    "backend/app/tests/test_flight_service.py"
+  ],
+  "selected_symbols": [
+    "seat_inventory_counts"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "symbol_name": "seat_inventory_counts",
+      "symbol_type": "function",
+      "reason": "Explicitly named in the issue as the affected implementation and likely contains the total/booked arithmetic bug.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "seat inventory aggregation/query",
+        "available_seats computation"
+      ]
+    },
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "flight detail assembly / seat counts consumption",
+      "symbol_type": "service function",
+      "reason": "Likely consumes seat_inventory_counts to build the flight details response, so it is the smallest adjacent integration point to verify.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "seat_inventory_counts"
+      ]
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "symbol_name": "flight detail / seat count tests",
+      "symbol_type": "test module",
+      "reason": "Best place to confirm the corrected formula and prevent regression.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "seat_inventory_counts",
+        "flight detail response"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug description precisely identifies the computation error: available seats are calculated with addition instead of subtraction.",
+    "The affected file is explicitly provided as backend/app/db/seat_inventory.py, making that the primary localization target.",
+    "Because the issue appears in flight details, the service layer that assembles the response is the next most likely consumer, but the smallest relevant implementation area remains the seat inventory count function itself.",
+    "Tests for flight detail behavior are likely already present or should be updated alongside the fix."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

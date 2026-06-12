@@ -1,0 +1,57 @@
+{
+  "issue_key": "SDLC-32",
+  "problem_statement": "A passenger who has cancelled a booking with an unresolved pending refund can immediately create another booking on the same flight. The duplicate/refund guard is checking the wrong booking status, so cancelled bookings are being skipped instead of still blocking re-booking while refund_status is pending.",
+  "goal": "Ensure the booking creation guard rejects a new booking for the same passenger and flight whenever there is any unresolved refund tied to that passenger/flight pair, returning HTTP 409 until the refund is resolved.",
+  "acceptance_criteria": [
+    "Creating a booking for passenger A on flight F must fail with 409 if passenger A has any existing booking for flight F whose refund_status is pending/unresolved, even if that booking is cancelled.",
+    "The duplicate/refund conflict check must not ignore cancelled bookings when refund_status is still pending.",
+    "Once the refund is resolved, the passenger should be able to book the same flight again according to existing duplicate rules."
+  ],
+  "constraints": [
+    "Smallest relevant implementation area is backend/app/services/booking_service.py, specifically _ensure_no_duplicate_or_refund_conflicts.",
+    "Behavior should preserve existing duplicate-booking protections except for the incorrect status filter.",
+    "Likely needs/should be covered by service-level tests in backend/tests/services/test_booking_service.py."
+  ],
+  "unknowns": [
+    "Exact booking/refund status enum names used by the service (e.g., cancelled, rescheduled, pending, resolved).",
+    "Whether the bug is in query filtering, in-memory conditionals, or both inside _ensure_no_duplicate_or_refund_conflicts.",
+    "Whether current tests already cover the opposite case (rescheduled bookings) and need adjustment or new regression coverage."
+  ],
+  "repo_summary": "Backend-focused monorepo with booking and flight services; issue points directly to booking_service.py and service tests.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/api/routes/bookings.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "_ensure_no_duplicate_or_refund_conflicts"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "_ensure_no_duplicate_or_refund_conflicts",
+      "symbol_type": "function",
+      "reason": "The reported bug explicitly names this helper as the location where cancelled bookings are skipped incorrectly; this is the likely point where the refund/duplicate filter needs to be corrected.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "create_booking",
+        "cancel_booking"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue description already names the affected file and helper, so localization is strong.",
+    "The symptom is a booking creation allowlist/denylist bug tied to refund state, which is typically enforced in the service-layer conflict check rather than the API route or schema.",
+    "Service tests are the most relevant secondary location for reproducing and locking in the fix."
+  ],
+  "confidence": 0.97,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

@@ -1,0 +1,22 @@
+{
+  "implementation_summary": "Fixed the knowledge topic retrieval bug by changing get_by_topic to perform an inclusive topic match instead of excluding the requested topic. No route or model changes were necessary because the route already forwards the topic directly and the model already exposes the expected topic field.",
+  "branch_name": "feature/SDLC-25-browsing-a-knowledge-topic-returns-articles-from-every-other-topic",
+  "commit_message": "fix(knowledge): return matching articles for requested topic",
+  "changes": [
+    {
+      "path": "backend/app/services/knowledge_service.py",
+      "operation": "update",
+      "content": "from __future__ import annotations\n\nfrom sqlalchemy import or_, select\nfrom sqlalchemy.orm import Session\n\nfrom app.models.knowledge_article import KnowledgeArticle\n\n\nclass KnowledgeService:\n    \"\"\"Read-only knowledge base queries used by the agent and API layer.\"\"\"\n\n    def __init__(self, session: Session) -> None:\n        self.session = session\n\n    def list_topics(self) -> list[str]:\n        statement = (\n            select(KnowledgeArticle.topic)\n            .where(KnowledgeArticle.is_active.is_(True))\n            .distinct()\n            .order_by(KnowledgeArticle.topic)\n        )\n        return list(self.session.scalars(statement))\n\n    def get_by_topic(self, topic: str) -> list[KnowledgeArticle]:\n        statement = (\n            select(KnowledgeArticle)\n            .where(\n                KnowledgeArticle.is_active.is_(True),\n                KnowledgeArticle.topic == topic,\n            )\n            .order_by(KnowledgeArticle.title)\n        )\n        return list(self.session.scalars(statement))\n\n    def search(self, query: str) -> list[KnowledgeArticle]:\n        pattern = f\"%{query.strip()}%\"\n        statement = (\n            select(KnowledgeArticle)\n            .where(\n                KnowledgeArticle.is_active.is_(True),\n                or_(\n                    KnowledgeArticle.topic.ilike(pattern),\n                    KnowledgeArticle.title.ilike(pattern),\n                    KnowledgeArticle.content.ilike(pattern),\n                ),\n            )\n            .order_by(KnowledgeArticle.topic, KnowledgeArticle.title)\n        )\n        return list(self.session.scalars(statement))\n",
+      "change_summary": "Corrected the topic filter from inequality to equality so only matching knowledge articles are returned.",
+      "rationale": "The issue was explicitly localized to get_by_topic and the existing predicate was inverted, returning every article except the requested topic."
+    }
+  ],
+  "validation_notes": [
+    "No automated tests were added in this patch because the request was to generate concrete file changes only and the repository did not include test file contents in the provided context.",
+    "Route and model files were reviewed in the provided repository contents; no changes were needed because the route passes the topic through unchanged and the model already contains the topic field."
+  ],
+  "assumptions": [
+    "Topic matching should be exact as implemented elsewhere in the backend, based on the provided model and route contract.",
+    "No normalization or case-folding behavior is required for this fix beyond the existing stored topic values."
+  ]
+}

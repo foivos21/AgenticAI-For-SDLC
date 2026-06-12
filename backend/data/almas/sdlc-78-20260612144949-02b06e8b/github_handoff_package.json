@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-78-knowledge-base-search-returns-no-results-for-most-queries",
+  "base_branch": "main",
+  "pr_title": "SDLC-78: Fix knowledge base search to match any field",
+  "pr_body": "## Summary\nFix knowledge base search so results are returned when the query matches any one of topic, title, or content instead of requiring all three.\n\n## Changes\n- Update knowledge_service search logic to use OR-style matching across topic/title/content\n- Add regression tests for title-only, topic-only, content-only, and multi-field matches\n\n## Validation\n- Targeted service tests for knowledge search behavior\n- Verify existing multi-field matches still return results\n\n## Notes\n- Scope intentionally limited to the knowledge service and its tests",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/knowledge_service.py: committed in 1c50a40f62630f795379c022bb6ca0efe7af1bb4",
+    "backend/app/services/test_knowledge_service.py: committed in 1c50a40f62630f795379c022bb6ca0efe7af1bb4"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/56",
+  "commit_sha": "1c50a40f62630f795379c022bb6ca0efe7af1bb4"
+}

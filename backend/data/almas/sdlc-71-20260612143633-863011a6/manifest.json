@@ -1,0 +1,85 @@
+{
+  "run_id": "sdlc-71-20260612143633-863011a6",
+  "issue_key": "SDLC-71",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-12T14:36:33.019732+00:00",
+  "updated_at": "2026-06-12T14:37:54.239568+00:00",
+  "explanation": "Pull request #49 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-71-paid-extras-lower-the-total-when-included-while-creating-a-booking",
+  "commit_sha": "8c3e7733c3f1edac163c52539a003fdabab7bf09",
+  "pr_number": 49,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/49",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781274993.022225,
+      "end_time": 1781274994.159501,
+      "duration_seconds": 1.137,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781274994.165152,
+      "end_time": 1781274999.249158,
+      "duration_seconds": 5.084,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781274999.254984,
+      "end_time": 1781275006.192814,
+      "duration_seconds": 6.938,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781275006.1990058,
+      "end_time": 1781275055.765256,
+      "duration_seconds": 49.566,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781275057.276449,
+      "end_time": 1781275063.2665548,
+      "duration_seconds": 5.99,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781275063.273587,
+      "end_time": 1781275068.890205,
+      "duration_seconds": 5.617,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781275068.8974369,
+      "end_time": 1781275070.182996,
+      "duration_seconds": 1.286,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 48234,
+  "total_completion_tokens": 12243
+}

@@ -1,0 +1,32 @@
+{
+  "solution_summary": "Update the 'search_flights' function in 'flight_service.py' to correctly filter flights by maximum price, ensuring that only flights at or below the specified 'max_price' limit are returned.",
+  "implementation_steps": [
+    "Review the current implementation of the 'search_flights' function.",
+    "Identify and modify the logic responsible for filtering flights based on the 'max_price' parameter.",
+    "Test the updated function with different price inputs to verify correct behaviour.",
+    "Ensure that unit tests cover the maximum price filtering condition."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Modify 'search_flights' function to filter flights correctly by max price.",
+      "rationale": "To fix the logic error that returns flights exceeding the max price instead of those within the limit."
+    }
+  ],
+  "patch_strategy": "Create a new branch for the feature, implement the changes in 'flight_service.py', commit the updates, and push to the remote repository.",
+  "validation_steps": [
+    "Run existing unit tests to ensure no existing functionality is broken.",
+    "Add specific tests for the 'max_price' filtering functionality to ensure it works as intended (i.e., returns flights priced at or below the max price).",
+    "Perform manual tests by invoking the flight search API with various max_price values."
+  ],
+  "branch_name": "feature/SDLC-14-flight-search-max-price-filter-returns-the-most-expensive-flights",
+  "pr_title": "Fix max price filter in flight search service",
+  "pr_body": "This PR addresses the issue where the flight search maximum price filter incorrectly returns flights that exceed the specified maximum price. The 'search_flights' function has been modified to correctly include only those flights priced at or below the specified max price.",
+  "risks": [
+    "Potential for introducing new filtering bugs if existing tests are not comprehensive.",
+    "Overlooking edge cases in price filtering."
+  ],
+  "assumptions": [
+    "The current implementation of 'search_flights' does not have existing tests that validate the max price filtering behaviour."
+  ]
+}

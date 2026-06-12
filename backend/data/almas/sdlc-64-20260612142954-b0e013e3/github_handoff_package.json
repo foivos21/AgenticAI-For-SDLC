@@ -1,0 +1,14 @@
+{
+  "branch_name": "feature/SDLC-64-knowledge-base-search-misses-articles-that-match-in-the-middle-of-the-text",
+  "base_branch": "main",
+  "pr_title": "SDLC-64: Fix knowledge base search to match substrings in articles",
+  "pr_body": "## Summary\nFix knowledge base search so it returns articles when the query appears anywhere in topic, title, or content, not only at the beginning of a field.\n\n## What changed\n- Update search matching logic in `backend/app/services/knowledge_service.py` to use contains/substring semantics\n- Add regression coverage in `backend/app/services/test_knowledge_service.py`\n\n## Why\nUsers searching for terms embedded in the middle of article text were missing relevant results due to prefix-only matching.\n\n## Validation\n- Focused service tests for mid-field matches\n- Confirm prefix matches still pass under the broader contains behavior",
+  "reviewer_summary": "Draft PR opened and awaiting human review.",
+  "changed_files_plan": [
+    "backend/app/services/knowledge_service.py: committed in 74ea230aa0f3561a5044941d0705fd10b59f4f16",
+    "backend/app/services/test_knowledge_service.py: committed in 74ea230aa0f3561a5044941d0705fd10b59f4f16"
+  ],
+  "publish_ready": true,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/42",
+  "commit_sha": "74ea230aa0f3561a5044941d0705fd10b59f4f16"
+}

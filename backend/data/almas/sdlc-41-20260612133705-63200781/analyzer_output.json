@@ -1,0 +1,55 @@
+{
+  "issue_key": "SDLC-41",
+  "problem_statement": "Booking base total is computed with the wrong operator when multiple passengers are included: the service appears to add passenger count to the fare instead of multiplying fare by passenger count.",
+  "goal": "Ensure create_booking calculates the booking base total as flight price \u00d7 number of passengers.",
+  "acceptance_criteria": [
+    "For a 200.00 flight with 3 passengers, base total should be 600.00, not 203.00.",
+    "Single-passenger bookings remain unchanged.",
+    "Booking creation continues to persist the correct total in the booking record/output."
+  ],
+  "constraints": [
+    "Likely fix should be localized to backend/app/services/booking_service.py in create_booking.",
+    "Avoid changing unrelated pricing logic unless needed for this specific total calculation."
+  ],
+  "unknowns": [
+    "Whether passenger count is derived from an input list, a count field, or related booking passengers in create_booking.",
+    "Whether tests already cover multi-passenger booking totals and need updating."
+  ],
+  "repo_summary": "Backend service-oriented booking app; booking creation logic likely lives in backend/app/services/booking_service.py and is covered by backend/tests/services/test_booking_service.py.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/booking_passenger.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "create_booking"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "create_booking",
+      "symbol_type": "function",
+      "reason": "Issue explicitly points to create_booking and the arithmetic bug is in base total computation for multiple passengers.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "booking total calculation",
+        "passenger count derivation"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The bug description is precise about the failure mode: incorrect arithmetic in booking total calculation.",
+    "The affected file is explicitly named as backend/app/services/booking_service.py (create_booking), making this the smallest likely implementation area.",
+    "The most likely correction is a single operator change in the base-total formula, with tests in backend/tests/services/test_booking_service.py to validate the fix."
+  ],
+  "confidence": 0.96,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

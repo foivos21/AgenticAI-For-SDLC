@@ -1,0 +1,15 @@
+{
+  "decision": "approved",
+  "fix_summary": "The implementation correctly changes max_price filtering to an inclusive upper bound in search_flights and adds a focused regression test. Automated tests passed, confirming the fix and no adjacent regressions in the covered scope.",
+  "approval_reasons": [
+    "The service-layer comparison was corrected from Flight.price >= max_price to Flight.price <= max_price, matching the issue requirement.",
+    "The added regression test validates that flights priced below and exactly at the threshold are returned, while higher-priced flights are excluded.",
+    "The route was left unchanged, which is consistent with the existing parameter plumbing and the minimal-fix constraint.",
+    "Automated tests passed (6/6), indicating the change is functioning as intended."
+  ],
+  "rejection_reasons": [],
+  "missing_checks": [],
+  "security_notes": [],
+  "test_gaps": [],
+  "revision_requests": []
+}

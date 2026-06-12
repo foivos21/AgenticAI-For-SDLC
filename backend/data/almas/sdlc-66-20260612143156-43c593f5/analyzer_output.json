@@ -1,0 +1,69 @@
+{
+  "issue_key": "SDLC-66",
+  "problem_statement": "When a paid extra is added to an existing booking, the booking total is being decreased by the extra\u2019s price instead of increased.",
+  "goal": "Fix booking extra addition so each paid extra increases the booking total by its price, matching expected booking price calculation behavior.",
+  "acceptance_criteria": [
+    "Adding a paid extra to an existing booking increases the booking total by the extra price.",
+    "The total no longer decreases when extras are added.",
+    "Existing booking update flows involving extras continue to persist correctly."
+  ],
+  "constraints": [
+    "Localize the change to the booking extras addition path if possible.",
+    "Preserve existing booking/extra persistence behavior aside from the pricing sign correction."
+  ],
+  "unknowns": [
+    "Whether the total is recalculated from all components or adjusted incrementally in add_extras.",
+    "Whether the bug is caused by subtraction logic in the service or a downstream model/calculation helper."
+  ],
+  "repo_summary": "Backend service-centric Python app with booking-related models, schemas, API routes, and service layer. Issue points directly to booking extras handling in backend/app/services/booking_service.py, with nearby tests in backend/tests/services/test_booking_service.py.",
+  "candidate_files": [
+    "backend/app/services/booking_service.py",
+    "backend/app/models/booking.py",
+    "backend/app/models/booking_extra.py",
+    "backend/app/schemas/booking.py",
+    "backend/app/api/routes/bookings.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/booking_service.py",
+    "backend/tests/services/test_booking_service.py"
+  ],
+  "selected_symbols": [
+    "BookingService.add_extras",
+    "BookingService",
+    "test_booking_service.py::tests covering extra addition / total calculation"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/booking_service.py",
+      "symbol_name": "BookingService.add_extras",
+      "symbol_type": "method",
+      "reason": "Issue explicitly names this method as the affected file and the symptom indicates incorrect price adjustment logic here.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "BookingService"
+      ]
+    },
+    {
+      "file_path": "backend/tests/services/test_booking_service.py",
+      "symbol_name": "tests covering add_extras and booking total updates",
+      "symbol_type": "test module",
+      "reason": "Best place to confirm the expected sign behavior and prevent regression for extra additions.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": [
+        "BookingService.add_extras"
+      ]
+    }
+  ],
+  "localization_rationale": [
+    "The issue title and description directly point to booking extras being applied with the wrong sign.",
+    "The affected file is explicitly given as backend/app/services/booking_service.py, method add_extras.",
+    "Related tests are likely the narrowest verification surface for this pricing bug.",
+    "Other candidate files are less likely because they define data structures or API routing rather than the price update logic itself."
+  ],
+  "confidence": 0.95,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

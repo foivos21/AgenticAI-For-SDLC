@@ -1,0 +1,43 @@
+{
+  "solution_summary": "Adjust seat type classification in backend/app/db/seat_inventory.py so that economy and premium_economy cabins treat both A and F columns as window seats, resolving incorrect window preference matching and availability counts for A-column seats.",
+  "implementation_steps": [
+    "1. Review _seat_type_for in backend/app/db/seat_inventory.py to confirm current cabin/column mapping and identify the conditional branch that handles economy and premium_economy.",
+    "2. Update the mapping logic so that, for economy and premium_economy only, both column A and column F resolve to 'window'.",
+    "3. Preserve existing behavior for all other cabin classes and for non-window columns.",
+    "4. Add or update tests covering seat inventory generation for at least one economy seat in column A (e.g. 10A) and a matching premium_economy seat, verifying they are classified as 'window'.",
+    "5. Confirm that existing tests for F-column seats and non-window seats still pass without behavioral changes."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "change_summary": "Modify _seat_type_for to classify A-column seats as window in economy and premium_economy cabins while leaving other cabin/column mappings unchanged.",
+      "rationale": "The issue explicitly identifies this function as the source of the misclassification and requires a localized fix."
+    },
+    {
+      "file_path": "backend/tests/... or backend/app/tests/... (whichever contains seat inventory tests)",
+      "change_summary": "Add/adjust tests for seat type classification in economy and premium_economy, specifically asserting that A-column seats are window and that existing F-column and non-window behavior remains intact.",
+      "rationale": "Validate the bug fix and prevent regressions in cabin/column seat-type mapping."
+    }
+  ],
+  "patch_strategy": "Make a minimal, localized change in _seat_type_for rather than altering schema, persistence, or downstream availability logic. Update the cabin/column conditional so economy and premium_economy use a window-column set of {A, F}. If the current implementation already centralizes seat type derivation, keep the refactor small and avoid touching unrelated cabin rules. Pair the code change with focused unit tests around the function or seat inventory generation path to verify A-column seats are now surfaced as window seats in the affected cabins, while all other classifications remain unchanged.",
+  "validation_steps": [
+    "Run the targeted unit tests for seat inventory type classification and inventory generation.",
+    "Add a regression test that exercises an economy seat in column A and confirms seat_type == 'window'.",
+    "Add a corresponding premium_economy test if coverage exists or can be added easily.",
+    "Run existing tests covering F-column window behavior to ensure no regressions.",
+    "Optionally run the broader backend test subset that includes seat inventory logic if the suite is fast enough."
+  ],
+  "branch_name": "feature/SDLC-81-economy-class-column-a-seats-are-not-classified-as-window-seats",
+  "pr_title": "SDLC-81: Classify economy A-column seats as window seats",
+  "pr_body": "## Summary\nFix seat inventory generation so that economy and premium_economy seats in column A are classified as `window` instead of `standard`.\n\n## What changed\n- Updated seat type derivation in `backend/app/db/seat_inventory.py`.\n- Ensured economy and premium_economy cabins treat both A and F columns as window seats.\n- Preserved existing behavior for other cabin classes and seat columns.\n\n## Validation\n- Added/updated regression coverage for A-column window-seat classification.\n- Confirmed existing F-column behavior remains unchanged.\n\n## Notes\n- This is a localized fix in the inventory generation path; no schema or migration changes are required.",
+  "risks": [
+    "If seat-type rules are duplicated elsewhere, a localized fix may leave inconsistent behavior in other code paths.",
+    "Tests may need to be placed in a repository-specific location once the test structure is confirmed.",
+    "Any downstream consumers that implicitly relied on the incorrect classification may change behavior, though this is expected and desired."
+  ],
+  "assumptions": [
+    "The current seat-type logic is centralized in _seat_type_for.",
+    "The repository has unit or integration tests available for seat inventory generation or the underlying helper function.",
+    "No schema, migration, or API contract changes are needed for this bug fix."
+  ]
+}

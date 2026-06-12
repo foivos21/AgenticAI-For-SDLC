@@ -1,0 +1,46 @@
+{
+  "solution_summary": "Implement a narrowly scoped backend fix so flight details report available seats as total seats minus booked seats, correcting the inflated count produced by the current seat inventory aggregation. The primary change is in backend/app/db/seat_inventory.py, with a supporting service-level check if needed and regression coverage in backend/app/tests/test_flight_service.py.",
+  "implementation_steps": [
+    "Inspect backend/app/db/seat_inventory.py and locate seat_inventory_counts to confirm the current arithmetic and the shape of its returned counts.",
+    "Update the available seat calculation to use total_seats - booked_seats, preserving existing query/filter behavior and return contract.",
+    "Review backend/app/services/flight_service.py to ensure it continues consuming the corrected count without additional transformation that could reintroduce the bug.",
+    "Add or adjust tests in backend/app/tests/test_flight_service.py to assert available_seats equals total minus booked and never exceeds capacity for representative flight detail responses.",
+    "Run targeted test coverage for seat inventory counts and flight detail assembly, then broaden to any adjacent tests that depend on seat availability values."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/db/seat_inventory.py",
+      "change_summary": "Correct the available seats arithmetic inside seat_inventory_counts from addition to subtraction.",
+      "rationale": "This is the explicit source of the bug and the smallest, highest-confidence fix point."
+    },
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Verify the flight detail assembly uses the corrected available seat value directly and does not perform a compensating calculation.",
+      "rationale": "This is the immediate consumer of the count and may need a minimal adjustment or no-op verification to keep the backend contract stable."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add or update regression tests covering flight detail seat counts so available_seats equals total seats minus booked seats and cannot exceed capacity.",
+      "rationale": "Prevents recurrence and validates the fix at the response level that users actually observe."
+    }
+  ],
+  "patch_strategy": "Apply a localized backend patch at the seat inventory aggregation layer, keeping the response contract unchanged. First, correct the arithmetic in seat_inventory_counts so available seats are derived as total minus booked. Second, confirm the flight service uses that value without additional post-processing. Third, add regression tests that exercise flight detail output for at least one normal case and one edge case where booked seats are zero or near capacity. Avoid touching frontend code or unrelated flight fields unless test failures reveal an unexpected downstream dependency. If any seed or fixture data encodes the old inflated assumption, update only the minimal test fixture necessary to match the corrected semantics.",
+  "validation_steps": [
+    "Run unit tests for backend/app/tests/test_flight_service.py.",
+    "Run any targeted tests for backend/app/db/seat_inventory.py or the seat inventory domain if present.",
+    "Verify a flight detail response shows available_seats = total_seats - booked_seats.",
+    "Check that available_seats does not exceed aircraft capacity in the fixed path.",
+    "Run the broader backend test subset that covers flight detail/service integration if available."
+  ],
+  "branch_name": "feature/SDLC-24-available-seat-count-is-inflated-on-flight-details",
+  "pr_title": "SDLC-24: Fix inflated available seat count in flight details",
+  "pr_body": "## Summary\nCorrect the available seat calculation used by flight details so it reports total seats minus booked seats instead of total plus booked seats.\n\n## Planned changes\n- Fix seat_inventory_counts in backend/app/db/seat_inventory.py\n- Verify downstream flight detail assembly uses the corrected value\n- Add regression coverage in backend/app/tests/test_flight_service.py\n\n## Validation\n- Targeted backend tests for seat inventory and flight service\n- Verify flight detail output no longer exceeds aircraft capacity\n\n## Notes\nThis is a localized backend fix with no expected frontend changes.",
+  "risks": [
+    "There may be additional code paths consuming seat_inventory_counts that should be reviewed for assumptions about the old inflated value.",
+    "Existing tests or fixtures may assert the previous incorrect availability semantics and will need updating."
+  ],
+  "assumptions": [
+    "seat_inventory_counts is the authoritative source for available_seats in flight details.",
+    "The service layer does not intentionally transform the count in a way that would require additional schema or API changes."
+  ]
+}

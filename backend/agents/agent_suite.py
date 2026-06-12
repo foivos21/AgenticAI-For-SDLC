@@ -34,6 +34,18 @@ class ALMASAgentSuite:
         self._developer_agent = DeveloperAgent(self._settings.almas_developer_model, self._repository, self._settings)
         self._fixer_agent = FixerAgent(self._settings.almas_fixer_model, self._settings)
         self._timing_history: list[AgentTimingInfo] = []
+        self._token_usage: dict[str, int] = {"request_tokens": 0, "response_tokens": 0, "total_tokens": 0}
+
+    def reset_token_usage(self) -> None:
+        self._token_usage = {"request_tokens": 0, "response_tokens": 0, "total_tokens": 0}
+
+    def _accumulate_usage(self, agent_last_usage: dict[str, int]) -> None:
+        for key in ("request_tokens", "response_tokens", "total_tokens"):
+            self._token_usage[key] = self._token_usage.get(key, 0) + agent_last_usage.get(key, 0)
+
+    @property
+    def token_usage(self) -> dict[str, int]:
+        return dict(self._token_usage)
 
     @property
     def model_names(self) -> dict[str, str]:
@@ -52,6 +64,7 @@ class ALMASAgentSuite:
         start_time = time.time()
         try:
             output = self._analyzer_agent.run(issue, run_id=run_id)
+            self._accumulate_usage(self._analyzer_agent.last_usage)
             end_time = time.time()
             self._timing_history.append(AgentTimingInfo(
                 agent_name="analyzer",
@@ -90,6 +103,7 @@ class ALMASAgentSuite:
                 branch_name=branch_name,
                 revision_requests=revision_requests,
             )
+            self._accumulate_usage(self._planner_agent.last_usage)
             end_time = time.time()
             self._timing_history.append(AgentTimingInfo(
                 agent_name="planner",
@@ -126,6 +140,7 @@ class ALMASAgentSuite:
                 planner_output,
                 run_id=run_id,
             )
+            self._accumulate_usage(self._developer_agent.last_usage)
             end_time = time.time()
             self._timing_history.append(AgentTimingInfo(
                 agent_name="developer",
@@ -168,6 +183,7 @@ class ALMASAgentSuite:
                 issue_key=issue_key,
                 test_results=test_results,
             )
+            self._accumulate_usage(self._fixer_agent.last_usage)
             end_time = time.time()
             self._timing_history.append(AgentTimingInfo(
                 agent_name="fixer",

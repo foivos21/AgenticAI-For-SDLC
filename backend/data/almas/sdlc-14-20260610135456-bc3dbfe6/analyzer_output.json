@@ -1,0 +1,38 @@
+{
+  "issue_key": "SDLC-14",
+  "problem_statement": "The maximum price filter returns flights that exceed the specified maximum price instead of including flights that are at or below that price.",
+  "goal": "Return flights priced at or below the specified max_price when searching for flights.",
+  "acceptance_criteria": [
+    "Ensure that GET /flights/search?max_price=200 returns flights priced at $200 or less.",
+    "Validate that no flights priced above $200 are included in the results."
+  ],
+  "constraints": [],
+  "unknowns": [],
+  "repo_summary": "README.md(1), backend(191), docker-compose.yml(1), frontend(8), run_backend.sh(1), run_frontend.sh(1), run_local.sh(1), scripts(7)",
+  "candidate_files": [
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_files": [
+    "backend/app/services/flight_service.py"
+  ],
+  "selected_symbols": [
+    "search_flights"
+  ],
+  "targeted_symbols": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "symbol_name": "search_flights",
+      "symbol_type": "function",
+      "reason": "The issue is directly related to the flight search functionality, which suggests that the logic for filtering by maximum price is likely implemented within the 'search_flights' function.",
+      "line_start": null,
+      "line_end": null,
+      "related_symbols": []
+    }
+  ],
+  "localization_rationale": [
+    "The problem indicates a logical error in the filtering criteria implemented in the flight search service, specifically in relation to the 'max_price' parameter."
+  ],
+  "confidence": 0.9,
+  "clarification_needed": false,
+  "blocked_reason": ""
+}

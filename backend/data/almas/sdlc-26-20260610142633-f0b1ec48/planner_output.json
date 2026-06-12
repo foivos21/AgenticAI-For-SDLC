@@ -1,0 +1,48 @@
+{
+  "solution_summary": "Plan to fix the flight search sorting inversion by correcting the sort-key mapping in the backend search service, with a quick route-level verification only if needed, and add regression tests for both default departure-time ordering and explicit price ordering.",
+  "implementation_steps": [
+    "Inspect backend/app/services/flight_service.py search_flights to locate the current sort branch and confirm whether price/departure_time are swapped.",
+    "If the bug is inside search_flights, correct the mapping so sort_by=price orders by ascending price and the default path orders by departure time.",
+    "Review backend/app/api/routes/flights.py only to verify the request query parameter is passed through unchanged to search_flights; adjust only if route translation is inverted.",
+    "Add or update tests in backend/app/tests/test_flight_service.py to assert both behaviors: explicit price sort and default sort by departure time.",
+    "Run focused test coverage for flight search sorting, then run any related backend test subset if the service test relies on shared fixtures or models."
+  ],
+  "planned_changes": [
+    {
+      "file_path": "backend/app/services/flight_service.py",
+      "change_summary": "Fix search_flights sort selection so the price sort branch sorts by price and the default branch sorts by departure time.",
+      "rationale": "This is the issue\u2019s explicitly named affected file and the most likely source of the inverted behavior."
+    },
+    {
+      "file_path": "backend/app/api/routes/flights.py",
+      "change_summary": "Verify the GET /flights/search handler forwards sort_by correctly without swapping semantics; only adjust if the bug originates in parameter wiring.",
+      "rationale": "The route is a secondary likely source of inversion and should be checked to keep the fix localized."
+    },
+    {
+      "file_path": "backend/app/tests/test_flight_service.py",
+      "change_summary": "Add regression tests for default ordering and sort_by=price ordering, including assertions on the first/last records or full ordered list as appropriate.",
+      "rationale": "Prevents the inversion from recurring and documents the intended sort contract."
+    }
+  ],
+  "patch_strategy": "Make the smallest possible fix in the service layer by aligning the sort_by discriminator with its intended ordering logic: explicit price sorting should use price ascending, while the unspecified/default path should use departure time. If the route handler is discovered to invert or remap the query parameter before reaching the service, correct that translation instead of duplicating sort logic. Keep all other search filters and response shaping unchanged. Use regression tests that fail on the current inversion and pass once the mapping is corrected.",
+  "validation_steps": [
+    "Run the flight search service tests focused on sorting behavior.",
+    "Verify GET /flights/search?sort_by=price returns flights in ascending price order.",
+    "Verify GET /flights/search without sort_by returns flights in ascending departure-time order.",
+    "Confirm existing non-sorting search behavior still passes (filters, pagination, response schema if covered by nearby tests).",
+    "Run the relevant backend test subset or the full backend suite if the targeted tests share fixtures or reveal integration issues."
+  ],
+  "branch_name": "feature/SDLC-26-sorting-flight-search-by-price-does-not-order-by-price",
+  "pr_title": "SDLC-26: Fix flight search sorting by price/default ordering",
+  "pr_body": "## Summary\nFix inverted sorting behavior in flight search so `sort_by=price` orders results by price ascending and the default ordering returns flights by departure time.\n\n## Plan\n- Correct the sort mapping in `backend/app/services/flight_service.py` (`search_flights`)\n- Verify route parameter handling in `backend/app/api/routes/flights.py` if needed\n- Add regression tests in `backend/app/tests/test_flight_service.py`\n\n## Validation\n- [ ] `GET /flights/search?sort_by=price` sorts by ascending price\n- [ ] `GET /flights/search` sorts by departure time by default\n- [ ] Existing flight search behavior remains unchanged",
+  "risks": [
+    "The inversion may be caused by route-level parameter translation rather than service-layer sort logic, requiring a slightly different fix.",
+    "Tests may depend on fixture data with identical prices or times, making ordering assertions brittle unless fixtures are chosen carefully.",
+    "If sorting is implemented in multiple layers, fixing only one layer could leave duplicate or conflicting behavior."
+  ],
+  "assumptions": [
+    "The current bug is localized to the flight search backend and does not require frontend changes.",
+    "The service currently supports at least two effective ordering modes: price and default departure time.",
+    "Existing tests either do not cover this behavior or are insufficient to catch the inversion."
+  ]
+}

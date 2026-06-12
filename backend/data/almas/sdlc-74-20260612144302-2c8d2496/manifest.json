@@ -1,0 +1,85 @@
+{
+  "run_id": "sdlc-74-20260612144302-2c8d2496",
+  "issue_key": "SDLC-74",
+  "status": "merged",
+  "current_stage": "merged",
+  "revision_count": 0,
+  "created_at": "2026-06-12T14:43:02.240980+00:00",
+  "updated_at": "2026-06-12T14:43:44.218079+00:00",
+  "explanation": "Pull request #52 merged into main.",
+  "model_names": {
+    "analyzer": "openai:gpt-5.4-mini-2026-03-17",
+    "planner": "openai:gpt-5.4-mini-2026-03-17",
+    "developer": "openai:gpt-5.4-mini-2026-03-17",
+    "fixer": "openai:gpt-5.4-mini-2026-03-17"
+  },
+  "artifact_files": {
+    "jira_snapshot": "jira_snapshot.json",
+    "github_branch": "github_branch.json",
+    "analyzer_output": "analyzer_output.json",
+    "planner_output": "planner_output.json",
+    "developer_output": "developer_output.json",
+    "fixer_output": "fixer_output.json",
+    "apply_result": "apply_result.json",
+    "github_pull_request": "github_pull_request.json",
+    "github_handoff_package": "github_handoff_package.json"
+  },
+  "latest_fixer_decision": "approved",
+  "branch_name": "feature/SDLC-74-flight-search-with-only-available-returns-fully-booked-flights-instead",
+  "commit_sha": "866144ab42af4ab9820a33f867fa8362435c82d1",
+  "pr_number": 52,
+  "pr_url": "https://github.com/foivos21/AgenticAI-For-SDLC/pull/52",
+  "timing_history": [
+    {
+      "agent_name": "branch",
+      "start_time": 1781275382.243786,
+      "end_time": 1781275383.545547,
+      "duration_seconds": 1.302,
+      "status": "success"
+    },
+    {
+      "agent_name": "analyzer",
+      "start_time": 1781275383.548823,
+      "end_time": 1781275389.579509,
+      "duration_seconds": 6.031,
+      "status": "success"
+    },
+    {
+      "agent_name": "planner",
+      "start_time": 1781275389.5840042,
+      "end_time": 1781275397.696518,
+      "duration_seconds": 8.113,
+      "status": "success"
+    },
+    {
+      "agent_name": "developer",
+      "start_time": 1781275397.699618,
+      "end_time": 1781275411.068985,
+      "duration_seconds": 13.369,
+      "status": "success"
+    },
+    {
+      "agent_name": "fixer",
+      "start_time": 1781275412.321152,
+      "end_time": 1781275414.947108,
+      "duration_seconds": 2.626,
+      "status": "success"
+    },
+    {
+      "agent_name": "apply",
+      "start_time": 1781275414.952638,
+      "end_time": 1781275418.914001,
+      "duration_seconds": 3.961,
+      "status": "success"
+    },
+    {
+      "agent_name": "pull_request",
+      "start_time": 1781275418.920206,
+      "end_time": 1781275420.286318,
+      "duration_seconds": 1.366,
+      "status": "success"
+    }
+  ],
+  "total_prompt_tokens": 19574,
+  "total_completion_tokens": 4801
+}
