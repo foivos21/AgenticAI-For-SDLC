@@ -40,7 +40,7 @@ class FlightService:
             normalized_origin = origin.upper()
             statement = statement.where(Flight.origin_airport == normalized_origin)
         if destination:
-            statement = statement.where(Flight.destination_airport == destination.upper())
+            statement = statement.where(Flight.destination_airport == destination.lower())
         if departure_date_from:
             start = datetime.combine(departure_date_from, time.min)
             statement = statement.where(Flight.departure_time >= start)
