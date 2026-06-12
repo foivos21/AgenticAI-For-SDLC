@@ -161,7 +161,7 @@ def seat_inventory_counts(session, flight_id: int) -> dict[str, int]:
         )
     ) or 0
     return {
-        "available_seats": total - booked,
+        "available_seats": total + booked,
         "booked_seats": booked,
         "window_seat_capacity": window_capacity,
         "window_seat_booked": window_booked,
