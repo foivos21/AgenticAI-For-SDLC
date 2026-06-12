@@ -57,13 +57,14 @@ class DummyBookingCreate:
 
 @pytest.fixture()
 def flight_factory(db_session):
-    def _create_flight(*, price: Decimal = Decimal("250.00")) -> Flight:
+    def _create_flight(*, price: Decimal = Decimal("250.00"), duration: timedelta = timedelta(hours=10)) -> Flight:
+        departure_time = datetime(2026, 6, 10, 8, 0, tzinfo=UTC)
         flight = Flight(
             flight_number="TM123",
             departure_airport_code="JFK",
             arrival_airport_code="LHR",
-            departure_time=datetime(2026, 6, 10, 8, 0, tzinfo=UTC),
-            arrival_time=datetime(2026, 6, 10, 18, 0, tzinfo=UTC),
+            departure_time=departure_time,
+            arrival_time=departure_time + duration,
             status=FlightStatus.SCHEDULED,
             seat_class=SeatClass.ECONOMY,
             price=price,
@@ -137,6 +138,59 @@ def test_create_booking_with_paid_extras_adds_to_total(db_session, booking_creat
     assert result.total_price == Decimal("285.00")
     assert db_session.query(BookingExtra).filter(BookingExtra.booking_id == result.id).count() == 1
     assert db_session.query(BookingPassenger).filter(BookingPassenger.booking_id == result.id).count() == 1
+
+
+def test_create_booking_without_explicit_checked_bag_price_uses_short_haul_rate_for_under_six_hours(db_session, booking_create_payload_factory, flight_factory):
+    flight = flight_factory(duration=timedelta(hours=3))
+    db_session.add_all(
+        [
+            SeatInventory(flight_id=flight.id, seat_number="1A", cabin=SeatClass.ECONOMY.value, seat_type="window", is_booked=False),
+            SeatInventory(flight_id=flight.id, seat_number="1B", cabin=SeatClass.ECONOMY.value, seat_type="aisle", is_booked=False),
+        ]
+    )
+    db_session.flush()
+    service = BookingService(db_session)
+    payload = DummyBookingCreate(
+        flight_id=flight.id,
+        passengers=[DummyBookingPassenger(first_name="Jane", last_name="Doe", date_of_birth=datetime(1990, 1, 1).date())],
+        extras=[SimpleNamespace(extra_type=ExtraType.CHECKED_BAG, quantity=1, price=None, description=None)],
+    )
+
+    result = service.create_booking(payload)
+
+    assert result.total_price == Decimal("285.00")
+    assert db_session.query(BookingExtra).filter(BookingExtra.booking_id == result.id).one().price == Decimal("35.00")
+
+
+def test_create_booking_without_explicit_checked_bag_price_uses_long_haul_rate_for_six_hours_or_more(db_session, flight_factory):
+    flight = flight_factory(duration=timedelta(hours=6))
+    db_session.add_all(
+        [
+            SeatInventory(flight_id=flight.id, seat_number="1A", cabin=SeatClass.ECONOMY.value, seat_type="window", is_booked=False),
+            SeatInventory(flight_id=flight.id, seat_number="1B", cabin=SeatClass.ECONOMY.value, seat_type="aisle", is_booked=False),
+        ]
+    )
+    db_session.flush()
+    service = BookingService(db_session)
+    payload = DummyBookingCreate(
+        flight_id=flight.id,
+        passengers=[DummyBookingPassenger(first_name="Jane", last_name="Doe", date_of_birth=datetime(1990, 1, 1).date())],
+        extras=[SimpleNamespace(extra_type=ExtraType.CHECKED_BAG, quantity=1, price=None, description=None)],
+    )
+
+    result = service.create_booking(payload)
+
+    assert result.total_price == Decimal("320.00")
+    assert db_session.query(BookingExtra).filter(BookingExtra.booking_id == result.id).one().price == Decimal("70.00")
+
+
+def test_default_extra_price_helper_respects_six_hour_threshold(db_session, flight_factory):
+    service = BookingService(db_session)
+    short_flight = flight_factory(duration=timedelta(hours=5, minutes=59))
+    long_flight = flight_factory(duration=timedelta(hours=6))
+
+    assert service._is_long_haul(short_flight) is False
+    assert service._is_long_haul(long_flight) is True
 
 
 def test_create_booking_with_multiple_paid_extras_adds_sum_to_total(db_session, booking_create_payload_factory):
