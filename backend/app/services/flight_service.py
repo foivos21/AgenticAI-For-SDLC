@@ -34,7 +34,7 @@ class FlightService:
         only_available: bool = True,
         limit: int = 100,
     ) -> list[Flight]:
-        statement: Select[tuple[Flight]] = select(Flight).where(Flight.status == FlightStatus.SCHEDULED)
+        statement: Select[tuple[Flight]] = select(Flight).where(Flight.status != FlightStatus.SCHEDULED)
 
         if origin:
             normalized_origin = origin.upper()
