@@ -78,6 +78,11 @@ def sample_articles() -> list[_FakeKnowledgeArticle]:
             content="Refunds are processed within five business days.",
             is_active=False,
         ),
+        _FakeKnowledgeArticle(
+            topic="Getting Started",
+            title="Using search effectively",
+            content="Learn how to find results quickly with the knowledge base.",
+        ),
     ]
 
 
@@ -88,6 +93,24 @@ def test_search_returns_mid_field_matches_in_content(sample_articles):
     results = service.search("scanned")
 
     assert [article.title for article in results] == ["Tracking orders"]
+
+
+def test_search_returns_mid_field_matches_in_title(sample_articles):
+    session = _FakeSession(sample_articles)
+    service = KnowledgeService(session)
+
+    results = service.search("search")
+
+    assert [article.title for article in results] == ["Using search effectively"]
+
+
+def test_search_returns_mid_field_matches_in_topic(sample_articles):
+    session = _FakeSession(sample_articles)
+    service = KnowledgeService(session)
+
+    results = service.search("Started")
+
+    assert [article.title for article in results] == ["Using search effectively"]
 
 
 def test_search_still_returns_prefix_matches(sample_articles):
