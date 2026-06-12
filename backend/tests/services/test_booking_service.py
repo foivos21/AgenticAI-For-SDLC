@@ -289,6 +289,50 @@ def test_default_extra_price_helper_respects_six_hour_threshold(db_session, flig
     assert service._is_long_haul(long_flight) is True
 
 
+def test_create_booking_with_explicit_checked_bag_price_overrides_default_for_short_haul(db_session, flight_factory):
+    flight = flight_factory(duration=timedelta(hours=3))
+    db_session.add_all(
+        [
+            SeatInventory(flight_id=flight.id, seat_number="1A", cabin=SeatClass.ECONOMY.value, seat_type="window", is_booked=False),
+            SeatInventory(flight_id=flight.id, seat_number="1B", cabin=SeatClass.ECONOMY.value, seat_type="aisle", is_booked=False),
+        ]
+    )
+    db_session.flush()
+    service = BookingService(db_session)
+    payload = DummyBookingCreate(
+        flight_id=flight.id,
+        passengers=[DummyBookingPassenger(first_name="Jane", last_name="Doe", date_of_birth=datetime(1990, 1, 1).date())],
+        extras=[SimpleNamespace(extra_type=ExtraType.CHECKED_BAG, quantity=1, price=Decimal("99.00"), description=None)],
+    )
+
+    result = service.create_booking(payload)
+
+    assert result.total_price == Decimal("349.00")
+    assert db_session.query(BookingExtra).filter(BookingExtra.booking_id == result.id).one().price == Decimal("99.00")
+
+
+def test_create_booking_with_explicit_checked_bag_price_overrides_default_for_long_haul(db_session, flight_factory):
+    flight = flight_factory(duration=timedelta(hours=6))
+    db_session.add_all(
+        [
+            SeatInventory(flight_id=flight.id, seat_number="1A", cabin=SeatClass.ECONOMY.value, seat_type="window", is_booked=False),
+            SeatInventory(flight_id=flight.id, seat_number="1B", cabin=SeatClass.ECONOMY.value, seat_type="aisle", is_booked=False),
+        ]
+    )
+    db_session.flush()
+    service = BookingService(db_session)
+    payload = DummyBookingCreate(
+        flight_id=flight.id,
+        passengers=[DummyBookingPassenger(first_name="Jane", last_name="Doe", date_of_birth=datetime(1990, 1, 1).date())],
+        extras=[SimpleNamespace(extra_type=ExtraType.CHECKED_BAG, quantity=1, price=Decimal("99.00"), description=None)],
+    )
+
+    result = service.create_booking(payload)
+
+    assert result.total_price == Decimal("349.00")
+    assert db_session.query(BookingExtra).filter(BookingExtra.booking_id == result.id).one().price == Decimal("99.00")
+
+
 def test_create_booking_with_multiple_paid_extras_adds_sum_to_total(db_session, booking_create_payload_factory):
     service = BookingService(db_session)
     payload = booking_create_payload_factory(
