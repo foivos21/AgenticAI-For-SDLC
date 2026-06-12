@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db.session import SessionLocal
 from app.models.booking import Booking, BookingStatus
+from app.models.booking_passenger import BookingPassenger
 from app.models.flight import Flight, SeatClass, SeatPreference
 from app.models.seat_inventory import SeatInventory
 
@@ -88,6 +89,39 @@ def sync_seat_inventory(engine: Engine) -> int:
         return created
     finally:
         session.close()
+
+
+def release_booking_seats(session: Session, booking: Booking) -> int:
+    """Mark all seat inventory rows for a booking as available on its source flight.
+
+    This resolves seats from passenger records so multi-passenger bookings free every
+    occupied seat when a booking is rescheduled or otherwise moved off a flight.
+    """
+
+    released = 0
+    passenger_seat_numbers = {
+        passenger.seat_number.upper().strip()
+        for passenger in booking.passengers
+        if passenger.seat_number
+    }
+
+    if not passenger_seat_numbers:
+        return 0
+
+    for seat_number in passenger_seat_numbers:
+        inventory = session.scalar(
+            select(SeatInventory).where(
+                SeatInventory.flight_id == booking.flight_id,
+                SeatInventory.seat_number == seat_number,
+            )
+        )
+        if inventory is None or not inventory.is_booked:
+            continue
+        inventory.is_booked = False
+        released += 1
+
+    session.flush()
+    return released
 
 
 def seat_inventory_counts(session, flight_id: int) -> dict[str, int]:
