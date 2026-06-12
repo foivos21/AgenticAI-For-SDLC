@@ -94,9 +94,9 @@ def test_search_flights_normalizes_origin_input_case_insensitively():
     assert lower_statement is not None
     assert mixed_statement is not None
     assert upper_statement is not None
-    assert str(lower_statement).upper().find("ATH") != -1
-    assert str(mixed_statement).upper().find("ATH") != -1
-    assert str(upper_statement).upper().find("ATH") != -1
+    assert "ATH" in str(lower_statement).upper()
+    assert "ATH" in str(mixed_statement).upper()
+    assert "ATH" in str(upper_statement).upper()
 
 
 def test_search_flights_normalizes_lowercase_destination_input():
