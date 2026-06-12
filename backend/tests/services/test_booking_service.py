@@ -167,6 +167,35 @@ def test_create_booking_calculates_base_total_for_multiple_passengers(db_session
     assert db_session.query(BookingPassenger).filter(BookingPassenger.booking_id == result.id).count() == 3
 
 
+def test_create_booking_with_three_passengers_and_two_hundred_fare_uses_multiplication(db_session, flight_factory):
+    flight = flight_factory(price=Decimal("200.00"))
+    db_session.add_all(
+        [
+            SeatInventory(flight_id=flight.id, seat_number="1A", cabin=SeatClass.ECONOMY.value, seat_type="window", is_booked=False),
+            SeatInventory(flight_id=flight.id, seat_number="1B", cabin=SeatClass.ECONOMY.value, seat_type="aisle", is_booked=False),
+            SeatInventory(flight_id=flight.id, seat_number="1C", cabin=SeatClass.ECONOMY.value, seat_type="window", is_booked=False),
+            SeatInventory(flight_id=flight.id, seat_number="1D", cabin=SeatClass.ECONOMY.value, seat_type="aisle", is_booked=False),
+        ]
+    )
+    db_session.flush()
+
+    service = BookingService(db_session)
+    payload = DummyBookingCreate(
+        flight_id=flight.id,
+        passengers=[
+            DummyBookingPassenger(first_name="Jane", last_name="Doe", date_of_birth=datetime(1990, 1, 1).date()),
+            DummyBookingPassenger(first_name="John", last_name="Doe", date_of_birth=datetime(1991, 1, 1).date()),
+            DummyBookingPassenger(first_name="Jill", last_name="Doe", date_of_birth=datetime(1992, 1, 1).date()),
+        ],
+        extras=[],
+    )
+
+    result = service.create_booking(payload)
+
+    assert result.total_price == Decimal("600.00")
+    assert db_session.query(BookingPassenger).filter(BookingPassenger.booking_id == result.id).count() == 3
+
+
 def test_create_booking_without_explicit_checked_bag_price_uses_short_haul_rate_for_under_six_hours(db_session, booking_create_payload_factory, flight_factory):
     flight = flight_factory(duration=timedelta(hours=3))
     db_session.add_all(
