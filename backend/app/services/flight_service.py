@@ -50,7 +50,7 @@ class FlightService:
             statement = statement.where(Flight.price <= max_price)
         if seat_class:
             statement = statement.where(Flight.seat_class == seat_class)
-        if only_available:
+        if not only_available:
             statement = statement.where(
                 exists(
                     select(1).where(
