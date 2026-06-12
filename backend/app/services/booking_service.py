@@ -407,7 +407,7 @@ class BookingService:
         )
 
         for booking in candidate_bookings:
-            if booking.status == BookingStatus.RESCHEDULED:
+            if booking.status == BookingStatus.CANCELLED:
                 continue
 
             passenger_identities = {
