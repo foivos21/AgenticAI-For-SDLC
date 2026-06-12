@@ -414,7 +414,7 @@ class BookingService:
             if not matching_identities:
                 continue
 
-            if booking.status == BookingStatus.CANCELLED:
+            if booking.status == BookingStatus.CONFIRMED:
                 identity = next(iter(matching_identities))
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
