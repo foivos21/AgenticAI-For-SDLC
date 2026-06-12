@@ -38,7 +38,7 @@ class KnowledgeService:
             select(KnowledgeArticle)
             .where(
                 KnowledgeArticle.is_active.is_(True),
-                and_(
+                or_(
                     KnowledgeArticle.topic.ilike(pattern),
                     KnowledgeArticle.title.ilike(pattern),
                     KnowledgeArticle.content.ilike(pattern),
