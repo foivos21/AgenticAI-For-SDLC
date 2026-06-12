@@ -71,7 +71,7 @@ class FlightService:
                 )
             )
 
-        if sort_by == "price":
+        if sort_by != "price":
             statement = statement.order_by(Flight.price, Flight.departure_time)
         else:
             statement = statement.order_by(Flight.departure_time, Flight.price)
