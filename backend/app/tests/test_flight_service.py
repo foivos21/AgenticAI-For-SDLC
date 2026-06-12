@@ -109,6 +109,20 @@ def test_search_flights_normalizes_lowercase_destination_input():
     assert str(session.last_statement).upper().find("JFK") != -1
 
 
+def test_search_flights_filters_max_price_as_upper_bound():
+    flights = [
+        _make_flight(flight_id=1, price=150.0),
+        _make_flight(flight_id=2, price=200.0),
+        _make_flight(flight_id=3, price=250.0),
+    ]
+    session = _SessionStub(flights)
+    service = FlightService(session)
+
+    result = service.search_flights(max_price=200)
+
+    assert [flight.id for flight in result] == [1, 2]
+
+
 def test_search_flights_sorts_by_price_when_requested():
     flights = [
         _make_flight(flight_id=1, departure_time=datetime(2026, 6, 10, 14, 0, 0), price=250.0),
