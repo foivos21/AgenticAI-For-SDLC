@@ -114,13 +114,13 @@ def bookable_flight_with_seats(db_session, flight_factory):
 
 @pytest.fixture()
 def booking_create_payload_factory(bookable_flight_with_seats):
-    def _create_payload(*, extras: list[object] | None = None) -> DummyBookingCreate:
-        passengers = [
+    def _create_payload(*, passengers: list[object] | None = None, extras: list[object] | None = None) -> DummyBookingCreate:
+        default_passengers = [
             DummyBookingPassenger(first_name="Jane", last_name="Doe", date_of_birth=datetime(1990, 1, 1).date()),
         ]
         return DummyBookingCreate(
             flight_id=bookable_flight_with_seats.id,
-            passengers=passengers,
+            passengers=passengers or default_passengers,
             extras=extras or [],
         )
 
@@ -138,6 +138,23 @@ def test_create_booking_with_paid_extras_adds_to_total(db_session, booking_creat
     assert result.total_price == Decimal("285.00")
     assert db_session.query(BookingExtra).filter(BookingExtra.booking_id == result.id).count() == 1
     assert db_session.query(BookingPassenger).filter(BookingPassenger.booking_id == result.id).count() == 1
+
+
+def test_create_booking_calculates_base_total_for_multiple_passengers(db_session, booking_create_payload_factory):
+    service = BookingService(db_session)
+    payload = booking_create_payload_factory(
+        passengers=[
+            DummyBookingPassenger(first_name="Jane", last_name="Doe", date_of_birth=datetime(1990, 1, 1).date()),
+            DummyBookingPassenger(first_name="John", last_name="Doe", date_of_birth=datetime(1991, 1, 1).date()),
+            DummyBookingPassenger(first_name="Jill", last_name="Doe", date_of_birth=datetime(1992, 1, 1).date()),
+        ],
+        extras=[],
+    )
+
+    result = service.create_booking(payload)
+
+    assert result.total_price == Decimal("750.00")
+    assert db_session.query(BookingPassenger).filter(BookingPassenger.booking_id == result.id).count() == 3
 
 
 def test_create_booking_without_explicit_checked_bag_price_uses_short_haul_rate_for_under_six_hours(db_session, booking_create_payload_factory, flight_factory):
